@@ -1,0 +1,33 @@
+{
+  "name": "arcnodegis",
+  "version": "0.0.0",
+  "description": "A local ArcGIS server clone for use with the ESRI Collector app.",
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "^1.13.3",
+    "connect-busboy": "^0.0.2",
+    "express": "^4.13.3",
+    "https": "^1.0.0",
+    "mkdirp": "^0.5.1",
+    "sqlite3": "^3.0.10"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://traderboy@github.com/traderboy/arcnodegis.git"
+  },
+  "keywords": [
+    "collector",
+    "arcgis"
+  ],
+  "author": "traderboy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/traderboy/arcnodegis/issues"
+  },
+  "homepage": "https://github.com/traderboy/arcnodegis"
+}
