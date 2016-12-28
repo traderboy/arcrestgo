@@ -1,0 +1,109 @@
+openssl req \
+    -new \
+    -newkey rsa:4096 \
+    -days 365 \
+    -nodes \
+    -x509 \
+    -subj "/C=US/ST=VA/L=Bristow/O=REAIS/CN=dev.go.com" \
+    -keyout go.dev.com.key \
+    -out go.dev.com.com.cert
+
+docker run -it --name pg -v /d/data:/data -v /d/git:/git -p 5432:5432 kartoza/postgis:9.4-2.1
+docker run -it --name pg -v /d/data:/data -v /d/git:/git -p 5432:5432 kartoza/postgis:9.5-2.2
+
+
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb homesites_inspections -nlt None -overwrite
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb homesites_inspections__ATTACH   -nlt None -overwrite
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb farm_tracts_inspections -nlt None -overwrite
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb farm_tracts_inspections__ATTACH -nlt None -overwrite
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb grazing_permittees -nlt None -overwrite
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb grazing_inspections -nlt None -overwrite
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb grazing_inspections__ATTACH -nlt None -overwrite
+
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb homesites -overwrite
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb farm_tracts -overwrite
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" leasecompliance2016.gdb grazing -overwrite
+
+
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{url}','\"https://reais.x10host.com:446/rest/services/accommodationagreementrentals/FeatureServer\"',true) where json->'url' is not null;"
+
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{tables,0,url}', to_json(replace(json#>>'{tables,0,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{tables,0,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{tables,1,url}', to_json(replace(json#>>'{tables,1,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{tables,1,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{tables,2,url}', to_json(replace(json#>>'{tables,2,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{tables,2,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{tables,3,url}', to_json(replace(json#>>'{tables,3,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{tables,3,url}' is not null;"
+
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{operationalLayers,0,url}', to_json(replace(json#>>'{operationalLayers,0,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,0,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{operationalLayers,1,url}', to_json(replace(json#>>'{operationalLayers,1,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,1,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{operationalLayers,2,url}', to_json(replace(json#>>'{operationalLayers,2,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,2,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{operationalLayers,3,url}', to_json(replace(json#>>'{operationalLayers,3,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,3,url}' is not null;"
+
+docker exec -it pg95 psql -d gis postgres -c "select json#>>'{tables,0,url}' from services where json#>>'{tables,0,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "select json#>>'{tables,1,url}' from services where json#>>'{tables,1,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "select json#>>'{tables,2,url}' from services where json#>>'{tables,2,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "select json#>>'{tables,3,url}' from services where json#>>'{tables,3,url}' is not null;"
+
+
+update services 
+set json=jsonb_set(json, array('features',elem_index::text, ,false) 
+from (
+select pos - 1 as elem_index from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=0 and elem->'attributes'->>'OBJECTID'='1'
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+update services set json=jsonb_set(json,'{url}','"https://reais.x10host.com:446/rest/services/accommodationagreementrentals/FeatureServer"',true) where json->'url' is not null;
+update services set json=jsonb_set(json,'{url}',replace('reais.x10host.com"',true) where json->'url' is not null;
+
+select json#>>'{tables,0,url}' from services where json#>>'{tables,0,url}' is not null;
+select json#>>'{tables,1,url}' from services where json#>>'{tables,1,url}' is not null;
+select json#>>'{tables,2,url}' from services where json#>>'{tables,2,url}' is not null;
+select json#>>'{tables,3,url}' from services where json#>>'{tables,3,url}' is not null;
+
+
+update services set json=jsonb_set(json,'{tables,0,url}', to_json(replace(json#>>'{tables,0,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{tables,0,url}' is not null;
+update services set json=jsonb_set(json,'{tables,1,url}', to_json(replace(json#>>'{tables,1,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{tables,1,url}' is not null;
+update services set json=jsonb_set(json,'{tables,2,url}', to_json(replace(json#>>'{tables,2,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{tables,2,url}' is not null;
+update services set json=jsonb_set(json,'{tables,3,url}', to_json(replace(json#>>'{tables,3,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{tables,3,url}' is not null;
+
+update services set json=jsonb_set(json,'{operationalLayers,0,url}', to_json(replace(json#>>'{operationalLayers,0,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,0,url}' is not null;
+update services set json=jsonb_set(json,'{operationalLayers,1,url}', to_json(replace(json#>>'{operationalLayers,1,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,1,url}' is not null;
+update services set json=jsonb_set(json,'{operationalLayers,2,url}', to_json(replace(json#>>'{operationalLayers,2,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,2,url}' is not null;
+update services set json=jsonb_set(json,'{operationalLayers,3,url}', to_json(replace(json#>>'{operationalLayers,3,url}','192.168.2.59','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,3,url}' is not null;
+
+
+reais.x10host.com
+
+ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" /data/content.items.data.json -skipfailures -nlt None
+
+Copy gdb to d:\data folder
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogrinfo  "Accommodation Agreement Rentals.gdb"
+ogrinfo  "Accommodation Agreement Rentals.gdb" 
+
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "grazing_permittees" -nlt None
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "homesites_permits" -nlt None
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "grazing_permits" -nlt None
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "farm_tracts_permits" -nlt None
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "grazing_inspections" -nlt None
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "homesites_inspections" -nlt None
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "farm_tracts_inspections" -nlt None
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "trespass_inspections" -nlt None
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "permittees" -nlt None
+
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "grazing"
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "homesites"
+docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" "Accommodation Agreement Rentals.gdb" "farm_tracts"

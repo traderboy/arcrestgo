@@ -12,23 +12,9 @@
             "program": "${workspaceRoot}",
             "cwd": "${workspaceRoot}",
             "env": {},
-            "args": ["server.go"],
-            "showLog": true
-        },
-        {
-            "name": "Test",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "remotePath": "",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "program": "${workspaceRoot}/json.go",
-            "cwd": "${workspaceRoot}",
-            "env": {},
-            "args": ["json.go"],
+            "args" : [],
+            //"args": ["D:\\workspace\\go\\src\\github.com\\traderboy\\arcrestgo\\services"],
             "showLog": true
         }
-
     ]
 }

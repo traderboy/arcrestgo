@@ -1,5 +1,10 @@
 services/*
 hpl12/*
+services.unused/*
+services.old/*
+leasecompliance/*
+trash.txt
+ssl/*
 *.com
 *.class
 *.dll

@@ -13,6 +13,6 @@
     "go.formatTool": "goreturns",
     "go.formatFlags": [],
     "go.goroot": "d:/go",
-    "go.gopath": "d:/go",
+    "go.gopath": "d:/workspace/go",
     "go.gocodeAutoBuild": false
 }
