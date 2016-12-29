@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 )
 
+//_ "github.com/mattn/go-sqlite3"
 func main() {
 	if len(os.Args) > 1 {
 		loadServices(os.Args[1])

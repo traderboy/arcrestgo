@@ -53,6 +53,17 @@ select pos - 1 as elem_index from services,jsonb_array_elements(json->'features'
 
 
 
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{tables,0,url}', to_json(replace(json#>>'{tables,0,url}','reais.x10host.com:446','reais.x10host.com'))::jsonb,false) where json#>>'{tables,0,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{tables,1,url}', to_json(replace(json#>>'{tables,1,url}','reais.x10host.com:446','reais.x10host.com'))::jsonb,false) where json#>>'{tables,1,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{tables,2,url}', to_json(replace(json#>>'{tables,2,url}','reais.x10host.com:446','reais.x10host.com'))::jsonb,false) where json#>>'{tables,2,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{tables,3,url}', to_json(replace(json#>>'{tables,3,url}','reais.x10host.com:446','reais.x10host.com'))::jsonb,false) where json#>>'{tables,3,url}' is not null;"
+
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{operationalLayers,0,url}', to_json(replace(json#>>'{operationalLayers,0,url}','reais.x10host.com:446','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,0,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{operationalLayers,1,url}', to_json(replace(json#>>'{operationalLayers,1,url}','reais.x10host.com:446','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,1,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{operationalLayers,2,url}', to_json(replace(json#>>'{operationalLayers,2,url}','reais.x10host.com:446','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,2,url}' is not null;"
+docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{operationalLayers,3,url}', to_json(replace(json#>>'{operationalLayers,3,url}','reais.x10host.com:446','reais.x10host.com'))::jsonb,false) where json#>>'{operationalLayers,3,url}' is not null;"
+
+
 
 
 

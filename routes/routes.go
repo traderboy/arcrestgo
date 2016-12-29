@@ -26,11 +26,12 @@ import (
 func StartGorillaMux() *mux.Router {
 	config.Init()
 	r := mux.NewRouter()
+	r.StrictSlash(true)
 
 	/*
 	   Download certs
 	*/
-	r.HandleFunc("/cert", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/cert/", func(w http.ResponseWriter, r *http.Request) {
 		//res.sendFile("certs/server.crt", { root : __dirname})
 		log.Println("Sending: " + config.RootPath + "certs/server.crt")
 		http.ServeFile(w, r, config.RootPath+string(os.PathSeparator)+"certs"+string(os.PathSeparator)+"server.crt")
@@ -43,7 +44,7 @@ func StartGorillaMux() *mux.Router {
 	/*
 	   Root responses
 	*/
-	r.HandleFunc("/sharing", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/sharing/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("/sharing")
 		response, _ := json.Marshal(map[string]interface{}{"currentVersion": config.ArcGisVersion})
 		w.Header().Set("Content-Type", "application/json")
@@ -54,22 +55,23 @@ func StartGorillaMux() *mux.Router {
 		//w.Write(response)
 	}).Methods("GET")
 
-	r.HandleFunc("/sharing/rest", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("/sharing/rest (post)")
+	r.HandleFunc("/sharing/rest/", func(w http.ResponseWriter, r *http.Request) {
+
+		log.Println("/sharing/rest (" + r.Method + ")")
 		response, _ := json.Marshal(map[string]interface{}{"currentVersion": config.ArcGisVersion})
 		//w.Write(response)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
-	}).Methods("POST")
-
-	r.HandleFunc("/sharing/rest", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("/sharing/rest")
-		response, _ := json.Marshal(map[string]interface{}{"currentVersion": config.ArcGisVersion})
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(response)
-		//w.Write(response)
-	}).Methods("GET")
-
+	}).Methods("GET", "POST")
+	/*
+		r.HandleFunc("/sharing/rest", func(w http.ResponseWriter, r *http.Request) {
+			log.Println("/sharing/rest")
+			response, _ := json.Marshal(map[string]interface{}{"currentVersion": config.ArcGisVersion})
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(response)
+			//w.Write(response)
+		}).Methods("GET")
+	*/
 	/*
 	   authentication.  Uses phoney tokens
 	*/

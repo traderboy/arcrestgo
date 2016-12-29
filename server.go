@@ -15,11 +15,11 @@ import (
 	"database/sql"
 
 	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
+	
 	config "github.com/traderboy/arcrestgo/config"
 	routes "github.com/traderboy/arcrestgo/routes"
 )
-
+//_ "github.com/mattn/go-sqlite3"
 var logPath = "logfile.txt"
 
 //
@@ -96,9 +96,8 @@ func main() {
 	//http.HandleFunc("/hello", HelloServer)
 	//  Start HTTP
 	go func() {
-
 		// Apply the CORS middleware to our top-level router, with the defaults.
-		err1 := http.ListenAndServe(":8080", handlers.CORS()(r))
+		err1 := http.ListenAndServe(":80", handlers.CORS()(r))
 		if err1 != nil {
 			log.Fatal("HTTP server: ", err1)
 		}
@@ -112,7 +111,7 @@ func main() {
 	cert = "ssl/2_reais.x10host.com.crt"
 	pem = "ssl/reais.x10host.com.key.pem"
 
-	err := http.ListenAndServeTLS(":446", cert, pem, handlers.CORS()(r))
+	err := http.ListenAndServeTLS(":443", cert, pem, handlers.CORS()(r))
 	if err != nil {
 		log.Fatal("HTTP server: ", err)
 	}

@@ -9,10 +9,10 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
+	
 	structs "github.com/traderboy/arcrestgo/structs"
 )
-
+//_ "github.com/mattn/go-sqlite3"
 //_ "github.com/traderboy/arcrestgo/controllers"
 //_ "github.com/traderboy/arcrestgo/models"
 
