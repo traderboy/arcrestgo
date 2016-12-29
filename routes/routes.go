@@ -18,11 +18,12 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/gorilla/mux"
-	_ "github.com/mattn/go-sqlite3"
+
 	config "github.com/traderboy/arcrestgo/config"
 	structs "github.com/traderboy/arcrestgo/structs"
 )
 
+//_ "github.com/mattn/go-sqlite3"
 func StartGorillaMux() *mux.Router {
 	config.Init()
 	r := mux.NewRouter()
