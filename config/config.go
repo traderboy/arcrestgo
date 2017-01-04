@@ -9,15 +9,16 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
-	
+
 	structs "github.com/traderboy/arcrestgo/structs"
 )
+
 //_ "github.com/mattn/go-sqlite3"
 //_ "github.com/traderboy/arcrestgo/controllers"
 //_ "github.com/traderboy/arcrestgo/models"
 
 var Project structs.JSONConfig
-var RootPath = "leasecompliance"
+var RootPath = "leasecompliance2016"
 
 //"github.com/gin-gonic/gin"
 //Db is the SQLITE databa se object
@@ -43,18 +44,6 @@ var AccessToken = "XMdOaajM4srQWx8nQ77KuOYGO8GupnCoYALvXEnTj0V_ZXmEzhrcboHLb7hGt
 
 func Init() {
 
-	file, err1 := ioutil.ReadFile(configFile)
-	if err1 != nil {
-		fmt.Printf("// error while reading file %s\n", configFile)
-		fmt.Printf("File error: %v\n", err1)
-		os.Exit(1)
-	}
-
-	err2 := json.Unmarshal(file, &Project)
-	if err2 != nil {
-		log.Println("Error reading configuration file: " + configFile)
-		log.Println(err2.Error())
-	}
 	//var err error
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -67,6 +56,7 @@ func Init() {
 	}
 	log.Print("Pinging Postgresql: ")
 	log.Println(Db.Ping)
+	GetConfiguration()
 
 	RootPath = pwd + string(os.PathSeparator) + RootPath //+ string(os.PathSeparator)
 	DataPath = RootPath                                  //+ string(os.PathSeparator)        //+ defaultService + string(os.PathSeparator) + "services" + string(os.PathSeparator)
@@ -76,6 +66,45 @@ func Init() {
 	log.Println("Replica path: " + ReplicaPath)
 	log.Println("Attachments path: " + AttachmentsPath)
 
+}
+
+func GetConfiguration() {
+	sql := "select json from catalog where name=$1"
+	log.Printf("Query: select json from catalog where name='config'")
+	stmt, err := Db.Prepare(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	var str []byte
+	err = stmt.QueryRow("config").Scan(&str)
+	if err != nil {
+		log.Println("Error reading configuration table")
+		log.Println(err.Error())
+		GetConfigurationFromFile()
+		return
+	}
+	err = json.Unmarshal(str, &Project)
+	if err != nil {
+		log.Println("Error parsing configuration table")
+		log.Println(err.Error())
+		GetConfigurationFromFile()
+		return
+	}
+}
+func GetConfigurationFromFile() {
+	//var json []byte
+	file, err1 := ioutil.ReadFile(configFile)
+	if err1 != nil {
+		fmt.Printf("// error while reading file %s\n", configFile)
+		fmt.Printf("File error: %v\n", err1)
+		os.Exit(1)
+	}
+
+	err2 := json.Unmarshal(file, &Project)
+	if err2 != nil {
+		log.Println("Error reading configuration file: " + configFile)
+		log.Println(err2.Error())
+	}
 }
 
 //GetArcService queries the database for service layer entries
@@ -113,4 +142,40 @@ func GetArcCatalog(service string, dtype string) []byte {
 	}
 
 	return json
+}
+
+func SetArcService(json string, catalog string, service string, layerid int, dtype string) bool {
+	sql := "update services set json=$5 where service like $1 and name=$2 and layerid=$3 and type=$4"
+	log.Printf("Query: update services set json=<json> where service like '%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
+	stmt, err := Db.Prepare(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	//err = stmt.QueryRow(name, "FeatureServer", idInt, "").Scan(&fields)
+	_, err = stmt.Exec(catalog, service, layerid, dtype, json)
+	if err != nil {
+		log.Println(err.Error())
+		return false
+	}
+
+	return true
+}
+
+//GetArcCatalog queries the database for top level catalog entries
+func SetArcCatalog(json string, service string, dtype string) bool {
+	sql := "update catalog set json=$3 where name=$1 and type=$2"
+	log.Printf("Query: update catalog set json=<json> where name='%v' and type='%v'", service, dtype)
+
+	stmt, err := Db.Prepare(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	_, err = stmt.Exec(service, dtype, json)
+	if err != nil {
+		log.Println(err.Error())
+		return false
+	}
+
+	return true
 }

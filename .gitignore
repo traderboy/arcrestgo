@@ -3,6 +3,10 @@ hpl12/*
 services.unused/*
 services.old/*
 leasecompliance/*
+leasecompliance.1/*
+leasecompliance2016/*
+leasecompliance2016.old/*
+*.saz
 trash.txt
 ssl/*
 *.com

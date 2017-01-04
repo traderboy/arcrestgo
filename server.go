@@ -10,15 +10,16 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/gorilla/handlers"
-
 	"database/sql"
 
+	"github.com/gorilla/handlers"
+
 	_ "github.com/lib/pq"
-	
+
 	config "github.com/traderboy/arcrestgo/config"
 	routes "github.com/traderboy/arcrestgo/routes"
 )
+
 //_ "github.com/mattn/go-sqlite3"
 var logPath = "logfile.txt"
 
@@ -92,12 +93,20 @@ func main() {
 	*/
 	config.Server = ConfigRuntime()
 	r := routes.StartGorillaMux()
+	
+
+	//test with: curl -H "Origin: http://localhost" -H "Access-Control-Request-Method: PUT" -H "Access-Control-Request-Headers: X-Requested-With" -X OPTIONS --verbose http://reais.x10host.com/
+	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	//os.Getenv("ORIGIN_ALLOWED")
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
 	//http.Handle("/", r)
 	//http.HandleFunc("/hello", HelloServer)
 	//  Start HTTP
 	go func() {
 		// Apply the CORS middleware to our top-level router, with the defaults.
-		err1 := http.ListenAndServe(":80", handlers.CORS()(r))
+		err1 := http.ListenAndServe(":80", handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
 		if err1 != nil {
 			log.Fatal("HTTP server: ", err1)
 		}
@@ -111,7 +120,7 @@ func main() {
 	cert = "ssl/2_reais.x10host.com.crt"
 	pem = "ssl/reais.x10host.com.key.pem"
 
-	err := http.ListenAndServeTLS(":443", cert, pem, handlers.CORS()(r))
+	err := http.ListenAndServeTLS(":443", cert, pem, handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
 	if err != nil {
 		log.Fatal("HTTP server: ", err)
 	}

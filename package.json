@@ -8,9 +8,10 @@
     "connect-busboy": "^0.0.2",
     "express": "^4.13.3",
     "https": "^1.0.0",
-    "mkdirp": "^0.5.1",
-    "sqlite3": "^3.0.10"
+    "mkdirp": "^0.5.1"
+    
   },
+  //"sqlite3": "^3.0.10"
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

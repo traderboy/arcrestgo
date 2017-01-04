@@ -25,11 +25,33 @@ func main() {
 }
 
 func loadServices(jsonPath string) {
-	services, err := ioutil.ReadDir(jsonPath)
+	isSingleFile := false
+	var err error
+	var fi os.FileInfo
+	fi, err = os.Stat(jsonPath)
 	if err != nil {
-		log.Println(err.Error())
+		fmt.Println(err)
 		return
 	}
+
+	var services []os.FileInfo
+
+	if fi.IsDir() {
+		services, err = ioutil.ReadDir(jsonPath)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+
+	} else {
+		isSingleFile = true
+		services = []os.FileInfo{fi}
+	}
+	/*
+		for _, f := range services {
+			log.Println(f.Name())
+		}
+	*/
 
 	/*
 		for _, f := range services {
@@ -46,39 +68,41 @@ func loadServices(jsonPath string) {
 			return
 		}
 	*/
-
 	db, err := sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
 	if err != nil {
 		log.Fatal(err)
 	}
-	sql := "DROP TABLE IF EXISTS catalog"
-	_, err = db.Exec(sql)
-	if err != nil {
-		log.Println(err.Error())
-		log.Println(sql)
 
-	}
-	sql = "DROP TABLE IF EXISTS catalog"
-	_, err = db.Exec(sql)
-	if err != nil {
-		log.Println(err.Error())
-		log.Println(sql)
+	if !isSingleFile {
+		sql := "DROP TABLE IF EXISTS catalog"
+		_, err = db.Exec(sql)
+		if err != nil {
+			log.Println(err.Error())
+			log.Println(sql)
 
-	}
+		}
+		sql = "DROP TABLE IF EXISTS services"
+		_, err = db.Exec(sql)
+		if err != nil {
+			log.Println(err.Error())
+			log.Println(sql)
 
-	sql = "CREATE TABLE IF NOT EXISTS catalog (id serial, name text, type text, json jsonb)"
-	_, err = db.Exec(sql)
-	if err != nil {
-		log.Println(err.Error())
-		log.Println(sql)
+		}
 
-	}
+		sql = "CREATE TABLE IF NOT EXISTS catalog (id serial, name text, type text, json jsonb)"
+		_, err = db.Exec(sql)
+		if err != nil {
+			log.Println(err.Error())
+			log.Println(sql)
 
-	sql = "CREATE TABLE IF NOT EXISTS services (id serial, service text,name text, layerid int, type text,json jsonb)"
-	_, err = db.Exec(sql)
-	if err != nil {
-		log.Println(err.Error())
-		log.Println(sql)
+		}
+
+		sql = "CREATE TABLE IF NOT EXISTS services (id serial, service text,name text, layerid int, type text,json jsonb)"
+		_, err = db.Exec(sql)
+		if err != nil {
+			log.Println(err.Error())
+			log.Println(sql)
+		}
 	}
 	/*
 		sql = "TRUNCATE catalog"
@@ -100,7 +124,7 @@ func loadServices(jsonPath string) {
 
 	for _, f := range services {
 		//if os.FileInfo(s).IsDir() {
-		if f.IsDir() {
+		if f.IsDir() || isSingleFile {
 			//dirName := strings.TrimSuffix(filepath.Base(f), filepath.Dir(f))
 			schema := f.Name()
 			log.Println("Schema name: " + schema)
@@ -133,10 +157,10 @@ func loadServices(jsonPath string) {
 					//" + fileName + "','" + strings.Replace(string(file), "'", "''", -1) + "')"
 					//log.Println(sql)
 					names := strings.Split(stat.Name(), ".")
-					layerid := 0
+					layerid := -1
 					dtype := ""
 					name := names[0]
-					log.Println("Loading service item: " + name)
+
 					if len(names) > 1 && names[1] != "json" {
 						if layerid, _ = strconv.Atoi(names[1]); err == nil {
 							//fmt.Printf("%d looks like a number.\n", layerid)
@@ -147,13 +171,14 @@ func loadServices(jsonPath string) {
 							dtype = names[1]
 						}
 					}
+					log.Printf("Loading service item: %v/%v/%v", name, layerid, dtype)
 					json := strings.Replace(string(file), "'", "''", -1)
 					json = strings.Replace(json, "\xa0", "", -1)
 					_, err = db.Exec(sql, schema, name, layerid, dtype, json)
 
 					if err != nil {
 						log.Println(err.Error())
-						//log.Println(sql)
+						log.Println(sql)
 						//return
 					}
 				}
@@ -177,7 +202,7 @@ func loadServices(jsonPath string) {
 				if len(names) > 1 && names[1] != "json" {
 					dtype = names[1]
 				}
-				log.Println("Loading service: " + name)
+				log.Printf("Loading service: %v/%v", name, dtype)
 				json := strings.Replace(string(file), "'", "''", -1)
 				json = strings.Replace(json, "\xa0", "", -1)
 
@@ -185,7 +210,7 @@ func loadServices(jsonPath string) {
 				_, err = db.Exec(sql, name, dtype, json)
 				if err != nil {
 					log.Println(err.Error())
-					//log.Println(sql)
+					log.Println(sql)
 				}
 			}
 		}
