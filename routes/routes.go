@@ -1250,8 +1250,17 @@ func StartGorillaMux() *mux.Router {
 		var outFields = r.FormValue("outFields")
 		//get fields for the related table
 		dID := config.Project.Services[name]["relationships"][relationshipId]["dId"]
-		sql := "select json->'fields' from services where service=$1 and name=$2 and layerid=$3 and type=$4"
-		log.Printf("select json->'fields' from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
+		var sql string
+		if config.DbName == "pgsql" {
+			sql = "select json->'fields' from services where service=$1 and name=$2 and layerid=$3 and type=$4"
+
+			log.Printf("select json->'fields' from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
+		} else if config.DbName == "sqlite3" {
+
+			sql = "select json from services where service=? and name=? and layerid=? and type=?"
+
+			log.Printf("select json from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
+		}
 		stmt, err := config.Db.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
@@ -1282,10 +1291,10 @@ func StartGorillaMux() *mux.Router {
 			config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string) + " in (select " +
 			config.Project.Services[name]["relationships"][relationshipId]["oJoinKey"].(string) + " from " +
 			config.Project.Services[name]["relationships"][relationshipId]["oTable"].(string) +
-			" where OBJECTID in($1))"
+			" where OBJECTID in(" + config.GetParam(1) + "))"
 
 		//_, err = w.Write([]byte(sqlstr))
-		log.Println(strings.Replace(sqlstr, "$1", objectIds, -1))
+		log.Println(strings.Replace(sqlstr, config.GetParam(1), objectIds, -1))
 
 		stmt, err = config.Db.Prepare(sqlstr)
 		if err != nil {
