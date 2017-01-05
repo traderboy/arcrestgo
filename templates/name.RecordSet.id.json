@@ -1,0 +1,274 @@
+{
+    "currentVersion": 10.3,
+    "id": 4,
+    "name": "Grazing permittees",
+    "type": "Table",
+    "serviceItemId": "5c8975fc06c34e4d987ef620a1cfa3ea",
+    "displayField": "suyl",
+    "description": "",
+    "copyrightText": "",
+    "defaultVisibility": true,
+    "editFieldsInfo": {
+        "creationDateField": "CreationDate",
+        "creatorField": "Creator",
+        "editDateField": "EditDate",
+        "editorField": "Editor"
+    },
+    "editingInfo": {
+        "lastEditDate": 1463748221976
+    },
+    "relationships": [
+        {
+            "id": 3,
+            "name": "Attributes from grazing_permittees",
+            "relatedTableId": 6,
+            "cardinality": "esriRelCardinalityOneToMany",
+            "role": "esriRelRoleOrigin",
+            "keyField": "GlobalID",
+            "composite": false
+        },
+        {
+            "id": 1,
+            "name": "Attributes grazing permits",
+            "relatedTableId": 1,
+            "cardinality": "esriRelCardinalityOneToMany",
+            "role": "esriRelRoleDestination",
+            "keyField": "range_unit",
+            "composite": false
+        }
+    ],
+    "isDataVersioned": false,
+    "supportsCalculate": true,
+    "supportsAttachmentsByUploadId": true,
+    "supportsRollbackOnFailureParameter": true,
+    "supportsStatistics": true,
+    "supportsAdvancedQueries": true,
+    "supportsValidateSql": true,
+    "supportsCoordinatesQuantization": true,
+    "supportsApplyEditsWithGlobalIds": true,
+    "advancedQueryCapabilities": {
+        "supportsPagination": true,
+        "supportsQueryWithDistance": true,
+        "supportsReturningQueryExtent": true,
+        "supportsStatistics": true,
+        "supportsOrderBy": true,
+        "supportsDistinct": true,
+        "supportsQueryWithResultType": true,
+        "supportsSqlExpression": true,
+        "supportsReturningGeometryCentroid": false
+    },
+    "useStandardizedQueries": true,
+    "allowGeometryUpdates": true,
+    "hasAttachments": false,
+    "htmlPopupType": "esriServerHTMLPopupTypeNone",
+    "hasM": false,
+    "hasZ": false,
+    "objectIdField": "OBJECTID",
+    "globalIdField": "GlobalID",
+    "typeIdField": "",
+    "fields": [
+        {
+            "name": "OBJECTID",
+            "type": "esriFieldTypeOID",
+            "alias": "OBJECTID",
+            "sqlType": "sqlTypeOther",
+            "nullable": false,
+            "editable": false,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "suyl",
+            "type": "esriFieldTypeInteger",
+            "alias": "SUYL",
+            "sqlType": "sqlTypeOther",
+            "nullable": true,
+            "editable": true,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "ov",
+            "type": "esriFieldTypeInteger",
+            "alias": "Ovine allocated",
+            "sqlType": "sqlTypeOther",
+            "nullable": true,
+            "editable": true,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "bo",
+            "type": "esriFieldTypeInteger",
+            "alias": "Bovine allocated",
+            "sqlType": "sqlTypeOther",
+            "nullable": true,
+            "editable": true,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "eq",
+            "type": "esriFieldTypeInteger",
+            "alias": "Equine allocated",
+            "sqlType": "sqlTypeOther",
+            "nullable": true,
+            "editable": true,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "permittee",
+            "type": "esriFieldTypeString",
+            "alias": "Name",
+            "sqlType": "sqlTypeOther",
+            "length": 8000,
+            "nullable": true,
+            "editable": true,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "range_unit",
+            "type": "esriFieldTypeString",
+            "alias": "Range Unit",
+            "sqlType": "sqlTypeOther",
+            "length": 255,
+            "nullable": true,
+            "editable": true,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "GlobalID",
+            "type": "esriFieldTypeGlobalID",
+            "alias": "GlobalID",
+            "sqlType": "sqlTypeOther",
+            "length": 38,
+            "nullable": false,
+            "editable": false,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "CreationDate",
+            "type": "esriFieldTypeDate",
+            "alias": "CreationDate",
+            "sqlType": "sqlTypeOther",
+            "length": 8,
+            "nullable": true,
+            "editable": false,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "Creator",
+            "type": "esriFieldTypeString",
+            "alias": "Creator",
+            "sqlType": "sqlTypeOther",
+            "length": 50,
+            "nullable": true,
+            "editable": false,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "EditDate",
+            "type": "esriFieldTypeDate",
+            "alias": "EditDate",
+            "sqlType": "sqlTypeOther",
+            "length": 8,
+            "nullable": true,
+            "editable": false,
+            "domain": null,
+            "defaultValue": null
+        },
+        {
+            "name": "Editor",
+            "type": "esriFieldTypeString",
+            "alias": "Editor",
+            "sqlType": "sqlTypeOther",
+            "length": 50,
+            "nullable": true,
+            "editable": false,
+            "domain": null,
+            "defaultValue": null
+        }
+    ],
+    "indexes": [
+        {
+            "name": "PK__LEASECOM__F4B70D85F7B61C83",
+            "fields": "OBJECTID",
+            "isAscending": true,
+            "isUnique": true,
+            "description": "clustered, unique, primary key"
+        },
+        {
+            "name": "FDO_GlobalID",
+            "fields": "GlobalID",
+            "isAscending": true,
+            "isUnique": true,
+            "description": ""
+        },
+        {
+            "name": "G14range_unit",
+            "fields": "range_unit",
+            "isAscending": true,
+            "isUnique": false,
+            "description": ""
+        },
+        {
+            "name": "CreationDateIndex",
+            "fields": "CreationDate",
+            "isAscending": true,
+            "isUnique": false,
+            "description": "CreationDate Field index"
+        },
+        {
+            "name": "CreatorIndex",
+            "fields": "Creator",
+            "isAscending": false,
+            "isUnique": false,
+            "description": "Creator Field index"
+        },
+        {
+            "name": "EditDateIndex",
+            "fields": "EditDate",
+            "isAscending": true,
+            "isUnique": false,
+            "description": "EditDate Field index"
+        },
+        {
+            "name": "EditorIndex",
+            "fields": "Editor",
+            "isAscending": false,
+            "isUnique": false,
+            "description": "Editor Field index"
+        }
+    ],
+    "types": [],
+    "templates": [
+        {
+            "name": "Grazing permittees",
+            "description": "",
+            "drawingTool": "esriFeatureEditToolNone",
+            "prototype": {
+                "attributes": {
+                    "range_unit": null,
+                    "permittee": null,
+                    "suyl": null,
+                    "ov": null,
+                    "bo": null,
+                    "eq": null
+                }
+            }
+        }
+    ],
+    "supportedQueryFormats": "JSON",
+    "hasStaticData": false,
+    "maxRecordCount": 1000,
+    "standardMaxRecordCount": 32000,
+    "tileMaxRecordCount": 8000,
+    "maxRecordCountFactor": 1,
+    "capabilities": "Create,Delete,Query,Update,Editing,Extract,Sync"
+}

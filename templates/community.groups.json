@@ -1,0 +1,787 @@
+{
+    "query": "+type:\"Web Map\" -type:\"Web Mapping Application\" AND group:7ed48d86139c485f9b1c7066004b72da",
+    "total": 12,
+    "start": 1,
+    "num": 100,
+    "nextStart": -1,
+    "results": [
+        {
+            "id": "86de95d4e0244cba80f0fa2c9403a7b2",
+            "owner": "esri_en",
+            "created": 1329588419000,
+            "modified": 1440611821000,
+            "guid": null,
+            "name": "0110_Imagery",
+            "title": "Imagery",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Server",
+                "Collector",
+                "Data",
+                "Feature Access",
+                "Feature Service",
+                "Location Tracking",
+                "Service",
+                "Data Editing",
+                "Explorer Web Map",
+                "Map",
+                "Offline",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": "This map features satellite imagery for the world and high-resolution aerial imagery for many areas.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9'>World Imagery</a> map service description.",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This map features satellite imagery for the world and high-resolution aerial imagery for many areas.",
+            "thumbnail": "thumbnail/tempimagery.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": "This work is licensed under the Esri Master License Agreement.<br /><a href='http://links.esri.com/agol_mla' target='_blank'><b>View Terms of Use</b></a>",
+            "culture": "en-us",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 5,
+            "numRatings": 9,
+            "avgRating": 4.150000095367432,
+            "numViews": 31730739
+        },
+        {
+            "id": "413fd05bbd7342f5991d5ec96f4f8b18",
+            "owner": "esri_en",
+            "created": 1329588423000,
+            "modified": 1436400987000,
+            "guid": null,
+            "name": "0120_Imagery_with_Labels",
+            "title": "Imagery with Labels",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Server",
+                "Collector",
+                "Data",
+                "Feature Access",
+                "Feature Service",
+                "Location Tracking",
+                "Service",
+                "Data Editing",
+                "Explorer Web Map",
+                "Map",
+                "Offline",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": "This map features satellite and high-resolution aerial imagery for the world with political boundaries and place names for reference purposes.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9'>World Imagery</a> and <a href='http://www.arcgis.com/home/item.html?id=a842e359856a4365b1ddf8cc34fde079'>World Boundaries and Places</a> map service descriptions.",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This map features satellite and high-resolution aerial imagery for the world with political boundaries and place names for reference purposes.",
+            "thumbnail": "thumbnail/imagery_labels.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": "Esri and its users and partners",
+            "licenseInfo": "This work is licensed under the Esri Master License Agreement.<br /><a href='http://links.esri.com/agol_mla' target='_blank'><b>View Terms of Use</b></a>",
+            "culture": "en-us",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 15,
+            "numRatings": 9,
+            "avgRating": 4.550000190734863,
+            "numViews": 24229464
+        },
+        {
+            "id": "d8855ee4d3d74413babfb0f41203b168",
+            "owner": "esri_en",
+            "created": 1329588529000,
+            "modified": 1436400987000,
+            "guid": null,
+            "name": "0130_Streets",
+            "title": "Streets",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Online",
+                "Explorer Web Map",
+                "Map",
+                "Online Map",
+                "sourceId#Five20Map12359428",
+                "Web Map"
+            ],
+            "description": "This map features highway-level data for the world and street-level data for North America, Europe, and other parts of the world.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://www.arcgis.com/home/item.html?id=3b93337983e9436f8db950e38a8629af'>World Street Map</a> service description.",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This map features highway-level data for the world and street-level data for North America, Europe, and other parts of the world.",
+            "thumbnail": "thumbnail/world_street_map.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": "This work is licensed under the Esri Master License Agreement.<br /><a href='http://links.esri.com/agol_mla' target='_blank'><b>View Terms of Use</b></a>",
+            "culture": "english (united states)",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 6,
+            "numRatings": 6,
+            "avgRating": 4.214290142059326,
+            "numViews": 29395018
+        },
+        {
+            "id": "6e03e8c26aad4b9c92a87c1063ddb0e3",
+            "owner": "esri_en",
+            "created": 1329588439000,
+            "modified": 1436400987000,
+            "guid": null,
+            "name": "0210_Topographic",
+            "title": "Topographic",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Server",
+                "Collector",
+                "Data",
+                "Feature Access",
+                "Feature Service",
+                "Location Tracking",
+                "Service",
+                "Data Editing",
+                "Explorer Web Map",
+                "Map",
+                "Offline",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": "This topographic map is designed to be used as a basemap and a reference map.  The map has been compiled by Esri and the ArcGIS user community from a variety of best available sources.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://goto.arcgisonline.com/maps/World_Topo_Map'>World Topographic Map</a> service description.",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This topographic map is designed to be used as a basemap and a reference map.  The map has been compiled by Esri and the ArcGIS user community from a variety of best available sources.",
+            "thumbnail": "thumbnail/topo_map_2.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": "This work is licensed under the Esri Master License Agreement.<br /><a href='http://links.esri.com/agol_mla' target='_blank'><b>View Terms of Use</b></a>",
+            "culture": "english (united states)",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 9,
+            "numRatings": 14,
+            "avgRating": 4.433330059051514,
+            "numViews": 25685625
+        },
+        {
+            "id": "25869b8718c0419db87dad07de5b02d8",
+            "owner": "esri_en",
+            "created": 1418255498000,
+            "modified": 1436400986000,
+            "guid": null,
+            "name": "0220_Dark_Gray_Canvas",
+            "title": "Dark Gray Canvas",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Online",
+                "ArcGIS Server",
+                "Collector",
+                "Data",
+                "Feature Access",
+                "Feature Service",
+                "Location Tracking",
+                "Service",
+                "Data Editing",
+                "Explorer Web Map",
+                "Map",
+                "Offline",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": "<span style='color: rgb(77, 77, 77); font-family: '>This map is designed to focus attention on your thematic content by providing a neutral background with minimal colors, labels, and features.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://goto.arcgisonline.com/maps/World_Dark_Gray_Base'>World Dark Gray Base</a> and <a href='http://goto.arcgisonline.com/maps/World_Dark_Gray_Reference'>World Dark Gray Reference</a> map service descriptions.</span>",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This map is designed to focus attention on your thematic content by providing a neutral background with minimal colors, labels, and features.",
+            "thumbnail": "thumbnail/DGCanvasBase.png",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": null,
+            "culture": "en-us",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 3,
+            "numRatings": 0,
+            "avgRating": 0,
+            "numViews": 5790479
+        },
+        {
+            "id": "8b3b470883a744aeb60e5fff0a319ce7",
+            "owner": "esri_en",
+            "created": 1329588577000,
+            "modified": 1436400987000,
+            "guid": null,
+            "name": "0230_Light_Gray_Canvas",
+            "title": "Light Gray Canvas",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Server",
+                "Collector",
+                "Data",
+                "Feature Access",
+                "Feature Service",
+                "Location Tracking",
+                "Service",
+                "Data Editing",
+                "Explorer Web Map",
+                "Map",
+                "Offline",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": "This map is designed to focus attention on your thematic content by providing a neutral background with minimal colors, labels, and features.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://www.arcgis.com/home/item.html?id=ed712cb1db3e4bae9e85329040fb9a49'>World Light Gray Base</a> and <a href='http://www.arcgis.com/home/item.html?id=87fcdf91a0f14e4a9fda40a763c6f2b8'>World Light Gray Reference</a> map service descriptions.",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This map is designed to focus attention on your thematic content by providing a neutral background with minimal colors, labels, and features.",
+            "thumbnail": "thumbnail/light_gray_canvas.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": "This work is licensed under the Esri Master License Agreement.<br /><a href='http://links.esri.com/agol_mla' target='_blank'><b>View Terms of Use</b></a>",
+            "culture": "en-us",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 2,
+            "numRatings": 5,
+            "avgRating": 4.083330154418945,
+            "numViews": 23611305
+        },
+        {
+            "id": "509e2d6b034246d692a461724ae2d62c",
+            "owner": "esri_en",
+            "created": 1329588459000,
+            "modified": 1436400986000,
+            "guid": null,
+            "name": "0310_NGS",
+            "title": "National Geographic",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Server",
+                "Collector",
+                "Data",
+                "Feature Access",
+                "Feature Service",
+                "Location Tracking",
+                "Service",
+                "Data Editing",
+                "Explorer Web Map",
+                "Map",
+                "Offline",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": "This map features the National Geographic World Map, which is a cartographically rich and distinctive reference map of the world.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://www.arcgis.com/home/item.html?id=b9b1b422198944fbbd5250b3241691b6'>National Geographic World Map</a> map service description.",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This map features the National Geographic World Map, which is a cartographically rich and distinctive reference map of the world.",
+            "thumbnail": "thumbnail/natgeo.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": "This work is licensed under the Esri Master License Agreement.<br /><a href='http://links.esri.com/agol_mla' target='_blank'><b>View Terms of Use</b></a>",
+            "culture": "en",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 1,
+            "numRatings": 4,
+            "avgRating": 3.5999999046325684,
+            "numViews": 20978997
+        },
+        {
+            "id": "48b8cec7ebf04b5fbdcaf70d09daff21",
+            "owner": "esri_en",
+            "created": 1329588425000,
+            "modified": 1436400987000,
+            "guid": null,
+            "name": "0320_Ocean_Basemap",
+            "title": "Oceans",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Online",
+                "Explorer Web Map",
+                "Map",
+                "Online Map",
+                "sourceId#oceans_1318033267629",
+                "Web Map"
+            ],
+            "description": "This map is designed to be used as a basemap by marine GIS professionals and as a reference map by anyone interested in ocean data.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://www.arcgis.com/home/item.html?id=1e126e7520f9466c9ca28b8f28b5e500'>World Ocean Base</a> map service description.",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This map is designed to be used as a basemap by marine GIS professionals and as a reference map by anyone interested in ocean data.",
+            "thumbnail": "thumbnail/tempoceans.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": "This work is licensed under the Esri Master License Agreement.<br /><a href='http://links.esri.com/agol_mla' target='_blank'><b>View Terms of Use</b></a>",
+            "culture": "en-us",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 0,
+            "numRatings": 6,
+            "avgRating": 4.071430206298828,
+            "numViews": 20178268
+        },
+        {
+            "id": "aab054ab883c4a4094c72e949566ad40",
+            "owner": "esri_en",
+            "created": 1329588475000,
+            "modified": 1436400987000,
+            "guid": null,
+            "name": "0330_Terrain_with_Labels",
+            "title": "Terrain with Labels",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Online",
+                "Explorer Web Map",
+                "Map",
+                "Online Map",
+                "sourceId#Terrain_with_Labels76404094",
+                "Web Map"
+            ],
+            "description": "This map features shaded relief imagery, bathymetry and coastal water features that provide neutral background with political boundaries and placenames for reference purposes.  The map is intended to support the ArcGIS Online basemap gallery.  For more details on the map, please visit the <a href='http://www.arcgis.com/home/item.html?id=c61ad8ab017d49e1a82f580ee1298931'>World Terrain Base</a> and <a href='http://www.arcgis.com/home/item.html?id=9763d83ba63048da8a2e0a71ccea4416'>World Reference Overlay</a> map service descriptions.",
+            "tags": [
+                "basemap"
+            ],
+            "snippet": "This map features shaded relief imagery, bathymetry and coastal water features that provide neutral background with political boundaries and placenames for reference purposes.",
+            "thumbnail": "thumbnail/terrain_labels.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": "This work is licensed under the Esri Master License Agreement.<br /><a href='http://links.esri.com/agol_mla' target='_blank'><b>View Terms of Use</b></a>",
+            "culture": "english (united states)",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 1,
+            "numRatings": 3,
+            "avgRating": 3.625,
+            "numViews": 21851561
+        },
+        {
+            "id": "5d2bfa736f8448b3a1708e1f6be23eed",
+            "owner": "esri_en",
+            "created": 1329588556000,
+            "modified": 1436400987000,
+            "guid": null,
+            "name": "0410_OpenStreetMap",
+            "title": "OpenStreetMap",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Online",
+                "Explorer Web Map",
+                "Map",
+                "Online Map",
+                "sourceId#Five20Map20100416",
+                "Web Map"
+            ],
+            "description": "This web map references the live tiled map service from the OpenStreetMap project. OpenStreetMap (OSM) is an open collaborative project to create a free editable map of the world.  Volunteers gather location data using GPS, local knowledge, and other free sources of information such as free satellite imagery, and upload it.�The resulting free map can be viewed and downloaded from the OpenStreetMap server: <a href='http://www.OpenStreetMap.org' target='_tab'>http://www.OpenStreetMap.org</a>. See that website for additional information about OpenStreetMap.�It is made available as a basemap for GIS work in Esri products under a <a href='http://creativecommons.org/licenses/by-sa/2.0/' target='_blank'>Creative Commons Attribution-ShareAlike license</a>.",
+            "tags": [
+                "basemap",
+                "world",
+                "Open Street Map",
+                "OSM",
+                "OpenStreetMap",
+                "international",
+                "road",
+                "roads",
+                "street",
+                "streets",
+                "wiki",
+                "world"
+            ],
+            "snippet": "This web map references the live tiled map service from the OpenStreetMap project. OpenStreetMap (OSM) is an open collaborative project to create a free editable map of the world.",
+            "thumbnail": "thumbnail/temposm.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": "OpenStreetMap project",
+            "licenseInfo": "<br />",
+            "culture": "english (united states)",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [
+                "[]"
+            ],
+            "industries": [
+                "[]"
+            ],
+            "languages": [
+                "[]"
+            ],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 2,
+            "numRatings": 5,
+            "avgRating": 4.416669845581055,
+            "numViews": 21956816
+        },
+        {
+            "id": "931d892ac7a843d7ba29d085e0433465",
+            "owner": "esri",
+            "created": 1328887957000,
+            "modified": 1420751086000,
+            "guid": null,
+            "name": "0420_USA_Topo_Maps",
+            "title": "USA Topo Maps",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Online",
+                "Explorer Web Map",
+                "Map",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": "<span><span><span><span><span><p><span><span><span>This map presents land cover and detailed topographic maps for the United States. It uses the�<a href='http://www.arcgis.com/home/item.html?id=99cd5fbd98934028802b4f797c4b1732' target='_self'>USA Topographic Map service</a>. The map includes the National Park Service (NPS) Natural Earth physical map at 1.24km per pixel for the world at small scales, i-cubed eTOPO 1:250,000-scale maps for the contiguous United States at medium scales, and National Geographic TOPO! 1:100,000 and 1:24,000-scale maps (1:250,000 and 1:63,000 in Alaska) for the United States at large scales. The TOPO! maps are seamless, scanned images of United States Geological Survey (USGS) paper topographic maps.</span></span></span></p><p><span><span><span>The maps provide a very useful basemap for a variety of applications, particularly in rural areas where the topographic maps provide unique detail and features from other basemaps.</span></span></span></p><p>To add this map service into a desktop application directly, go to the entry for the <a href='http://www.arcgis.com/home/item.html?id=99cd5fbd98934028802b4f797c4b1732' target='_self'>USA Topo Maps map service</a>. <br /></p><p><b>Tip:</b> Here are some famous locations as they appear in this web map, accessed�by including their location in the URL that launches the map:</p><p><span><span><span><span><span><i><a href='http://www.arcgis.com/home/webmap/viewer.html?webmap=931d892ac7a843d7ba29d085e0433465&amp;extent=-112.818602,35.850748,-111.553801,36.555520' target='_self'>Grand Canyon, Arizona</a></i></span></span></span></span></span></p><p><span><span><span><span><span><i><a href='http://www.arcgis.com/home/webmap/viewer.html?webmap=931d892ac7a843d7ba29d085e0433465&amp;extent=-122.578926,37.720084,-122.258263,37.927545' target='_self'>Golden Gate, California</a></i></span></span></span></span></span></p><p><span><span><span><span><span><i><a href='http://www.arcgis.com/home/webmap/viewer.html?webmap=931d892ac7a843d7ba29d085e0433465&amp;center=-74.044939,40.689601&amp;level=14' target='_self'>The Statue of Liberty, New York</a></i></span></span></span></span></span></p><p><span><span><span><span><span><i><a href='http://www.arcgis.com/home/webmap/viewer.html?webmap=931d892ac7a843d7ba29d085e0433465&amp;center=-77.036466,38.897281&amp;level=14' target='_self'>Washington DC</a></i></span></span></span></span></span></p><p><span><span><span><span><span><i><a href='http://www.arcgis.com/home/webmap/viewer.html?webmap=931d892ac7a843d7ba29d085e0433465&amp;center=-109.364209,36.139685&amp;level=12' target='_self'>Canyon De Chelly, Arizona</a></i></span></span></span></span></span></p><p><span><span><span><span><span><i><a href='http://www.arcgis.com/home/webmap/viewer.html?webmap=931d892ac7a843d7ba29d085e0433465&amp;center=-110.484538,44.573916&amp;level=9' target='_self'>Yellowstone National Park, Wyoming</a></i></span></span></span></span></span></p><p><span><span><span><span><span><i><a href='http://www.arcgis.com/home/webmap/viewer.html?webmap=931d892ac7a843d7ba29d085e0433465&amp;center=-115.811111,37.235&amp;level=12' target='_self'>Area 51, Nevada</a></i></span></span></span></span></span></p></span></span></span></span></span>",
+            "tags": [
+                "topographic",
+                "topography",
+                "topo",
+                "US",
+                "USA",
+                "USGS",
+                "Geological Survey",
+                "quad",
+                "sheets",
+                "basemap",
+                "historical",
+                "landcover",
+                "elevation",
+                "LayerGallery"
+            ],
+            "snippet": "This map features detailed USGS topographic maps for the United States at multiple scales.",
+            "thumbnail": "thumbnail/usa_topo.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -157.2075,
+                    11.7037
+                ],
+                [
+                    -66.3286,
+                    63.1582
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": "U.S. Geological Survey, National Geographic, i-cubed",
+            "licenseInfo": "<span style='font-family: Verdana, Helvetica, sans-serif; font-size: 12px; overflow: auto; background-color: rgb(255, 255, 255);'><img alt='Esri logo' src='http://downloads.esri.com/blogs/arcgisonline/esrilogo_new.png' style='border: 0px currentcolor;' />�</span><span style='font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255);'>This work is licensed under the Esri Master License Agreement.</span><div style='margin: 0px; padding: 0px; font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255);'><span style='line-height: 1.3846;'><font size='2' style='background-color: rgb(0, 0, 0);'><br /></font></span><a href='http://links.esri.com/tou_summary' style='color: rgb(33, 117, 155); outline: none !important;' target='_blank'><b>View Summary</b></a><span style='line-height: 1.3846;'>�|�</span><span style='line-height: 1.3846;'><span style='color: rgb(33, 117, 155); line-height: 1.3846; outline: none !important;'><a href='http://links.esri.com/agol_tou' style='color: rgb(33, 117, 155); line-height: 1.3846; outline: none !important;' target='_blank'><b>View Terms of Use</b></a></span></span></div>",
+            "culture": "en-us",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [],
+            "industries": [],
+            "languages": [],
+            "largeThumbnail": "largethumbnail/USATopo_286x190.jpg",
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 5,
+            "numRatings": 6,
+            "avgRating": 4.642859935760498,
+            "numViews": 5562849
+        },
+        {
+            "id": "6d9fa6d159ae4a1f80b9e296ed300767",
+            "owner": "esri",
+            "created": 1417478140000,
+            "modified": 1418272118000,
+            "guid": null,
+            "name": "0430_National_Map",
+            "title": "USGS National Map",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Online",
+                "Explorer Web Map",
+                "Map",
+                "Offline",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": "<span style='color: rgb(77, 77, 77); font-family: '>The USGS Topo base map service from The National Map is a combination of contours, shaded relief, woodland and urban tint, along with vector layers, such as geographic names, governmental unit boundaries, hydrography, structures, and transportation, to provide a composite topographic base map. Data sources are the National Atlas for small scales, and The National Map for medium to large scales.</span>",
+            "tags": [
+                "basemap",
+                "user_basemap",
+                "USGS",
+                "National Map",
+                "current"
+            ],
+            "snippet": "The USGS Topo base map service from The National Map is a combination of contours, shaded relief, woodland and urban tint, along with vector layers to provide a composite topographic base map.",
+            "thumbnail": "thumbnail/national_map.jpg",
+            "documentation": null,
+            "extent": [
+                [
+                    -180,
+                    -90
+                ],
+                [
+                    180,
+                    90
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": "USGS - The National Map",
+            "licenseInfo": null,
+            "culture": "en-us",
+            "properties": null,
+            "url": null,
+            "access": "public",
+            "size": -1,
+            "appCategories": [],
+            "industries": [],
+            "languages": [],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 0,
+            "numRatings": 2,
+            "avgRating": 4.166669845581055,
+            "numViews": 4686619
+        }
+    ]
+}

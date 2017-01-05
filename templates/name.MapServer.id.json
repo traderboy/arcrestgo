@@ -1,0 +1,78 @@
+{
+    "currentVersion": 10.3,
+    "id": 0,
+    "name": "",
+    "type": "Feature Layer",
+    "displayField": "",
+    "description": "",
+    "copyrightText": "",
+    "defaultVisibility": true,
+    "editingInfo": {
+        "lastEditDate": 1440641105681
+    },
+    "relationships": [],
+    "isDataVersioned": false,
+    "supportsCalculate": false,
+    "supportsAttachmentsByUploadId": false,
+    "supportsRollbackOnFailureParameter": false,
+    "supportsStatistics": false,
+    "supportsAdvancedQueries": false,
+    "supportsValidateSql": false,
+    "supportsCoordinatesQuantization": false,
+    "geometryType": "esriGeometryPoint",
+    "minScale": 0,
+    "maxScale": 0,
+    "extent": {
+        "xmin": -12354045.957299948,
+        "ymin": 4236426.790400028,
+        "xmax": -12252189.262500048,
+        "ymax": 4346760.841700077,
+        "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+        }
+    },
+    "drawingInfo": {
+        "renderer": {
+            "type": "simple",
+            "symbol": {
+                "type": "esriPMS",
+                "url": "a4c1a651b1ff36384604c3d84c3904ad",
+                "imageData": "iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAdBJREFUOI2t1M9Lk3EcwPF3c+55tphkZjssMCaoeNoYiAUJy5ZJREWg4Q4q0mFePChBSIdO/gElEWgrQnhohwqKQEEPUbBDOA8p9msnnVqNcnM+30c3OpSzJx+eNulz/Hy/n9f384EvHyv/KawmZzXBei77PNIxWRbS1x9S+smCmE8meQpkioHsfae5dclPi8+D32IRv+8IBlW+Tc4Seh5HeRHnoRnkvHmFR30B2m3l2Pa8IFN18QTnmhtoqHZS9+AVw4bQUDuj11q5YC3DYjIyrkqOD5ynW9VIKDHGdFDQK7V1nhJt/0L+wNxBLz1KDAXIFKAzjaLHXcXRYpCdCDTS1OEn9Pgt9wqQ+xB1pSAAsky510OTDpIlKkuFACocv+oKUC5Hfj9QPk9OB20KVoHaEhG+Z6VlELvQWkZ6nVXFSYdcPLS4RDqRFHd0HV2fEMOuCjqCXmqKQbQtmEswHXnDBx0EbG1ohGc/EfXVctAM2c7BZJyPXzS6dnK6n90/zstImNDMHGPN9RyxG4y5koLYe+JqGWdHomQNIYDeuzxTbjA1845Rp0yLXcJtOYBtO096fYPPqnb4fjiSuv13neEauTpCFug1HixlmDXbRyXFT16UitkmMx/wAAAAAElFTkSuQmCC",
+                "contentType": "image/png",
+                "width": 13,
+                "height": 13,
+                "angle": 0,
+                "xoffset": 0,
+                "yoffset": 0
+            },
+            "label": "",
+            "description": ""
+        },
+        "transparency": 0,
+        "labelingInfo": null
+    },
+    "allowGeometryUpdates": true,
+    "hasAttachments": true,
+    "htmlPopupType": "esriServerHTMLPopupTypeAsHTMLText",
+    "hasM": false,
+    "hasZ": false,
+    "objectIdField": "OBJECTID",
+    "globalIdField": "GlobalID",
+    "typeIdField": "",
+    "fields": [],
+    "indexes": [],
+    "types": [],
+    "templates": [
+        {
+            "name": "",
+            "description": "",
+            "drawingTool": "esriFeatureEditToolPoint",
+            "prototype": {}
+        }
+    ],
+    "supportedQueryFormats": "JSON",
+    "hasStaticData": false,
+    "maxRecordCount": -1,
+    "capabilities": "Map"
+}

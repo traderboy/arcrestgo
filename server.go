@@ -105,7 +105,7 @@ func main() {
 	//  Start HTTP
 	go func() {
 		// Apply the CORS middleware to our top-level router, with the defaults.
-		err1 := http.ListenAndServe(":81", handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
+		err1 := http.ListenAndServe(":80", handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
 		if err1 != nil {
 			log.Fatal("HTTP server: ", err1)
 		}

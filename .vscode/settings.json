@@ -12,7 +12,8 @@
     "go.formatOnSave": true,
     "go.formatTool": "goreturns",
     "go.formatFlags": [],
-    "go.goroot": "c:/go",
-    "go.gopath": "X:\\git\\arcrestgo",
-    "go.gocodeAutoBuild": false
+    "go.goroot": "D:/go",
+    "go.gopath": "D:/workspace/go/",
+    "go.gocodeAutoBuild": false,
+    "python.linting.pylintEnabled": false
 }

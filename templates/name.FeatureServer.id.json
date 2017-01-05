@@ -1,0 +1,94 @@
+{
+    "currentVersion": 10.3,
+    "id": 1,
+    "name": "",
+    "type": "Feature Layer",
+    "displayField": "",
+    "description": "",
+    "copyrightText": "",
+    "defaultVisibility": false,
+    "editFieldsInfo": {
+        "creationDateField": "CreationDate",
+        "creatorField": "Creator",
+        "editDateField": "EditDate",
+        "editorField": "Editor"
+    },
+    "editingInfo": {
+        "lastEditDate": 1440524683722
+    },
+    "relationships": [],
+    "isDataVersioned": false,
+    "supportsCalculate": true,
+    "supportsAttachmentsByUploadId": true,
+    "supportsRollbackOnFailureParameter": true,
+    "supportsApplyEditsWithGlobalIds": false,
+    "supportsStatistics": true,
+    "supportsAdvancedQueries": true,
+    "supportsValidateSql": true,
+    "supportsCoordinatesQuantization": true,
+    "serviceItemId": "55C5E7E4-834D-4D44-A12C-991E7F8B4600",
+    "advancedQueryCapabilities": {
+        "supportsPagination": true,
+        "supportsQueryWithDistance": true,
+        "supportsReturningQueryExtent": true,
+        "supportsStatistics": true,
+        "supportsOrderBy": true,
+        "supportsDistinct": true
+    },
+    "geometryType": "esriGeometryPoint",
+    "minScale": 0,
+    "maxScale": 0,
+    "extent": {
+        "xmin": -12354045.957299948,
+        "ymin": 4236426.790400028,
+        "xmax": -12252189.262500048,
+        "ymax": 4346760.841700077,
+        "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+        }
+    },
+    "drawingInfo": {
+        "renderer": {
+            "type": "simple",
+            "symbol": {
+                "type": "esriPMS",
+                "url": "3c1918ec586a4445b9e37c6e439acfb3",
+                "imageData": "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAXlJREFUKJGd0k8og3Ecx/G3eXiezQxbZOZPSuHgxFFKDlxwcXFxXM5SwsXZxcEBy4WLcvY/2lJrSQprymmRZ48/edi0za+0OYwnY418b7/D69fn9/t+JP450tfDjQezKY07IRiKJ6lTingotbCRMjFf60bPCVUPjbePeKMJGqwKWBWICxoiT3QUS4ypHrnP5RaBLPg0hxyM4Ksoob6lNjtStR0Sr9gursWeukira5QbAwaf5elSs6h32HK/x6JAYyXW4BULQL8BX4QYaKrJ/xkWBQpNdGZFVSTK87PMOKyU9Tbj2r1ElQBSaWJ/gXIR0fOY0w5aBupRzoC23+DdMyeapqlG1FUv3q42utPgyuNed07Yhsw+JYDNEDsrB3bbSI8+CVTlQMnTsH1q+Qj/hzMKEJndxx++Z3xmWG4HMZiGGuAR2FsPsDWxFo8JIY4/bzKao+v68ZIPdckn3oBDIAUUAMVOpzMkhBb6GiGrq0AEWPueU9O0H9nfARUbgfr1A5gwAAAAAElFTkSuQmCC",
+                "contentType": "image/png",
+                "width": 10,
+                "height": 10,
+                "angle": 0,
+                "xoffset": 0,
+                "yoffset": 0
+            },
+            "label": "",
+            "description": ""
+        },
+        "transparency": 0,
+        "labelingInfo": null
+    },
+    "allowGeometryUpdates": false,
+    "hasAttachments": true,
+    "htmlPopupType": "esriServerHTMLPopupTypeAsHTMLText",
+    "hasM": false,
+    "hasZ": false,
+    "objectIdField": "OBJECTID",
+    "globalIdField": "GlobalID",
+    "typeIdField": "",
+    "fields": [],
+    "indexes": [],
+    "types": [],
+    "templates": [
+        {
+            "name": "",
+            "description": "",
+            "drawingTool": "esriFeatureEditToolPoint",
+            "prototype": {}
+        }
+    ],
+    "supportedQueryFormats": "JSON",
+    "hasStaticData": false,
+    "maxRecordCount": 1000,
+    "capabilities": "Create,Delete,Query,Update,Editing,Sync"
+}

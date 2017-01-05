@@ -789,7 +789,7 @@ func StartGorillaMux() *mux.Router {
 		vars := mux.Vars(r)
 		name := vars["name"]
 
-		log.Println("/arcgis/rest/services/" + name + "(" + r.Method + ")")
+		log.Println("/arcgis/rest/services/" + name + " (" + r.Method + ")")
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
@@ -1251,11 +1251,11 @@ func StartGorillaMux() *mux.Router {
 		//get fields for the related table
 		dID := config.Project.Services[name]["relationships"][relationshipId]["dId"]
 		var sql string
-		if config.DbName == "pgsql" {
+		if config.DbSource == config.PGSQL {
 			sql = "select json->'fields' from services where service=$1 and name=$2 and layerid=$3 and type=$4"
 
 			log.Printf("select json->'fields' from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
-		} else if config.DbName == "sqlite3" {
+		} else if config.DbSource == config.SQLITE3 {
 
 			sql = "select json from services where service=? and name=? and layerid=? and type=?"
 
@@ -1285,7 +1285,7 @@ func StartGorillaMux() *mux.Router {
 		//var jsonFields=JSON.parse(file)
 		//log.Println("sqlite: " + replicaDb)
 		//var db = new sqlite3.Database(replicaDb)
-		var sqlstr = "select " + outFields + " from postgres." +
+		var sqlstr = "select " + outFields + " from " + config.Schema +
 			config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string) +
 			" where " +
 			config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string) + " in (select " +
@@ -1449,7 +1449,7 @@ func StartGorillaMux() *mux.Router {
 		*/
 
 		//var replicaDb = config.RootPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
-		var tableName = "postgres." + config.Project.Services[name]["layers"][id]["data"].(string)
+		var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
 		log.Println("Table name: " + tableName)
 		//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 

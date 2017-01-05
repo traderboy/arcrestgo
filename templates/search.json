@@ -1,0 +1,70 @@
+{
+    "query": "+type:\"Web Map\" -type:\"Web Mapping Application\" AND group:8e6b96c556754c9e8307cc2768cadd9e AND (typekeywords:Collector)",
+    "total": 1,
+    "start": 1,
+    "num": 100,
+    "nextStart": -1,
+    "results": [
+        {
+            "id": "7af4318fc298486f9ff8032376f8cbe0",
+            "owner": "admin",
+            "created": 1440523862000,
+            "modified": 1440523923000,
+            "guid": null,
+            "name": null,
+            "title": "Offline Collector",
+            "type": "Web Map",
+            "typeKeywords": [
+                "ArcGIS Server",
+                "Collector",
+                "Data",
+                "Feature Access",
+                "Feature Service",
+                "Location Tracking",
+                "Service",
+                "Data Editing",
+                "Explorer Web Map",
+                "Map",
+                "Offline",
+                "Online Map",
+                "Web Map"
+            ],
+            "description": null,
+            "tags": [
+                "gis"
+            ],
+            "snippet": "Map for collecting data in the field",
+            "thumbnail": "thumbnail/ago_downloaded.png",
+            "documentation": null,
+            "extent": [
+                [
+                    -111.5361,
+                    35.469
+                ],
+                [
+                    -109.5078,
+                    36.4129
+                ]
+            ],
+            "spatialReference": null,
+            "accessInformation": null,
+            "licenseInfo": null,
+            "culture": "en-us",
+            "properties": null,
+            "url": null,
+            "access": "org",
+            "size": -1,
+            "appCategories": [],
+            "industries": [],
+            "languages": [],
+            "largeThumbnail": null,
+            "banner": null,
+            "screenshots": [],
+            "listed": false,
+            "numComments": 0,
+            "numRatings": 0,
+            "avgRating": 0,
+            "numViews": 1
+        }
+    ]
+}

@@ -1,0 +1,62 @@
+{
+    "id": "",
+    "owner": "",
+    "created": 1463147189931,
+    "modified": 1463147190846,
+    "guid": null,
+    "name": null,
+    "title": "",
+    "type": "Map Service",
+    "typeKeywords": [
+        "ArcGIS Server",
+        "Data",
+        "Map Service",
+        "Multilayer",
+        "Service",
+        "Tiled",
+        "Service Proxy"
+    ],
+    "description": "",
+    "tags": [
+        "World",
+        "Global",
+        "United States"
+    ],
+    "snippet": "",
+    "thumbnail": "thumbnail/ago_downloaded.png",
+    "documentation": null,
+    "extent": [
+        [
+            -180,
+            -85
+        ],
+        [
+            180,
+            85
+        ]
+    ],
+    "spatialReference": "102100",
+    "accessInformation": "",
+    "licenseInfo": null,
+    "culture": "en-us",
+    "properties": null,
+    "url": "",
+    "sourceUrl": "",
+    "access": "org",
+    "size": 77,
+    "appCategories": [],
+    "industries": [],
+    "languages": [],
+    "largeThumbnail": null,
+    "banner": null,
+    "screenshots": [],
+    "listed": false,
+    "ownerFolder": null,
+    "protected": false,
+    "commentsEnabled": false,
+    "numComments": 0,
+    "numRatings": 0,
+    "avgRating": 0,
+    "numViews": 78,
+    "itemControl": "admin"
+}

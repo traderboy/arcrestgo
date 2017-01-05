@@ -4,7 +4,7 @@ services.unused/*
 services.old/*
 leasecompliance/*
 leasecompliance.1/*
-leasecompliance2016/*
+leasecompliance*/*
 leasecompliance2016.old/*
 *.saz
 trash.txt
@@ -36,3 +36,7 @@ node_modules/*
 ls
 sqlite2mongodb
 settings.json
+*.exe
+*.dll
+*.7z
+*.database

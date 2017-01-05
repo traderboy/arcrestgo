@@ -1,0 +1,62 @@
+{
+    "currentVersion": 10.3,
+    "serviceDescription": "",
+    "hasVersionedData": false,
+    "supportsDisconnectedEditing": false,
+    "hasStaticData": false,
+    "maxRecordCount": 2000,
+    "supportedQueryFormats": "JSON",
+    "capabilities": "Create,Delete,Query,Update,Editing,Sync",
+    "description": "",
+    "copyrightText": "",
+    "spatialReference": {
+        "wkid": 102100,
+        "latestWkid": 3857
+    },
+    "initialExtent": {
+        "xmin": -12354302.357228404,
+        "ymin": 4236426.7904273495,
+        "xmax": -12252189.262519188,
+        "ymax": 4348967.850034557,
+        "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+        }
+    },
+    "fullExtent": {
+        "xmin": -12354302.357228404,
+        "ymin": 4236426.7904273495,
+        "xmax": -12252189.262519188,
+        "ymax": 4348967.850034557,
+        "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+        }
+    },
+    "allowGeometryUpdates": true,
+    "units": "esriMeters",
+    "size": 180224,
+    "syncEnabled": true,
+    "syncCapabilities": {
+        "supportsAsync": true,
+        "supportsRegisteringExistingData": true,
+        "supportsSyncDirectionControl": true,
+        "supportsPerLayerSync": true,
+        "supportsPerReplicaSync": true,
+        "supportsSyncModelNone": true,
+        "supportsRollbackOnFailure": true
+    },
+    "editorTrackingInfo": {
+        "enableEditorTracking": true,
+        "enableOwnershipAccessControl": false,
+        "allowOthersToUpdate": true,
+        "allowOthersToDelete": true
+    },
+    "xssPreventionInfo": {
+        "xssPreventionEnabled": true,
+        "xssPreventionRule": "InputOnly",
+        "xssInputRule": "rejectInvalid"
+    },
+    "layers": [],
+    "tables": []
+}

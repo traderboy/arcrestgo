@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"strconv"
 
@@ -18,7 +19,14 @@ import (
 //_ "github.com/mattn/go-sqlite3"
 //_ "github.com/traderboy/arcrestgo/controllers"
 //_ "github.com/traderboy/arcrestgo/models"
-var DbName = "sqlite3"
+//var DbSource = "sqlite3"
+const (
+	PGSQL   = 1
+	SQLITE3 = 2
+)
+
+var Schema = "postgres."
+var DbSource = PGSQL
 var Project structs.JSONConfig
 var RootPath = "leasecompliance2016"
 
@@ -45,53 +53,81 @@ var RefreshToken = "51vzPXXNl7scWXsw7YXvhMp_eyw_iQzifDIN23jNSsQuejcrDtLmf3IN5_bK
 var AccessToken = "XMdOaajM4srQWx8nQ77KuOYGO8GupnCoYALvXEnTj0V_ZXmEzhrcboHLb7hGtGxZCYUGFt07HKOTnkNLah8LflMDoWmKGr4No2LBSpoNkhJqc9zPa2gR3vfZp5L3yXigqxYOBVjveiuarUo2z_nqQ401_JL-mCRsXq9NO1DYrLw."
 
 func Init() {
-
 	//var err error
 	pwd, err := os.Getwd()
 	if err != nil {
 		log.Println("Unable to get current directory")
 	}
-	if DbName == "pgsql" {
-		Db, err = sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
-		if err != nil {
-			log.Fatal(err)
-		}
+	RootPath = pwd + string(os.PathSeparator) + RootPath //+ string(os.PathSeparator)
+	var DbName string
 
-	} else if DbName == "sqlite3" {
-		Db, err = sql.Open("sqlite3", "arcrest.sqlite")
+	if len(os.Args) > 1 {
+		for i := 1; i < len(os.Args); i++ {
+			if os.Args[i] == "-sqlite" {
+				DbSource = SQLITE3
+				if len(os.Args) > i {
+					DbName = os.Args[i+1]
+				} else {
+					DbName = pwd + string(os.PathSeparator) + "arcrest.sqlite"
+				}
+				Schema = ""
+			} else if os.Args[i] == "-pgsql" && len(os.Args) > i {
+				DbSource = PGSQL
+				if len(os.Args) > i {
+					DbName = os.Args[i+1]
+				} else {
+					DbName = "user=postgres dbname=gis host=192.168.99.100"
+				}
+				Schema = "postgres."
+			} else if os.Args[i] == "-root" && len(os.Args) > i {
+				RootPath, _ = filepath.Abs(os.Args[i+1])
+			}
+		}
+	}
+
+	if DbSource == PGSQL {
+		Db, err = sql.Open("postgres", DbName)
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Print("Postgresql database: " + DbName)
+		log.Print("Pinging Postgresql: ")
+		log.Println(Db.Ping)
+	} else if DbSource == SQLITE3 {
+		Db, err = sql.Open("sqlite3", DbName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Print("Sqlite database: " + DbName)
 		//defer db.Close()
 	}
 	/*
-		Db, err = sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
+		Db, err = sql.Open("postgres", "user=postgres DbSource=gis host=192.168.99.100")
 		if err != nil {
 			log.Fatal(err)
 		}
 	*/
-	log.Print("Pinging Postgresql: ")
-	log.Println(Db.Ping)
-	GetConfiguration()
 
-	RootPath = pwd + string(os.PathSeparator) + RootPath //+ string(os.PathSeparator)
-	DataPath = RootPath                                  //+ string(os.PathSeparator)        //+ defaultService + string(os.PathSeparator) + "services" + string(os.PathSeparator)
-	ReplicaPath = RootPath                               //+ string(os.PathSeparator)     //+ defaultService + string(os.PathSeparator) + "replicas" + string(os.PathSeparator)
-	AttachmentsPath = RootPath                           //+ string(os.PathSeparator) //+ defaultService + string(os.PathSeparator) + "attachments" + string(os.PathSeparator)
+	DataPath = RootPath        //+ string(os.PathSeparator)        //+ defaultService + string(os.PathSeparator) + "services" + string(os.PathSeparator)
+	ReplicaPath = RootPath     //+ string(os.PathSeparator)     //+ defaultService + string(os.PathSeparator) + "replicas" + string(os.PathSeparator)
+	AttachmentsPath = RootPath //+ string(os.PathSeparator) //+ defaultService + string(os.PathSeparator) + "attachments" + string(os.PathSeparator)
+
+	log.Println("Root path: " + RootPath)
 	log.Println("Data path: " + DataPath)
 	log.Println("Replica path: " + ReplicaPath)
 	log.Println("Attachments path: " + AttachmentsPath)
+	LoadConfiguration()
 
 }
 
 func GetParam(i int) string {
-	if DbName == "sqlite3" {
+	if DbSource == SQLITE3 {
 		return "?"
 	}
 	return "$" + strconv.Itoa(i)
 }
 
-func GetConfiguration() {
+func LoadConfiguration() {
 	sql := "select json from catalog where name=" + GetParam(1)
 	log.Printf("Query: select json from catalog where name='config'")
 	stmt, err := Db.Prepare(sql)
@@ -103,19 +139,20 @@ func GetConfiguration() {
 	if err != nil {
 		log.Println("Error reading configuration table")
 		log.Println(err.Error())
-		GetConfigurationFromFile()
+		LoadConfigurationFromFile()
 		return
 	}
 	err = json.Unmarshal(str, &Project)
 	if err != nil {
 		log.Println("Error parsing configuration table")
 		log.Println(err.Error())
-		GetConfigurationFromFile()
+		LoadConfigurationFromFile()
 		return
 	}
 }
 
-func GetConfigurationFromFile() {
+func LoadConfigurationFromFile() {
+	configFile = RootPath + string(os.PathSeparator) + "config.json"
 	//var json []byte
 	file, err1 := ioutil.ReadFile(configFile)
 	if err1 != nil {
