@@ -11,7 +11,11 @@ import (
 	"strings"
 
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
+
+var DbName = "sqlite3"
+var Db *sql.DB
 
 //_ "github.com/mattn/go-sqlite3"
 func main() {
@@ -68,37 +72,57 @@ func loadServices(jsonPath string) {
 			return
 		}
 	*/
-	db, err := sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
-	if err != nil {
-		log.Fatal(err)
+	if DbName == "pgsql" {
+		Db, err = sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else if DbName == "sqlite3" {
+		Db, err = sql.Open("sqlite3", "../arcrest.sqlite")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer Db.Close()
 	}
+	/*
+		Db, err := sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
 
 	if !isSingleFile {
 		sql := "DROP TABLE IF EXISTS catalog"
-		_, err = db.Exec(sql)
+		_, err = Db.Exec(sql)
 		if err != nil {
 			log.Println(err.Error())
 			log.Println(sql)
 
 		}
 		sql = "DROP TABLE IF EXISTS services"
-		_, err = db.Exec(sql)
+		_, err = Db.Exec(sql)
 		if err != nil {
 			log.Println(err.Error())
 			log.Println(sql)
 
 		}
-
-		sql = "CREATE TABLE IF NOT EXISTS catalog (id serial, name text, type text, json jsonb)"
-		_, err = db.Exec(sql)
+		if DbName == "pgsql" {
+			sql = "CREATE TABLE IF NOT EXISTS catalog (id serial, name text, type text, json jsonb)"
+		} else if DbName == "sqlite3" {
+			sql = "CREATE TABLE IF NOT EXISTS catalog (id serial, name text, type text, json text)"
+		}
+		_, err = Db.Exec(sql)
 		if err != nil {
 			log.Println(err.Error())
 			log.Println(sql)
 
 		}
-
-		sql = "CREATE TABLE IF NOT EXISTS services (id serial, service text,name text, layerid int, type text,json jsonb)"
-		_, err = db.Exec(sql)
+		if DbName == "pgsql" {
+			sql = "CREATE TABLE IF NOT EXISTS services (id serial, service text,name text, layerid int, type text,json jsonb)"
+		} else if DbName == "sqlite3" {
+			sql = "CREATE TABLE IF NOT EXISTS services (id serial, service text,name text, layerid int, type text,json text)"
+		}
+		_, err = Db.Exec(sql)
 		if err != nil {
 			log.Println(err.Error())
 			log.Println(sql)
@@ -106,7 +130,7 @@ func loadServices(jsonPath string) {
 	}
 	/*
 		sql = "TRUNCATE catalog"
-		_, err = db.Exec(sql)
+		_, err = Db.Exec(sql)
 		if err != nil {
 			log.Println(err.Error())
 			log.Println(sql)
@@ -114,7 +138,7 @@ func loadServices(jsonPath string) {
 		}
 
 		sql = "TRUNCATE services"
-		_, err = db.Exec(sql)
+		_, err = Db.Exec(sql)
 		if err != nil {
 			log.Println(err.Error())
 			log.Println(sql)
@@ -174,7 +198,7 @@ func loadServices(jsonPath string) {
 					log.Printf("Loading service item: %v/%v/%v", name, layerid, dtype)
 					json := strings.Replace(string(file), "'", "''", -1)
 					json = strings.Replace(json, "\xa0", "", -1)
-					_, err = db.Exec(sql, schema, name, layerid, dtype, json)
+					_, err = Db.Exec(sql, schema, name, layerid, dtype, json)
 
 					if err != nil {
 						log.Println(err.Error())
@@ -183,11 +207,11 @@ func loadServices(jsonPath string) {
 					}
 				}
 
-				//loadJSON2Postgresql(db, schema, f)
+				//loadJSON2Postgresql(Db, schema, f)
 			}
 		} else {
 			log.Println("Is file: " + f.Name())
-			//loadJSON2Postgresql(db, "", jsonPath+string(os.PathSeparator)+f.Name())
+			//loadJSON2Postgresql(Db, "", jsonPath+string(os.PathSeparator)+f.Name())
 			jsonFile := jsonPath + string(os.PathSeparator) + f.Name()
 
 			if filepath.Ext(jsonFile) == ".json" {
@@ -207,7 +231,7 @@ func loadServices(jsonPath string) {
 				json = strings.Replace(json, "\xa0", "", -1)
 
 				sql := "INSERT INTO catalog(name,type,json) VALUES($1,$2,$3)"
-				_, err = db.Exec(sql, name, dtype, json)
+				_, err = Db.Exec(sql, name, dtype, json)
 				if err != nil {
 					log.Println(err.Error())
 					log.Println(sql)
@@ -220,7 +244,7 @@ func loadServices(jsonPath string) {
 }
 
 /*
-func loadJSON2Postgresql(db *sql.DB, schema string, name string, layerid string, dtype string, f string) {
+func loadJSON2Postgresql(Db *sql.Db, schema string, name string, layerid string, dtype string, f string) {
 	//i := 0
 
 	//read json file to string
@@ -248,7 +272,7 @@ func loadJSON2Postgresql(db *sql.DB, schema string, name string, layerid string,
 
 		//" + fileName + "','" + strings.Replace(string(file), "'", "''", -1) + "')"
 		//log.Println(sql)
-		_, err = db.Exec(sql, schema, name, layerid, dtype, file)
+		_, err = Db.Exec(sql, schema, name, layerid, dtype, file)
 
 		if err != nil {
 			log.Println(err.Error())
@@ -260,12 +284,12 @@ func loadJSON2Postgresql(db *sql.DB, schema string, name string, layerid string,
 	//i++
 
 }
-func _loadJSON2Postgresql(db *sql.DB, schema string, files []string) {
+func _loadJSON2Postgresql(Db *sql.Db, schema string, files []string) {
 
 	if len(schema) > 0 {
 		sql := "CREATE schema IF NOT EXISTS " + schema
 		//log.Println(sql)
-		_, err4 := db.Exec(sql)
+		_, err4 := Db.Exec(sql)
 		if err4 != nil {
 			log.Println(err4.Error())
 			log.Println(sql)
@@ -299,7 +323,7 @@ func _loadJSON2Postgresql(db *sql.DB, schema string, files []string) {
 			log.Println("Loading table: " + schema + tableName)
 			sql := "DROP TABLE IF EXISTS " + schema + tableName
 			//log.Println(sql)
-			_, err := db.Exec(sql)
+			_, err := Db.Exec(sql)
 			if err != nil {
 				log.Println(err.Error())
 				log.Println(sql)
@@ -308,7 +332,7 @@ func _loadJSON2Postgresql(db *sql.DB, schema string, files []string) {
 
 			sql = "CREATE TABLE " + schema + tableName + " (id serial, name text, json jsonb)"
 			//log.Println(sql)
-			_, err3 := db.Exec(sql)
+			_, err3 := Db.Exec(sql)
 			if err3 != nil {
 				log.Println(err3.Error())
 				log.Println(sql)
@@ -317,7 +341,7 @@ func _loadJSON2Postgresql(db *sql.DB, schema string, files []string) {
 
 			sql = "INSERT INTO " + schema + tableName + "(name, json) VALUES('" + fileName + "','" + strings.Replace(string(file), "'", "''", -1) + "')"
 			//log.Println(sql)
-			_, err2 := db.Exec(sql)
+			_, err2 := Db.Exec(sql)
 
 			if err2 != nil {
 				log.Println(err2.Error())
@@ -332,9 +356,9 @@ func _loadJSON2Postgresql(db *sql.DB, schema string, files []string) {
 
 
 	//   	age := 21
-	//  	rows, err := db.Query("SELECT name FROM users WHERE age = $1", age)
+	//  	rows, err := Db.Query("SELECT name FROM users WHERE age = $1", age)
 	//  	var userid int
-	//  err := db.QueryRow(`INSERT INTO users(name, favorite_fruit, age)
+	//  err := Db.QueryRow(`INSERT INTO users(name, favorite_fruit, age)
 	//  	VALUES('beatrice', 'starfruit', 93) RETURNING id`).Scan(&userid)
 
 }

@@ -8,15 +8,17 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/lib/pq"
+	"strconv"
 
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	structs "github.com/traderboy/arcrestgo/structs"
 )
 
 //_ "github.com/mattn/go-sqlite3"
 //_ "github.com/traderboy/arcrestgo/controllers"
 //_ "github.com/traderboy/arcrestgo/models"
-
+var DbName = "sqlite3"
 var Project structs.JSONConfig
 var RootPath = "leasecompliance2016"
 
@@ -49,11 +51,25 @@ func Init() {
 	if err != nil {
 		log.Println("Unable to get current directory")
 	}
+	if DbName == "pgsql" {
+		Db, err = sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	Db, err = sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
-	if err != nil {
-		log.Fatal(err)
+	} else if DbName == "sqlite3" {
+		Db, err = sql.Open("sqlite3", "arcrest.sqlite")
+		if err != nil {
+			log.Fatal(err)
+		}
+		//defer db.Close()
 	}
+	/*
+		Db, err = sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
 	log.Print("Pinging Postgresql: ")
 	log.Println(Db.Ping)
 	GetConfiguration()
@@ -68,8 +84,15 @@ func Init() {
 
 }
 
+func GetParam(i int) string {
+	if DbName == "sqlite3" {
+		return "?"
+	}
+	return "$" + strconv.Itoa(i)
+}
+
 func GetConfiguration() {
-	sql := "select json from catalog where name=$1"
+	sql := "select json from catalog where name=" + GetParam(1)
 	log.Printf("Query: select json from catalog where name='config'")
 	stmt, err := Db.Prepare(sql)
 	if err != nil {
@@ -91,6 +114,7 @@ func GetConfiguration() {
 		return
 	}
 }
+
 func GetConfigurationFromFile() {
 	//var json []byte
 	file, err1 := ioutil.ReadFile(configFile)
@@ -109,7 +133,7 @@ func GetConfigurationFromFile() {
 
 //GetArcService queries the database for service layer entries
 func GetArcService(catalog string, service string, layerid int, dtype string) []byte {
-	sql := "select json from services where service like $1 and name=$2 and layerid=$3 and type=$4"
+	sql := "select json from services where service like " + GetParam(1) + " and name=" + GetParam(2) + " and layerid=" + GetParam(3) + " and type=" + GetParam(4)
 	log.Printf("Query: select json from services where service like '%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
 	stmt, err := Db.Prepare(sql)
 	if err != nil {
@@ -126,7 +150,7 @@ func GetArcService(catalog string, service string, layerid int, dtype string) []
 
 //GetArcCatalog queries the database for top level catalog entries
 func GetArcCatalog(service string, dtype string) []byte {
-	sql := "select json from catalog where name=$1 and type=$2"
+	sql := "select json from catalog where name=" + GetParam(1) + " and type=" + GetParam(2)
 	log.Printf("Query: select json from catalog where name='%v' and type='%v'", service, dtype)
 
 	stmt, err := Db.Prepare(sql)
@@ -145,7 +169,7 @@ func GetArcCatalog(service string, dtype string) []byte {
 }
 
 func SetArcService(json string, catalog string, service string, layerid int, dtype string) bool {
-	sql := "update services set json=$5 where service like $1 and name=$2 and layerid=$3 and type=$4"
+	sql := "update services set json=" + GetParam(5) + " where service like " + GetParam(1) + "and name=" + GetParam(2) + " and layerid=" + GetParam(3) + " and type=" + GetParam(4)
 	log.Printf("Query: update services set json=<json> where service like '%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
 	stmt, err := Db.Prepare(sql)
 	if err != nil {
@@ -163,7 +187,7 @@ func SetArcService(json string, catalog string, service string, layerid int, dty
 
 //GetArcCatalog queries the database for top level catalog entries
 func SetArcCatalog(json string, service string, dtype string) bool {
-	sql := "update catalog set json=$3 where name=$1 and type=$2"
+	sql := "update catalog set json=$3 where name=" + GetParam(1) + " and type=" + GetParam(2)
 	log.Printf("Query: update catalog set json=<json> where name='%v' and type='%v'", service, dtype)
 
 	stmt, err := Db.Prepare(sql)
