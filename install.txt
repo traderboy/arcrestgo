@@ -38,7 +38,8 @@ ogr2ogr -f "SQLITE" arcrest.sqlite leasecompliance2016.gdb grazing -overwrite
 
 
 
-copy D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite to d:\data
+#copy D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite to d:\data
+docker cp *.sqlite determined_pare:/data
 docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "SQLITE" arcrest.sqlite leasecompliance2016.gdb homesites_inspections -nlt None -overwrite
 docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "SQLITE" arcrest.sqlite leasecompliance2016.gdb homesites_inspections__ATTACH   -nlt None -overwrite
 docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "SQLITE" arcrest.sqlite leasecompliance2016.gdb farm_tracts_inspections -nlt None -overwrite
@@ -50,7 +51,8 @@ docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local og
 docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "SQLITE" arcrest.sqlite leasecompliance2016.gdb homesites -overwrite
 docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "SQLITE" arcrest.sqlite leasecompliance2016.gdb farm_tracts -overwrite
 docker run -it --user root -v /d/data:/data -v /d/git:/git geodata/gdal:local ogr2ogr -f "SQLITE" arcrest.sqlite leasecompliance2016.gdb grazing -overwrite
-
+#copy sqlite file back over
+docker cp determined_pare:/data/arcresta.sqlite .
 
 docker exec -it pg95 psql -d gis postgres -c "update services set json=jsonb_set(json,'{url}','\"https://reais.x10host.com:446/rest/services/accommodationagreementrentals/FeatureServer\"',true) where json->'url' is not null;"
 

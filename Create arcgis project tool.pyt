@@ -652,7 +652,7 @@ class CreateNewProject(object):
 
            #only need to update the operationalLayers
            content_items_json=openJSON(templatePath + "/content.items.data.json")
-           opLayers = content_items_json['operationalLayers']=getOperationalLayers(operationalLayers,serverName,serviceName)
+           opLayers = content_items_json['operationalLayers']=getOperationalLayers(operationalLayers,serverName,serviceName,symbols)
            opTables = content_items_json['tables']=getTables(operationalTables,serverName,serviceName,len(opLayers))
 
            saveJSON(servicesDestinationPath + "/content.items.data.json",content_items_json)
@@ -1450,10 +1450,16 @@ def saveMapfile(mapfile,lyr,desc,dataDestinationPath,mapserver_json):
     printMessage("Unable to create mapfile: " + mapstr)
 
 
-def getOperationalLayers(opLayers,serverName,serviceName):
+def getOperationalLayers(opLayers,serverName,serviceName,symbols):
    layers=[]
    id = 0
    for lyr in opLayers:
+     desc = arcpy.Describe(lyr)
+     if hasattr(desc, "layer"):
+         featureName=os.path.basename(desc.layer.catalogPath)
+     else:
+         featureName=os.path.basename(desc.catalogPath)
+       
      opLayer = {
          "id": str(id),
          "itemId": lyr.name.replace(" ","_")+str(id),
@@ -1461,6 +1467,7 @@ def getOperationalLayers(opLayers,serverName,serviceName):
          "title": lyr.name,
          "url": "http://"+serverName + "/arcgis/rest/services/"+serviceName+"/FeatureServer/"+str(id),
          "popupInfo": getPopupInfo(lyr),
+         "layerDefinition":{"drawingInfo":getSymbol(lyr,symbols[featureName],lyr.name)},
          "opacity": (100.0 - float(lyr.transparency)) / 100.0,
          "capabilities": "Create,Delete,Query,Update,Editing,Sync",
          "visibility": lyr.visible
@@ -1535,6 +1542,14 @@ def getPopupInfo(lyr):
               'fieldInfos': getFieldInfos(lyr)
               }
    return popInfo
+
+#def getLayerDefinition(lyr,symbol):
+#    return getSymbol(lyr,symbols[featureName],lyr.name)
+#    layerDef={
+#        "drawingInfo":{
+#            "renderer":getRendere(lyr)
+#        }
+#    }
 
 #get the fields for the popup
 def getFieldInfos(layer):
@@ -2078,6 +2093,7 @@ def getSymbolColor(sym):
     printMessage("here")
 
 def getPointSymbol(sym):
+    #"style" : "< esriSMSCircle | esriSMSCross | esriSMSDiamond | esriSMSSquare | esriSMSX | esriSMSTriangle >",
     obj = {}
     obj['type']="esriSMS"
     obj['style']="esriSMSCircle"
@@ -2085,38 +2101,108 @@ def getPointSymbol(sym):
     obj['angle']= 0
     obj['xoffset']= 0
     obj['yoffset']=  0
-    obj['outline']={}
-    obj['outline']['width']= 1
-    symb = sym.getElementsByTagName("CIMSymbolLayer")[0]
-    size = symb.getElementsByTagName("Size")
-    width = symb.getElementsByTagName("Width")
+    #obj['outline']={}
+    #obj['outline']['width']= 1
+    symb = sym.getElementsByTagName("CIMSymbolLayer")
+    size = sym.getElementsByTagName("Size")
     if len(size) > 0:
-       printMessage("       Size: " + size[0].childNodes[0].nodeValue)
+       printMessage("Size: " + size[0].childNodes[0].nodeValue)
        obj['size']= num(size[0].childNodes[0].nodeValue)
-    if len(width)>0:
-       printMessage("       Width: " + width[0].childNodes[0].nodeValue)
-       obj['width']=num(width[0].childNodes[0].nodeValue)  
-    obj = getSymbolColor(sym,obj)               
+
+    #type = symb.getAttribute("xsi:type")
+    #if type == "typens:CIMFilledStroke":
+    #    x=1
+    #elif type == "typens:CIMCharacterMarker":
+    #    x=2
+
+    for i in symb:
+
+       if i.getAttribute("xsi:type")=="typens:CIMFill":
+          #obj['color']['type']="esriSLS"
+          #obj['outline']['style']="esriSLSSolid"
+          #2drawingInfo['renderer']['symbol']['outline']['style']="esriSFSSolid"
+          #obj['outline']['style']="esriSLSSolid"
+          obj['color'] = getSymbolColor(i)  
+       elif i.getAttribute("xsi:type")== "typens:CIMFilledStroke":
+          obj['outline']={}
+          obj['outline']['type']="esriSLS"
+          obj['outline']['style']="esriSLSSolid"
+          obj['outline']['color'] = getSymbolColor(i)  
+          
+          width = i.getElementsByTagName("Width")
+          if len(width)>0:
+             printMessage("Width: " + width[0].childNodes[0].nodeValue)
+             obj['outline']['width']=num(width[0].childNodes[0].nodeValue)  
+          
+       
+    #obj = getSymbolColor(sym,obj)               
     return obj
     
 def getPolygonSymbol(sym):
+    #"style" : "< esriSFSBackwardDiagonal | esriSFSCross | esriSFSDiagonalCross | esriSFSForwardDiagonal | esriSFSHorizontal | esriSFSNull | esriSFSSolid | esriSFSVertical >",
     obj = {}
     obj['type']="esriSFS"
     obj['style']="esriSFSSolid"
-    obj['outline']={}
-    symb = sym.getElementsByTagName("CIMSymbolLayer")[0]
-    if symb.getAttribute("xsi:type")=="typens:CIMFill":
-                    obj['outline']['type']="esriSLS"
-                    #2drawingInfo['renderer']['symbol']['outline']['style']="esriSFSSolid"
-                    obj['outline']['style']="esriSLSSolid"
-                    
-    else:
-                    obj['outline']['type']="esriSLS"
-                    obj['outline']['style']="esriSLSSolid"
-    obj = getSymbolColor(sym,obj)  
+
+    symb = sym.getElementsByTagName("CIMSymbolLayer")
+    for i in symb:
+        
+       if i.getAttribute("xsi:type")=="typens:CIMFill":
+          #obj['color']= {}
+          #obj['color']['type']="esriSLS"
+          #2drawingInfo['renderer']['symbol']['outline']['style']="esriSFSSolid"
+          #obj['outline']['style']="esriSLSSolid"
+          obj['color'] = getSymbolColor(i)  
+       elif i.getAttribute("xsi:type")== "typens:CIMFilledStroke":
+          obj['outline']={}
+          obj['outline']['type']="esriSLS"
+          obj['outline']['style']="esriSLSSolid"
+          obj['outline']['color'] = getSymbolColor(i)  
+          #size = i.getElementsByTagName("Size")
+          width = i.getElementsByTagName("Width")
+          
+          #if len(size) > 0:
+          #   printMessage("Size: " + size[0].childNodes[0].nodeValue)
+          #   obj['outline']['size']= num(size[0].childNodes[0].nodeValue)
+          if len(width)>0:
+             printMessage("Width: " + width[0].childNodes[0].nodeValue)
+             obj['outline']['width']=num(width[0].childNodes[0].nodeValue)  
+          
     return obj
 
-def getSymbolColor(sym,obj):
+def getPolylineSymbol(sym):
+    #"style" : "< esriSLSDash | esriSLSDashDot | esriSLSDashDotDot | esriSLSDot | esriSLSNull | esriSLSSolid >",
+    obj = {}
+    obj['type']="esriSLS"
+    obj['style']="esriSFSSolid"
+    obj['outline']={}
+    return obj
+
+def getSymbolColor(sym):
+    patt = sym.getElementsByTagName("Pattern")
+    colorObj=[]
+    #colorObj = {}
+    if len(patt)>0:
+         color = patt[0].getElementsByTagName("Color")
+         if len(color)==0:
+            return colorObj
+         colorStr = str(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("Alpha")[0].childNodes[0].nodeValue)
+            
+         colorObj = [ 
+             int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), 
+             int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), 
+             int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),
+             int(color[0].getElementsByTagName("Alpha")[0].childNodes[0].nodeValue) 
+         ]
+         #if patt[0].getAttribute("xsi:type")=="typens:CIMFilledStroke":
+         #   obj['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
+         #else:
+         #   obj['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
+         printMessage("Color (polygon): " + colorStr)
+    return colorObj
+
+
+def getSymbolColora(sym,obj):
     patt = sym.getElementsByTagName("Pattern")
     if len(patt)>0:
          color = patt[0].getElementsByTagName("Color")
@@ -2125,65 +2211,35 @@ def getSymbolColor(sym,obj):
             obj['outline']['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
          else:
             obj['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
-         printMessage("         Color (polygon): " + colorStr)
+         printMessage("Color (polygon): " + colorStr)
     return obj
 
-def getSymbolLayers(sym):
-    return {}
-    #for l in sym.childNodes:
+def getGroupSymbols(sym):
+    #loop through sym and return Array
+    #get geometry type
+    group=[]
+    for i in sym:
+        obj = {}
+        val = i.getElementsByTagName("FieldValues")
+        if len(val)>0:
+            #obj["value"]=val[0].childNodes[0].nodeValue
+            s = val[0].getElementsByTagName("String")
+            obj["value"]=s[0].childNodes[0].nodeValue
+        obj["label"]=obj["value"]
 
-def getSymbolLayersa(sym):
-    for l in sym.childNodes:
-       printMessage("   " + l.tagName + ": " + l.getAttribute("xsi:type"))
-       if l.tagName=='SymbolLayers':
-          #printMessage("    " + l.tagName)
-          for m in l.childNodes:
-              printMessage("     " + m.tagName + ": " + m.getAttribute("xsi:type"))
-              if m.tagName == "CIMSymbolLayer":
-                 if m.getAttribute("xsi:type")=="typens:CIMFill":
-                    drawingInfo['renderer']['symbol']['outline']['type']="esriSLS"
-                    #2drawingInfo['renderer']['symbol']['outline']['style']="esriSFSSolid"
-                    drawingInfo['renderer']['symbol']['outline']['style']="esriSLSSolid"
-                    
-                 else:
-                    drawingInfo['renderer']['symbol']['outline']['type']="esriSLS"
-                    drawingInfo['renderer']['symbol']['outline']['style']="esriSLSSolid"
-                     
-                    #{"type":"esriSLS",
-                    #"style":"esriSLSSolid",
-
-                 for n in m.childNodes:
-                    printMessage("      " + n.tagName + ": " + n.getAttribute("xsi:type"))
-                    if n.tagName=='Size':
-                      printMessage("       Size: " + n.childNodes[0].nodeValue)
-                      drawingInfo['renderer']['symbol']['size']= num(n.childNodes[0].nodeValue)
-                    if n.tagName=='Width':
-                      printMessage("       Width: " + n.childNodes[0].nodeValue)
-                      drawingInfo['renderer']['symbol']['width']=num(n.childNodes[0].nodeValue)
-                    
-                    if n.tagName=='Pattern':
-                      color = n.getElementsByTagName("Color")
-                      colorStr = str(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue)
-                      if m.getAttribute("xsi:type")=="typens:CIMFilledStroke":
-                         drawingInfo['renderer']['symbol']['outline']['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
-                      else:
-                         drawingInfo['renderer']['symbol']['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
-                      printMessage("         Color (polygon): " + colorStr)
-                    
-                    if n.tagName=='Symbol':
-                      for o in n.childNodes:
-                        printMessage("       " + o.tagName + ": " + o.getAttribute("xsi:type"))
-                        if o.tagName=='SymbolLayers':
-                          for p in o.childNodes:
-                             printMessage("        " + p.tagName + ": " + p.getAttribute("xsi:type"))
-                             if p.tagName =='CIMSymbolLayer':
-                                for q in p.childNodes:
-                                   printMessage("         " + q.tagName + ": " + q.getAttribute("xsi:type"))
-                                   if q.tagName=='Pattern':
-                                      color = q.getElementsByTagName("Color")
-                                      colorStr = str(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue)
-                                      drawingInfo['renderer']['symbol']['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue), 255]
-                                      printMessage("          Color (point): " + colorStr)
+        for j in i.childNodes:
+           if j.tagName == "Symbol":
+             #get the next symbol
+             k = j.getElementsByTagName("Symbol")
+             for m in k:
+                #type = geomtype[0].getAttribute("xsi:type")=="typens:CIMPolygonSymbol"
+                if m.getAttribute("xsi:type")=="typens:CIMPointSymbol":
+                   obj['symbol'] = getPointSymbol(m)
+                elif m.getAttribute("xsi:type")=="typens:CIMPolygonSymbol":
+                   obj['symbol']=getPolygonSymbol(m)
+        group.append(obj)
+    return group
+        
 
 
 #see http://resources.arcgis.com/en/help/arcgis-rest-api/index.html#//02r30000019t000000
@@ -2201,7 +2257,7 @@ def getSymbol(lyr,sym,name):
 
    if sym[0].getAttribute("xsi:type") == "typens:CIMUniqueValueSymbolizer":
          drawingInfo['renderer']['type']="uniqueValue"
-         drawingInfo['renderer']['uniqueValueInfos']=[]
+         #drawingInfo['renderer']['uniqueValueInfos']=[]
    else:
          drawingInfo['renderer']['type']="simple"
          #drawingInfo['renderer']['symbol']={}
@@ -2209,33 +2265,39 @@ def getSymbol(lyr,sym,name):
 
    #renderer->uniqueValueInfos
    printMessage("******Creating symbology for " + name + "*******")
-   for i in sym:
+   for i in sym[0].childNodes:
       printMessage(i.tagName + ": " + i.getAttribute("xsi:type"))
       #printMessage(i)
       #printMessage(str(i.childNodes.length))
-
-      for j in i.childNodes:
-         printMessage(" " + j.tagName + ": " + j.getAttribute("xsi:type"))
-         if i.tagName=='Fields':
+      if i.tagName=='Fields':
             c=1
-            for k in j.childNodes:
-               drawingInfo['renderer']['field'+str(c)]=j.childNodes[k].nodeValue
-               c=c+1
-
-         #get first symbol
-         if j.tagName=='Symbol':
-            for k in j.childNodes:
-               printMessage("  " + k.tagName + ": " + k.getAttribute("xsi:type"))
-               #get second symbol
-               #if k.getAttribute("xsi:type")=="typens:CIMSymbolReference":
-               if k.tagName=='Symbol':
-                 if k.getAttribute("xsi:type")=="typens:CIMPointSymbol":
-                    drawingInfo['renderer']['symbol'] = getPointSymbol(k)
-                 elif k.getAttribute("xsi:type")=="typens:CIMPolygonSymbol":
-                     drawingInfo['renderer']['symbol']=getPolygonSymbol(k)
-               elif k.tagName=='SymbolLayers':
+            k = i.getElementsByTagName("String")
+            for m in k:
+              lbl = 'field'+str(c)
+              drawingInfo['renderer'][lbl]=m.childNodes[0].nodeValue
+              c=c+1
+      elif i.tagName=='Groups':
+             if i.getAttribute("xsi:type") == "typens:ArrayOfCIMUniqueValueGroup":
+                 k = i.getElementsByTagName("CIMUniqueValueClass")
+                 drawingInfo['renderer']['uniqueValueInfos'] = getGroupSymbols(k)
+      elif i.tagName == "Symbol":
+         for j in i.childNodes:
+           printMessage(" " + j.tagName + ": " + j.getAttribute("xsi:type"))
+           #get first symbol
+           if j.tagName=='Symbol':
+                 if j.getAttribute("xsi:type")=="typens:CIMPointSymbol":
+                      drawingInfo['renderer']['symbol'] = getPointSymbol(j)
+                 elif j.getAttribute("xsi:type")=="typens:CIMPolygonSymbol":
+                      drawingInfo['renderer']['symbol']=getPolygonSymbol(j)
+              #for k in j.childNodes:
+              #   printMessage("  " + k.tagName + ": " + k.getAttribute("xsi:type"))
+                 #get second symbol
+                 #if k.getAttribute("xsi:type")=="typens:CIMSymbolReference":
+                 #if k.tagName=='Symbol':
+                 
+               #elif k.tagName=='SymbolLayers':
                     #drawingInfo['renderer']['symbol'] = getSymbolLayers(k)
-                    drawingInfo['renderer']['uniqueValueInfos']=getSymbolLayers(k)
+               #     drawingInfo['renderer']['uniqueValueInfos']=getSymbolLayers(k)
    
    return drawingInfo
 
@@ -2672,9 +2734,9 @@ def main():
     #tool.execute(tool.getParameterInfo(),r"C:\hpl\distribution\aar\leasecompliance2014.gdb.mxd")
     #mxd,server,user,outputfolder
     #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|gis.biz.tm|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
-    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
+    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
     
-    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016")
+    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016")
     #tool.execute(tool.getParameterInfo(),r"D:\workspace\hpl\distribution\aar\Accommodation Agreement Rentals.mxd")
     #arcpy.ImportToolbox ("C:/Users/steve/git/arcservice/Createarcgisprojecttool.pyt")
     #arcpy.arcservices.CreateNewProject()

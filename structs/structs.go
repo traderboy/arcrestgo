@@ -10,6 +10,8 @@ type JSONConfig struct {
 	Hostname string `json:"hostname"`
 	//Services
 	Services map[string]map[string]map[string]map[string]interface{} `json:"services"`
+	FGDB string `json:fgdb`
+	MXD string `json:mxd`
 	//Services map[string]map[string]Service
 	//map[string]Service
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,6 +13,7 @@ import (
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+	structs "github.com/traderboy/arcrestgo/structs"
 )
 
 //data sources
@@ -34,12 +36,12 @@ func main() {
 	}
 	fmt.Println("Usage:")
 	fmt.Println("go run loader.go -file <path to single file> -dir <path to services> [-sqlite <filename> | -pgsql <dbname>]")
-
 }
 
 func loadServices() {
 	var CreateTables = true
 	var inputSource string
+	configFile := ""
 	//isSingleFile := false
 	var DbName string
 	var err error
@@ -67,6 +69,7 @@ func loadServices() {
 				}
 			} else if os.Args[i] == "-dir" && len(os.Args) > i {
 				inputSource = os.Args[i+1]
+				configFile = inputSource + string(os.PathSeparator) + "config.json"
 
 			} else if os.Args[i] == "-file" && len(os.Args) > i {
 				inputSource = os.Args[i+1]
@@ -271,7 +274,69 @@ func loadServices() {
 		}
 		// filepath.Dir(f)
 	}
+	if configFile != "" {
+		LoadGISDocker(configFile, DbName)
+	}
 
+}
+
+func LoadGIS(configFile string, DbName string) {
+	project := LoadConfigurationFromFile(configFile)
+	fmt.Println("Source FGDB: " + project.FGDB)
+	dbPath, _ := filepath.Abs(DbName)
+	for name := range project.Services {
+		fmt.Println("Service name: " + name)
+		for _, layer := range project.Services[name]["layers"] {
+			if layer["type"] == "layer" {
+				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + project.FGDB + "\" " + layer["data"].(string))
+			} else {
+				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + project.FGDB + "\" " + layer["data"].(string) + " -nlt None -overwrite")
+			}
+		}
+	}
+}
+
+func LoadGISDocker(configFile string, DbName string) {
+	project := LoadConfigurationFromFile(configFile)
+	fFullPath, _ := filepath.Abs(DbName)
+	dbFullPath, _ := filepath.Abs(project.FGDB)
+
+	fmt.Println("docker cp " + fFullPath + " determined_pare:/data")
+	fmt.Println("docker cp " + dbFullPath + " determined_pare:/data")
+
+	fmt.Println("Source FGDB: " + project.FGDB)
+	dbPath := filepath.Base(DbName)
+
+	fgdb := filepath.Base(project.FGDB)
+	for name := range project.Services {
+		fmt.Println("Service name: " + name)
+		for _, layer := range project.Services[name]["layers"] {
+			if layer["type"] == "layer" {
+				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + fgdb + "\" " + layer["data"].(string))
+			} else {
+				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + fgdb + "\" " + layer["data"].(string) + " -nlt None -overwrite")
+			}
+		}
+	}
+}
+
+func LoadConfigurationFromFile(configFile string) structs.JSONConfig {
+	//configFile = RootPath + string(os.PathSeparator) + "config.json"
+	//var json []byte
+	var project structs.JSONConfig
+	file, err1 := ioutil.ReadFile(configFile)
+	if err1 != nil {
+		fmt.Printf("// error while reading file %s\n", configFile)
+		fmt.Printf("File error: %v\n", err1)
+		os.Exit(1)
+	}
+
+	err2 := json.Unmarshal(file, &project)
+	if err2 != nil {
+		log.Println("Error reading configuration file: " + configFile)
+		log.Println(err2.Error())
+	}
+	return project
 }
 
 func LoadCatalog(fileName string, file []byte) {

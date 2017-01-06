@@ -12,7 +12,7 @@
             "program": "${workspaceRoot}",
             "cwd": "${workspaceRoot}",
             "env": {},
-            "args" : ["-sqlite","D:/workspace/go/src/github.com/traderboy/arcrestgo/arcresta.sqlite","-root","D:/workspace/go/src/github.com/traderboy/arcrestgo/leasecompliance2016a"],
+            "args" : ["-sqlite","D:/workspace/go/src/github.com/traderboy/arcrestgo/arcrest.sqlite","-root","D:/workspace/go/src/github.com/traderboy/arcrestgo/leasecompliance2016"],
             //"args": ["D:\\workspace\\go\\src\\github.com\\traderboy\\arcrestgo\\services"],
             "showLog": true
         },
