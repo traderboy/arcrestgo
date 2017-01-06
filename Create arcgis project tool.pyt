@@ -2087,15 +2087,52 @@ def getPointSymbol(sym):
     obj['yoffset']=  0
     obj['outline']={}
     obj['outline']['width']= 1
+    symb = sym.getElementsByTagName("CIMSymbolLayer")[0]
+    size = symb.getElementsByTagName("Size")
+    width = symb.getElementsByTagName("Width")
+    if len(size) > 0:
+       printMessage("       Size: " + size[0].childNodes[0].nodeValue)
+       obj['size']= num(size[0].childNodes[0].nodeValue)
+    if len(width)>0:
+       printMessage("       Width: " + width[0].childNodes[0].nodeValue)
+       obj['width']=num(width[0].childNodes[0].nodeValue)  
+    obj = getSymbolColor(sym,obj)               
     return obj
     
 def getPolygonSymbol(sym):
     obj = {}
     obj['type']="esriSFS"
     obj['style']="esriSFSSolid"
+    obj['outline']={}
+    symb = sym.getElementsByTagName("CIMSymbolLayer")[0]
+    if symb.getAttribute("xsi:type")=="typens:CIMFill":
+                    obj['outline']['type']="esriSLS"
+                    #2drawingInfo['renderer']['symbol']['outline']['style']="esriSFSSolid"
+                    obj['outline']['style']="esriSLSSolid"
+                    
+    else:
+                    obj['outline']['type']="esriSLS"
+                    obj['outline']['style']="esriSLSSolid"
+    obj = getSymbolColor(sym,obj)  
     return obj
-    
+
+def getSymbolColor(sym,obj):
+    patt = sym.getElementsByTagName("Pattern")
+    if len(patt)>0:
+         color = patt[0].getElementsByTagName("Color")
+         colorStr = str(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue)
+         if patt[0].getAttribute("xsi:type")=="typens:CIMFilledStroke":
+            obj['outline']['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
+         else:
+            obj['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
+         printMessage("         Color (polygon): " + colorStr)
+    return obj
+
 def getSymbolLayers(sym):
+    return {}
+    #for l in sym.childNodes:
+
+def getSymbolLayersa(sym):
     for l in sym.childNodes:
        printMessage("   " + l.tagName + ": " + l.getAttribute("xsi:type"))
        if l.tagName=='SymbolLayers':
@@ -2123,6 +2160,7 @@ def getSymbolLayers(sym):
                     if n.tagName=='Width':
                       printMessage("       Width: " + n.childNodes[0].nodeValue)
                       drawingInfo['renderer']['symbol']['width']=num(n.childNodes[0].nodeValue)
+                    
                     if n.tagName=='Pattern':
                       color = n.getElementsByTagName("Color")
                       colorStr = str(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue)
@@ -2131,6 +2169,7 @@ def getSymbolLayers(sym):
                       else:
                          drawingInfo['renderer']['symbol']['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
                       printMessage("         Color (polygon): " + colorStr)
+                    
                     if n.tagName=='Symbol':
                       for o in n.childNodes:
                         printMessage("       " + o.tagName + ": " + o.getAttribute("xsi:type"))
@@ -2194,7 +2233,7 @@ def getSymbol(lyr,sym,name):
                     drawingInfo['renderer']['symbol'] = getPointSymbol(k)
                  elif k.getAttribute("xsi:type")=="typens:CIMPolygonSymbol":
                      drawingInfo['renderer']['symbol']=getPolygonSymbol(k)
-                 elif k.tagName=='SymbolLayers':
+               elif k.tagName=='SymbolLayers':
                     #drawingInfo['renderer']['symbol'] = getSymbolLayers(k)
                     drawingInfo['renderer']['uniqueValueInfos']=getSymbolLayers(k)
    
@@ -2633,8 +2672,9 @@ def main():
     #tool.execute(tool.getParameterInfo(),r"C:\hpl\distribution\aar\leasecompliance2014.gdb.mxd")
     #mxd,server,user,outputfolder
     #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|gis.biz.tm|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
-    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
+    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
     
+    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016")
     #tool.execute(tool.getParameterInfo(),r"D:\workspace\hpl\distribution\aar\Accommodation Agreement Rentals.mxd")
     #arcpy.ImportToolbox ("C:/Users/steve/git/arcservice/Createarcgisprojecttool.pyt")
     #arcpy.arcservices.CreateNewProject()
