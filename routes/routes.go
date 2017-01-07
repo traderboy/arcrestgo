@@ -23,7 +23,7 @@ import (
 
 //_ "github.com/mattn/go-sqlite3"
 func StartGorillaMux() *mux.Router {
-	config.Init()
+	
 	r := mux.NewRouter()
 
 	//fs := http.FileServer(http.Dir("."))
