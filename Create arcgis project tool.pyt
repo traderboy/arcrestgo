@@ -2265,7 +2265,12 @@ def getGroupSymbols(sym):
             #obj["value"]=val[0].childNodes[0].nodeValue
             s = val[0].getElementsByTagName("String")
             obj["value"]=s[0].childNodes[0].nodeValue
-        obj["label"]=obj["value"]
+        label = i.getElementsByTagName("Label")
+        if len(label)>0:
+            obj["label"]=label[0].childNodes[0].nodeValue
+        else:
+            obj["label"]=obj["value"]
+        
 
         for j in i.childNodes:
            if j.tagName == "Symbol":

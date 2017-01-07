@@ -91,7 +91,7 @@ func main() {
 			OpenDb()
 		}
 	*/
-	config.Init()
+	config.Initialize()
 	config.Server = ConfigRuntime()
 	r := routes.StartGorillaMux()
 
