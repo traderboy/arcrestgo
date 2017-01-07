@@ -312,9 +312,9 @@ func LoadGISDocker(configFile string, DbName string) {
 		fmt.Println("Service name: " + name)
 		for _, layer := range project.Services[name]["layers"] {
 			if layer["type"] == "layer" {
-				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + fgdb + "\" " + layer["data"].(string))
+				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + fgdb + "\" " + layer["data"].(string) + " -append")
 			} else {
-				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + fgdb + "\" " + layer["data"].(string) + " -nlt None -overwrite")
+				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + fgdb + "\" " + layer["data"].(string) + " -nlt None -append")
 			}
 		}
 	}
