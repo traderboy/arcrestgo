@@ -91,6 +91,7 @@ func main() {
 			OpenDb()
 		}
 	*/
+	config.Init()
 	config.Server = ConfigRuntime()
 	r := routes.StartGorillaMux()
 
@@ -105,7 +106,7 @@ func main() {
 	//  Start HTTP
 	go func() {
 		// Apply the CORS middleware to our top-level router, with the defaults.
-		err1 := http.ListenAndServe(":80", handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
+		err1 := http.ListenAndServe(config.HTTPPort, handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
 		if err1 != nil {
 			log.Fatal("HTTP server: ", err1)
 		}
@@ -119,7 +120,7 @@ func main() {
 	cert = "ssl/2_reais.x10host.com.crt"
 	pem = "ssl/reais.x10host.com.key.pem"
 
-	err := http.ListenAndServeTLS(":443", cert, pem, handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
+	err := http.ListenAndServeTLS(config.HTTPSPort, cert, pem, handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
 	if err != nil {
 		log.Fatal("HTTP server: ", err)
 	}

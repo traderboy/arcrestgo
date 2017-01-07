@@ -2177,6 +2177,57 @@ def getPolylineSymbol(sym):
     obj['style']="esriSFSSolid"
     obj['outline']={}
     return obj
+    
+def hsv_to_rgb(h, s, v,a):
+        if s == 0.0: v*=255; return [v, v, v,a]
+        i = int(h*6.) # XXX assume int() truncates!
+        f = (h*6.)-i; p,q,t = int(255*(v*(1.-s))), int(255*(v*(1.-s*f))), int(255*(v*(1.-s*(1.-f)))); v*=255; i%=6
+        if i == 0: return [v, t, p,a]
+        if i == 1: return [q, v, p,a]
+        if i == 2: return [p, v, t,a]
+        if i == 3: return [p, q, v,a]
+        if i == 4: return [t, p, v,a]
+        if i == 5: return [v, p, q,a]
+
+def getColorObj(color):
+    
+    if len(color[0].getElementsByTagName("R")) > 0:
+       colorStr = (str(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue) + "," + 
+       str(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue) + "," + 
+       str(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue) + "," + 
+       str(color[0].getElementsByTagName("Alpha")[0].childNodes[0].nodeValue))
+            
+       colorObj = [ 
+             int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), 
+             int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), 
+             int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),
+             int(color[0].getElementsByTagName("Alpha")[0].childNodes[0].nodeValue) 
+       ]
+       printMessage("Color (polygon): " + colorStr) 
+       return colorObj
+    
+    elif len(color[0].getElementsByTagName("H")) > 0:
+       colorStr = (str(color[0].getElementsByTagName("H")[0].childNodes[0].nodeValue) + "," + 
+       str(color[0].getElementsByTagName("S")[0].childNodes[0].nodeValue) + "," + 
+       str(color[0].getElementsByTagName("V")[0].childNodes[0].nodeValue) + "," + 
+       str(color[0].getElementsByTagName("Alpha")[0].childNodes[0].nodeValue))
+            
+       colorObj = hsv_to_rgb(
+             int(color[0].getElementsByTagName("H")[0].childNodes[0].nodeValue), 
+             int(color[0].getElementsByTagName("S")[0].childNodes[0].nodeValue), 
+             int(color[0].getElementsByTagName("V")[0].childNodes[0].nodeValue),
+             int(color[0].getElementsByTagName("Alpha")[0].childNodes[0].nodeValue)
+       ) 
+       
+       printMessage("Color (polygon): " + colorStr) 
+       return colorObj
+    
+         #if patt[0].getAttribute("xsi:type")=="typens:CIMFilledStroke":
+         #   obj['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
+         #else:
+         #   obj['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
+    
+    return []
 
 def getSymbolColor(sym):
     patt = sym.getElementsByTagName("Pattern")
@@ -2186,19 +2237,8 @@ def getSymbolColor(sym):
          color = patt[0].getElementsByTagName("Color")
          if len(color)==0:
             return colorObj
-         colorStr = str(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("Alpha")[0].childNodes[0].nodeValue)
-            
-         colorObj = [ 
-             int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), 
-             int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), 
-             int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),
-             int(color[0].getElementsByTagName("Alpha")[0].childNodes[0].nodeValue) 
-         ]
-         #if patt[0].getAttribute("xsi:type")=="typens:CIMFilledStroke":
-         #   obj['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
-         #else:
-         #   obj['color']=[ int(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue), int(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue),255]
-         printMessage("Color (polygon): " + colorStr)
+         colorObj = getColorObj(color)
+
     return colorObj
 
 
@@ -2734,9 +2774,10 @@ def main():
     #tool.execute(tool.getParameterInfo(),r"C:\hpl\distribution\aar\leasecompliance2014.gdb.mxd")
     #mxd,server,user,outputfolder
     #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|gis.biz.tm|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
-    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
+    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
     
-    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016")
+    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016")
+    
     #tool.execute(tool.getParameterInfo(),r"D:\workspace\hpl\distribution\aar\Accommodation Agreement Rentals.mxd")
     #arcpy.ImportToolbox ("C:/Users/steve/git/arcservice/Createarcgisprojecttool.pyt")
     #arcpy.arcservices.CreateNewProject()

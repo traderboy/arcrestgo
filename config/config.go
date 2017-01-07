@@ -29,6 +29,8 @@ var Schema = "postgres."
 var DbSource = PGSQL
 var Project structs.JSONConfig
 var RootPath = "leasecompliance2016"
+var HTTPPort = ":80"
+var HTTPSPort = ":443"
 
 //"github.com/gin-gonic/gin"
 //Db is the SQLITE databa se object
@@ -81,6 +83,14 @@ func Init() {
 				Schema = "postgres."
 			} else if os.Args[i] == "-root" && len(os.Args) > i {
 				RootPath, _ = filepath.Abs(os.Args[i+1])
+			} else if os.Args[i] == "-p" && len(os.Args) > i {
+				HTTPPort = ":" + os.Args[i+1]
+			} else if os.Args[i] == "-https" && len(os.Args) > i {
+				HTTPSPort = ":" + os.Args[i+1]
+			} else if os.Args[i] == "-h" {
+				fmt.Println("Usage:")
+				fmt.Println("go run server.go -p HTTP Port -https HTTPS Port -root <path to service folder> -sqlite <path to service .sqlite> -pgsql <connection string for Postgresql> -h [show help]")
+				os.Exit(0)
 			}
 		}
 	}
