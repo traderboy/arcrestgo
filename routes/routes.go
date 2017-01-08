@@ -356,7 +356,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), "%", "content", 0, "")
+			ret := config.SetArcService(string(body), "%", "content", -1, "")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -364,7 +364,7 @@ func StartGorillaMux() *mux.Router {
 		}
 
 		//load from db
-		response := config.GetArcService("%", "content", 0, "")
+		response := config.GetArcService("%", "content", -1, "")
 		if len(response) > 0 {
 			//log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + id + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "content.items.json")
 			w.Header().Set("Content-Type", "application/json")
@@ -385,14 +385,14 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), "%", "content", 0, "data")
+			ret := config.SetArcService(string(body), "%", "content", -1, "data")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
 			return
 		}
 
-		response := config.GetArcService("%", "content", 0, "data")
+		response := config.GetArcService("%", "content", -1, "data")
 		if len(response) > 0 {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(response)

@@ -133,9 +133,16 @@ class CreateNewProject(object):
         if not outputfolder.value:
             outputfolder.value="C:/massappraisal/agolnode/hpl12"
 
+        sqlitedb = arcpy.Parameter()
+        sqlitedb.name = u'Output_Report_File'
+        sqlitedb.displayName = u'Output Sqlite database'
+        sqlitedb.parameterType = 'Optional'
+        sqlitedb.direction = 'Output'
+        sqlitedb.datatype = u'File'
+
         #param0.filter.type = "ValueList"
         #param0.filter.list = ["Street","Aerial","Terrain","Topographic"]
-        parameters = [servername,username,outputfolder]
+        parameters = [servername,username,outputfolder,sqlitedb]
         #username,projecttitle,projectname,tags,summary,description,
         return parameters
 
@@ -157,6 +164,15 @@ class CreateNewProject(object):
         serverName = parameters[0].valueAsText
         username = parameters[1].valueAsText        
         baseDestinationPath = parameters[2].valueAsText
+        sqliteDb = parameters[3].valueAsText
+        if sqliteDb.find(".sqlite") == -1:
+            sqliteDb = sqliteDb + ".sqlite"
+        try:
+           arcpy.gp.CreateSQLiteDatabase(sqliteDb, "SPATIALITE")
+        except Exception as e:
+           arcpy.AddMessage("Database already exists")
+
+        conn = initializeSqlite(sqliteDb)
         created_ts=int(time.time()*1000)
 
         # suppose you want to add it to the current MXD (open MXD)
@@ -201,10 +217,12 @@ class CreateNewProject(object):
         printMessage("Server name: " +serverName)
         printMessage("User name: " + username)
         printMessage("Destination path: " + baseDestinationPath)
+        printMessage("Sqlite path: " + sqliteDb)
 
         Config.set("settings","server",serverName)
         Config.set("settings","username",username)
         Config.set("settings","destination",baseDestinationPath)
+        Config.set("settings","sqlitedb",sqliteDb)
         Config.write(cfgfile)
         cfgfile.close()
         del cfgfile       
@@ -274,7 +292,6 @@ class CreateNewProject(object):
         config["username"]=username
         config["mxd"]=mxd.filePath
         
-
         #config["services"][serviceName]["layers"]={}
 
         fullname = mxd.author
@@ -302,7 +319,7 @@ class CreateNewProject(object):
 
         description  = mxd.description
         if not description:
-           description=""
+           description=""        
 
         if not os.path.exists(baseDestinationPath + "/portals.self.json"):
            portals_self_json=openJSON(templatePath + "/portals.self.json")
@@ -316,7 +333,9 @@ class CreateNewProject(object):
            portals_self_json['user']['lastName']=last_name
            portals_self_json['user']['email']=email_address
            portals_self_json['user']['username']=username
-           saveJSON(baseDestinationPath + "/portals.self.json",portals_self_json)
+           file = saveJSON(baseDestinationPath + "/portals.self.json",portals_self_json)
+           LoadCatalog(conn,"portals", "self",file)
+
 
         if not os.path.exists(baseDestinationPath + "/community.users.json"):
            community_users_json=openJSON(templatePath + "/community.users.json")
@@ -329,13 +348,15 @@ class CreateNewProject(object):
            community_users_json['modified']=created_ts
            community_users_json['lastLogin']=created_ts
            #community_users_json['groups'][0]['userMembership']['username']=username
-           saveJSON(baseDestinationPath + "/community.users.json",community_users_json)
+           file = saveJSON(baseDestinationPath + "/community.users.json",community_users_json)
+           LoadCatalog(conn,"community", "users",file)
 
         #User info
         content_users_json=openJSON(templatePath + "/content.users.json")
         content_users_json['username']=username
         #content_users_json['items'][0]['created']=int(time.time()*1000)
-        saveJSON(baseDestinationPath + "/content.users.json",content_users_json)
+        file = saveJSON(baseDestinationPath + "/content.users.json",content_users_json)
+        LoadCatalog(conn,"content", "users",file)
 
         #Search results
         if not os.path.exists(baseDestinationPath + "/search.json"):
@@ -550,7 +571,8 @@ class CreateNewProject(object):
            #    os.makedirs(destinationPath)
 
            rootService_json={"folders": [], "services":[{"name":serviceName,"type":"FeatureServer","url":"http://"+serverName+"/rest/services/"+serviceName+"/FeatureServer"},{"name":serviceName,"type":"MapServer"}], "currentVersion": 10.3}
-           saveJSON(servicesDestinationPath + "/"+serviceName+".json",rootService_json)
+           file = saveJSON(servicesDestinationPath + "/"+serviceName+".json",rootService_json)
+           LoadService(conn,serviceName,serviceName, -1,"",file)
 
            #analysis = arcpy.mapping.AnalyzeForMSD(mxd)
            #
@@ -655,7 +677,8 @@ class CreateNewProject(object):
            opLayers = content_items_json['operationalLayers']=getOperationalLayers(operationalLayers,serverName,serviceName,symbols)
            opTables = content_items_json['tables']=getTables(operationalTables,serverName,serviceName,len(opLayers))
 
-           saveJSON(servicesDestinationPath + "/content.items.data.json",content_items_json)
+           file = saveJSON(servicesDestinationPath + "/content.items.data.json",content_items_json)
+           LoadService(conn,serviceName,"content", -1,"data",file)
 
            content_items_json=openJSON(templatePath + "/content.items.json")
            content_items_json["id"]=title
@@ -672,7 +695,8 @@ class CreateNewProject(object):
 
            content_items_json["type"]="Feature Service"
            content_items_json["url"]="http://"+serverName+"/rest/services/"+serviceName+"/FeatureServer"
-           saveJSON(servicesDestinationPath + "/content.items.json",content_items_json)
+           file=saveJSON(servicesDestinationPath + "/content.items.json",content_items_json)
+           LoadService(conn,serviceName,"content", -1,"items",file)
 
            #create JSON description of all services.  Each dataframe is a service for this application.
            featureserver_json={
@@ -683,7 +707,8 @@ class CreateNewProject(object):
                  "url": "http://"+serverName + "/arcgis/rest/services/"+serviceName+"/FeatureServer"
               }]
            }
-           saveJSON(servicesDestinationPath + "/FeatureServer.json",featureserver_json)
+           file=saveJSON(servicesDestinationPath + "/FeatureServer.json",featureserver_json)
+           LoadService(conn,serviceName,"FeatureServer", -1,"",file)
 
            #create JSON description of all layers in the service.
            featureserver_json=openJSON(templatePath + "/name.FeatureServer.json")
@@ -697,7 +722,8 @@ class CreateNewProject(object):
            featureserver_json['fullExtent']['ymax']=dataFrame.extent.YMax
            featureserver_json['layers'] = getLayers(operationalLayers)
            featureserver_json['tables']=operationalTablesObj
-           saveJSON(servicesDestinationPath + "/FeatureServer.json",featureserver_json)
+           file=saveJSON(servicesDestinationPath + "/FeatureServer.json",featureserver_json)
+           LoadService(conn,serviceName,"FeatureServer", -1,"",file)
 
            maps_json=openJSON(templatePath + "/name.MapServer.json")
            maps_json['initialExtent']['xmin']=dataFrame.extent.XMin
@@ -713,7 +739,8 @@ class CreateNewProject(object):
            maps_json['name']=serviceName
            maps_json['mapName']=serviceName
            maps_json['tables']=operationalTablesObj
-           saveJSON(servicesDestinationPath + "/MapServer.json",maps_json)
+           file=saveJSON(servicesDestinationPath + "/MapServer.json",maps_json)
+           LoadService(conn,serviceName,"MapServer", -1,"",file)
 
            minx=str(dataFrame.extent.XMin)
            miny=str(dataFrame.extent.YMin)
@@ -732,6 +759,8 @@ class CreateNewProject(object):
                else:
                    featureName=os.path.basename(desc.catalogPath)
                printMessage(lyr.name+": " + featureName)
+               if sqliteDb:
+                   saveToSqlite(lyr,sqliteDb)
 
                feature_json=openJSON(templatePath + "/name.FeatureServer.id.json")
                feature_json['defaultVisibility']=lyr.visible
@@ -819,7 +848,8 @@ class CreateNewProject(object):
 
                #getSymbol(lyr,symbols[featureName],lyr.name)
                #opLayers = content_items_json['operationalLayers']=getOperationalLayers(operationalLayers,serverName,serviceName)
-               saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".json",feature_json)
+               file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".json",feature_json)
+               LoadService(conn,serviceName,"FeatureServer", id,"",file)
 
                #now create a MapServer json file
                mapserver_json=openJSON(templatePath + "/name.MapServer.id.json")
@@ -831,7 +861,8 @@ class CreateNewProject(object):
                mapserver_json['drawingInfo']=feature_json['drawingInfo']
                mapserver_json['geometryType']=feature_json['geometryType']
 
-               saveJSON(servicesDestinationPath + "/MapServer."+str(id)+".json",feature_json)
+               file=saveJSON(servicesDestinationPath + "/MapServer."+str(id)+".json",feature_json)
+               LoadService(conn,serviceName,"MapServer", id,"",file)
 
                #save replica file
                feature_json=openJSON(templatePath + "/name.FeatureServer.id.json")
@@ -879,7 +910,8 @@ class CreateNewProject(object):
 
                layerObj["type"]="layer"
                printMessage("Saving layer " + str(id) + " to JSON")
-               saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".query.json",feature_json)
+               file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".query.json",feature_json)
+               LoadService(conn,serviceName,"FeatureServer", id,"query",file)
 
                #create a JSON OBJECTID file used in ArcGIS for showing the attribute table
                #remove all fields except OBJECTID
@@ -901,7 +933,8 @@ class CreateNewProject(object):
                   #   if feature_json['features'][i]['attributes'][j]['name'] != 'OBJECTID':
                   #      del feature_json.features[i]['attributes'][j]
 
-               saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".objectid.json",feature_json)
+               file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".objectid.json",feature_json)
+               LoadService(conn,serviceName,"FeatureServer", id,"objectid",file)
                layerObj["itemId"]= lyr.name.replace(" ","_")+str(id)
                config["services"][serviceName]["layers"][str(id)]=layerObj
                id = id+1
@@ -909,6 +942,8 @@ class CreateNewProject(object):
            #now save any tables
            for tbl in operationalTables:
                desc = arcpy.Describe(tbl)
+               if sqliteDb:
+                   saveToSqlite(tbl,sqliteDb)
                featureName=os.path.basename(desc.catalogPath)
                feature_json=openJSON(templatePath + "/name.RecordSet.id.json")
                #feature_json['description'] = tbl.description
@@ -961,7 +996,8 @@ class CreateNewProject(object):
                else:
                   feature_json['hasAttachments']=False
 
-               saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".json",feature_json)
+               file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".json",feature_json)
+               LoadService(conn,serviceName,"FeatureServer", id,"",file)
                tableObj["itemId"]= tbl.name.replace(" ","_")+str(id)
                config["services"][serviceName]["layers"][str(id)]=tableObj
 
@@ -973,7 +1009,8 @@ class CreateNewProject(object):
                #dataName = os.path.basename(desc.dataElement.catalogPath)
                #layerObj={"name":lyr.name,"data":dataName}
                printMessage("Saving table " + str(id) + " to JSON")
-               saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".query.json",feature_json)
+               file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".query.json",feature_json)
+               LoadService(conn,serviceName,"FeatureServer", id,"query",file)
 
                id = id+1
 
@@ -990,11 +1027,17 @@ class CreateNewProject(object):
 
         #now save the search results
         search_json['total']=len(search_json['results'])
-        saveJSON(baseDestinationPath + "/search.json",search_json)
+        file=saveJSON(baseDestinationPath + "/search.json",search_json)
+        LoadCatalog(conn,"search", "",file)
         #save root FeatureServer.json file
-        saveJSON(baseDestinationPath + "/FeatureServer.json",feature_services)
-        saveJSON(baseDestinationPath + "/MapServer.json",feature_services)
-        saveJSON(baseDestinationPath + "/config.json",config)
+        file=saveJSON(baseDestinationPath + "/FeatureServer.json",feature_services)
+        LoadCatalog(conn,"FeatureServer", "",file)
+        file=saveJSON(baseDestinationPath + "/MapServer.json",feature_services)
+        LoadCatalog(conn,"MapServer", "",file)
+        file=saveJSON(baseDestinationPath + "/config.json",config)
+        LoadCatalog(conn,"config", "",file)
+ 
+        conn.close()
         printMessage("Finished")
 
 
@@ -1007,8 +1050,10 @@ def openJSON(name):
        return json_data
 
 def saveJSON(name,json_data): #optional
+    data = json.dumps(json_data)
     with open(name,'w') as f:
-       f.write(json.dumps(json_data))
+       f.write(data)
+    return data
 
 def clearSelections(mxd):
     for df in arcpy.mapping.ListDataFrames(mxd):
@@ -2345,6 +2390,72 @@ def getSymbol(lyr,sym,name):
                #     drawingInfo['renderer']['uniqueValueInfos']=getSymbolLayers(k)
    
    return drawingInfo
+
+
+def saveToSqlite(lyr,sqliteDb):
+   desc = arcpy.Describe(lyr)
+   inFeaturesSqlName = desc.name.lower().replace(".shp","").replace("-","").replace("_","")
+   if hasattr(desc,"shapeType"):
+        try:
+            arcpy.CreateFeatureclass_management(sqliteDb,inFeaturesSqlName, desc.shapeType.upper())
+        except Exception as e:
+            arcpy.AddMessage("Table already exists")
+            printMessage(e)
+        try:
+            arcpy.CopyFeatures_management(desc.catalogPath, sqliteDb+"/"+inFeaturesSqlName)
+        except Exception as e:
+            arcpy.AddMessage("Unable to copy features")
+            printMessage(e)
+
+   else:
+        arcpy.CopyRows_management(desc.catalogPath, sqliteDb+"/"+inFeaturesSqlName)
+        arcpy.AddMessage("")
+
+   arcpy.ClearWorkspaceCache_management()
+
+def initializeSqlite(sqliteDb):
+        conn = sqlite3.connect(sqliteDb)
+        #conn = sqlite3.connect("c:/massappraisal/colville/"+inFeaturesName+".sqlite")
+        c = conn.cursor()
+        
+        c.execute("DROP TABLE IF EXISTS catalog")
+        c.execute("DROP TABLE IF EXISTS services")
+        c.execute("CREATE TABLE IF NOT EXISTS catalog (id INTEGER PRIMARY KEY AUTOINCREMENT, name text, type text, json text)")
+        c.execute("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, service text,name text, layerid int, type text,json text)")
+
+        #c.execute("Create table "+inFeaturesName+" (objectid integer,t_r text,sect text,shape_area double)")
+        #c.executemany("Insert into "+inFeaturesName+"(objectid,t_r,sect,shape_area) values (?,?,?,?)", map(tuple, array.tolist()))
+        conn.commit()
+        return conn
+
+
+def LoadCatalog(conn,name, dtype,file):
+    #conn = sqlite3.connect(sqliteDb)
+    #conn = sqlite3.connect("c:/massappraisal/colville/"+inFeaturesName+".sqlite")
+    c = conn.cursor()
+    json = file.replace("'", "''")
+    json = json.replace("\xa0", "")
+    json = json.replace("\n", "")
+    array = [name,dtype,json]
+    c.execute("INSERT INTO catalog(name,type,json) VALUES(?,?,?)", (name,dtype,json))
+    #map(tuple, array.tolist())
+    #conn.close()
+
+
+def LoadService(conn,service,name,  layerid,dtype,file):
+	#conn = sqlite3.connect(sqliteDb)
+    #conn = sqlite3.connect("c:/massappraisal/colville/"+inFeaturesName+".sqlite")
+    c = conn.cursor() 
+
+    json = file.replace("'", "''")
+    json = json.replace("\xa0", "")
+    json = json.replace("\n", "")
+    
+    array = [service,name,layerid,dtype,json]
+    c.execute("INSERT INTO services(service,name,layerid,type,json) VALUES(?,?,?,?,?)", (service,name,layerid,dtype,json))
+    #conn.close()
+
+
 
    #if sym[0].getElementsByTagName("OutlineColor").length > 0:
    #  printMessage("OutlineColor len: "+ str(sym[0].getElementsByTagName("OutlineColor").length))
