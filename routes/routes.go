@@ -23,7 +23,7 @@ import (
 
 //_ "github.com/mattn/go-sqlite3"
 func StartGorillaMux() *mux.Router {
-	
+
 	r := mux.NewRouter()
 
 	//fs := http.FileServer(http.Dir("."))
@@ -356,7 +356,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), "%", "content", -1, "")
+			ret := config.SetArcService(string(body), "%", "content", -1, "items")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -364,7 +364,7 @@ func StartGorillaMux() *mux.Router {
 		}
 
 		//load from db
-		response := config.GetArcService("%", "content", -1, "")
+		response := config.GetArcService("%", "content", -1, "items")
 		if len(response) > 0 {
 			//log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + id + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "content.items.json")
 			w.Header().Set("Content-Type", "application/json")
@@ -775,7 +775,7 @@ func StartGorillaMux() *mux.Router {
 
 		log.Println("/arcgis/rest/services/" + name)
 
-		response := config.GetArcService(name, name, 0, "")
+		response := config.GetArcService(name, name, -1, "")
 		if len(response) > 0 {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(response)
@@ -796,7 +796,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), name, "FeatureServer", -1, "")
+			ret := config.SetArcService(string(body), name, "", -1, "")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)

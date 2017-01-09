@@ -36,7 +36,9 @@ node_modules/*
 ls
 sqlite2mongodb
 settings.json
-*.exe
-*.dll
+spatialite_gui*
 *.7z
 *.database
+*.msd
+go
+*.mxd

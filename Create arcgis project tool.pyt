@@ -195,12 +195,10 @@ class CreateNewProject(object):
         if os.path.exists(sqliteDb):
             os.remove(sqliteDb)
 
-        try:
-           arcpy.gp.CreateSQLiteDatabase(sqliteDb, "SPATIALITE")
-        except Exception as e:
-           arcpy.AddMessage("Database already exists")
-
-        conn = initializeSqlite(sqliteDb)
+        #try:
+        #   arcpy.gp.CreateSQLiteDatabase(sqliteDb, "SPATIALITE")
+        #except Exception as e:
+        #   arcpy.AddMessage("Database already exists")
 
         printMessage("Exporting dataframe: " + mxd.activeDataFrame.name)
         serviceName = mxd.activeDataFrame.name.replace(" ","").lower()
@@ -330,6 +328,8 @@ class CreateNewProject(object):
         description  = mxd.description
         if not description:
            description=""        
+
+        initializeSqlite(sqliteDb)
 
         if not os.path.exists(baseDestinationPath + "/portals.self.json"):
            portals_self_json=openJSON(templatePath + "/portals.self.json")
@@ -2420,10 +2420,22 @@ def getSymbol(lyr,sym,name):
    
    return drawingInfo
 
-
 def saveToSqlite(lyr,sqliteDb):
    desc = arcpy.Describe(lyr)
-   inFeaturesSqlName = desc.name.lower().replace(".shp","").replace("-","").replace("_","")
+   if hasattr(desc,"shapeType"):
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -append"
+   else:
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -append"
+   printMessage("Running " + cmd)
+   try:
+        os.system(cmd)
+   except:
+        printMessage("Unable to run sql commands")
+
+def saveToSqliteUsingArcpy(lyr,sqliteDb):
+   desc = arcpy.Describe(lyr)
+
+   inFeaturesSqlName = desc.name.lower().replace(".shp","") .replace("-","_") #.replace("_","")
    if hasattr(desc,"shapeType"):
         try:
             arcpy.CreateFeatureclass_management(sqliteDb,inFeaturesSqlName, desc.shapeType.upper())
@@ -2927,9 +2939,9 @@ def main():
     #tool.execute(tool.getParameterInfo(),r"C:\hpl\distribution\aar\leasecompliance2014.gdb.mxd")
     #mxd,server,user,outputfolder
     #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|gis.biz.tm|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
-    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016|D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite")
+    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016|D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite")
     
-    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016|C:\docker\src\github.com\traderboy\arcrestgo\arcrest.sqlite")
+    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016|C:\docker\src\github.com\traderboy\arcrestgo\arcrest.sqlite")
     
     #tool.execute(tool.getParameterInfo(),r"D:\workspace\hpl\distribution\aar\Accommodation Agreement Rentals.mxd")
     #arcpy.ImportToolbox ("C:/Users/steve/git/arcservice/Createarcgisprojecttool.pyt")
