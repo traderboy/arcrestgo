@@ -139,6 +139,10 @@ class CreateNewProject(object):
         sqlitedb.parameterType = 'Optional'
         sqlitedb.direction = 'Output'
         sqlitedb.datatype = u'File'
+        try:
+            sqlitedb.value= Config.get("settings","sqlitedb")
+        except Exception as e:
+           pass        
 
         #param0.filter.type = "ValueList"
         #param0.filter.list = ["Street","Aerial","Terrain","Topographic"]
@@ -188,6 +192,9 @@ class CreateNewProject(object):
 
         if sqliteDb.find(".sqlite") == -1:
             sqliteDb = sqliteDb + ".sqlite"
+        if os.path.exists(sqliteDb):
+            os.remove(sqliteDb)
+
         try:
            arcpy.gp.CreateSQLiteDatabase(sqliteDb, "SPATIALITE")
         except Exception as e:
@@ -562,7 +569,7 @@ class CreateNewProject(object):
            #if dataFrame != mxd.activeDataFrame:
            #   printMessage("Active data frame is not the first data frame")
 
-           feature_services['folders'].append(serviceName);
+           feature_services['folders'].append(serviceName)
 
            #now set path to serviceName folder
            #destinationPath = servicesDestinationPath + "/data" #+ serviceName
@@ -1039,7 +1046,7 @@ class CreateNewProject(object):
         file=saveJSON(baseDestinationPath + "/config.json",config)
         LoadCatalog(conn,"config", "",file)
  
-        conn.close()
+        #conn.close()
         printMessage("Finished")
 
 
@@ -2428,6 +2435,7 @@ def initializeSqlite(sqliteDb):
         #c.execute("Create table "+inFeaturesName+" (objectid integer,t_r text,sect text,shape_area double)")
         #c.executemany("Insert into "+inFeaturesName+"(objectid,t_r,sect,shape_area) values (?,?,?,?)", map(tuple, array.tolist()))
         conn.commit()
+        c.close()
         return conn
 
 
@@ -2440,6 +2448,7 @@ def LoadCatalog(conn,name, dtype,file):
     json = json.replace("\n", "")
     array = [name,dtype,json]
     c.execute("INSERT INTO catalog(name,type,json) VALUES(?,?,?)", (name,dtype,json))
+    c.close()
     #map(tuple, array.tolist())
     #conn.close()
 
@@ -2455,6 +2464,7 @@ def LoadService(conn,service,name,  layerid,dtype,file):
     
     array = [service,name,layerid,dtype,json]
     c.execute("INSERT INTO services(service,name,layerid,type,json) VALUES(?,?,?,?,?)", (service,name,layerid,dtype,json))
+    c.close()
     #conn.close()
 
 
