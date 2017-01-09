@@ -165,14 +165,6 @@ class CreateNewProject(object):
         username = parameters[1].valueAsText        
         baseDestinationPath = parameters[2].valueAsText
         sqliteDb = parameters[3].valueAsText
-        if sqliteDb.find(".sqlite") == -1:
-            sqliteDb = sqliteDb + ".sqlite"
-        try:
-           arcpy.gp.CreateSQLiteDatabase(sqliteDb, "SPATIALITE")
-        except Exception as e:
-           arcpy.AddMessage("Database already exists")
-
-        conn = initializeSqlite(sqliteDb)
         created_ts=int(time.time()*1000)
 
         # suppose you want to add it to the current MXD (open MXD)
@@ -185,6 +177,7 @@ class CreateNewProject(object):
                  username= vals[2]
               if len(vals)>3:
                  baseDestinationPath=vals[3].replace("\\","/")
+              sqliteDb=vals[4]
               mxdName=vals[0].replace("\\","/")
               mxd = arcpy.mapping.MapDocument(mxdName)
            else:
@@ -192,6 +185,15 @@ class CreateNewProject(object):
         except Exception as e:
            printMessage("Still Unable to open map document.  Make sure background processing is unchecked in the geoprocessing options")
            return
+
+        if sqliteDb.find(".sqlite") == -1:
+            sqliteDb = sqliteDb + ".sqlite"
+        try:
+           arcpy.gp.CreateSQLiteDatabase(sqliteDb, "SPATIALITE")
+        except Exception as e:
+           arcpy.AddMessage("Database already exists")
+
+        conn = initializeSqlite(sqliteDb)
 
         printMessage("Exporting dataframe: " + mxd.activeDataFrame.name)
         serviceName = mxd.activeDataFrame.name.replace(" ","").lower()
@@ -2890,9 +2892,9 @@ def main():
     #tool.execute(tool.getParameterInfo(),r"C:\hpl\distribution\aar\leasecompliance2014.gdb.mxd")
     #mxd,server,user,outputfolder
     #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|gis.biz.tm|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
-    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
+    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|reais.x10host.com|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016|D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite")
     
-    tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016")
+    #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|reais.x10host.com|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016|C:\docker\src\github.com\traderboy\arcrestgo\arcrest.sqlite")
     
     #tool.execute(tool.getParameterInfo(),r"D:\workspace\hpl\distribution\aar\Accommodation Agreement Rentals.mxd")
     #arcpy.ImportToolbox ("C:/Users/steve/git/arcservice/Createarcgisprojecttool.pyt")
