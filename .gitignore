@@ -11,8 +11,6 @@ trash.txt
 ssl/*
 *.com
 *.class
-*.dll
-*.exe
 *.o
 *.so
 *.log
