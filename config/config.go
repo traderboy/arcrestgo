@@ -216,14 +216,14 @@ func GetArcCatalog(service string, dtype string) []byte {
 }
 
 func SetArcService(json string, catalog string, service string, layerid int, dtype string) bool {
-	sql := "update services set json=" + GetParam(5) + " where service like " + GetParam(1) + "and name=" + GetParam(2) + " and layerid=" + GetParam(3) + " and type=" + GetParam(4)
+	sql := "update services set json=" + GetParam(1) + " where service like " + GetParam(2) + " and name=" + GetParam(3) + " and layerid=" + GetParam(4) + " and type=" + GetParam(5)
 	log.Printf("Query: update services set json=<json> where service like '%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
 	stmt, err := Db.Prepare(sql)
 	if err != nil {
 		log.Println(err.Error())
 	}
 	//err = stmt.QueryRow(name, "FeatureServer", idInt, "").Scan(&fields)
-	_, err = stmt.Exec(catalog, service, layerid, dtype, json)
+	_, err = stmt.Exec(json, catalog, service, layerid, dtype)
 	if err != nil {
 		log.Println(err.Error())
 		return false
@@ -234,7 +234,7 @@ func SetArcService(json string, catalog string, service string, layerid int, dty
 
 //GetArcCatalog queries the database for top level catalog entries
 func SetArcCatalog(json string, service string, dtype string) bool {
-	sql := "update catalog set json=$3 where name=" + GetParam(1) + " and type=" + GetParam(2)
+	sql := "update catalog set json=" + GetParam(1) + " where name=" + GetParam(2) + " and type=" + GetParam(3)
 	log.Printf("Query: update catalog set json=<json> where name='%v' and type='%v'", service, dtype)
 
 	stmt, err := Db.Prepare(sql)
@@ -242,7 +242,7 @@ func SetArcCatalog(json string, service string, dtype string) bool {
 		log.Println(err.Error())
 	}
 
-	_, err = stmt.Exec(service, dtype, json)
+	_, err = stmt.Exec(json, service, dtype)
 	if err != nil {
 		log.Println(err.Error())
 		return false
