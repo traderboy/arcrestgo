@@ -925,39 +925,39 @@ func StartGorillaMux() *mux.Router {
 			log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".json")
 			http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".json")
 		}
-	}).Methods("GET", "PUT")
+	}).Methods("GET", "POST", "PUT")
+	/*
+		r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}", func(w http.ResponseWriter, r *http.Request) {
+			vars := mux.Vars(r)
+			name := vars["name"]
+			id := vars["id"]
 
-	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		name := vars["name"]
-		id := vars["id"]
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "(" + r.Method + ")")
 
-		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "(" + r.Method + ")")
-
-		idInt, _ := strconv.Atoi(id)
-		if r.Method == "PUT" {
-			body, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				w.Write([]byte("Error"))
+			idInt, _ := strconv.Atoi(id)
+			if r.Method == "PUT" {
+				body, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					w.Write([]byte("Error"))
+					return
+				}
+				ret := config.SetArcService(string(body), name, "FeatureServer", idInt, "")
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": ret})
+				w.Write(response)
 				return
 			}
-			ret := config.SetArcService(string(body), name, "FeatureServer", idInt, "")
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": ret})
-			w.Write(response)
-			return
-		}
 
-		response := config.GetArcService(name, "FeatureServer", idInt, "")
-		if len(response) > 0 {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(response)
-		} else {
-			log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".json")
-			http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".json")
-		}
-	}).Methods("POST", "PUT")
-
+			response := config.GetArcService(name, "FeatureServer", idInt, "")
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".json")
+			}
+		}).Methods("POST", "PUT")
+	*/
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/query", func(w http.ResponseWriter, r *http.Request) {
 		//if(req.query.outFields=='OBJECTID'){
 		vars := mux.Vars(r)
