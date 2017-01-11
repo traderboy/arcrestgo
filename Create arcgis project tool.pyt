@@ -484,6 +484,7 @@ class CreateNewProject(object):
            #[u'farm_tracts_inspections__ATTACHREL', u'farm_tractsInspectionRelClass', u'homesites_inspections__ATTACHREL', u'homesitesInspectionRelClass', u'grazing_inspections__ATTACHREL', u'grazing_permitteeRelClass', u'grazing_permitteesInspectionRelClass']
            #for j,rel in enumerate(desc.relationshipClassNames):
            id=0
+           destIds={}
            printMessage("Find relationships")
            for rc in relationships:
              relDesc = arcpy.Describe(rootFGDB+"/"+rc)
@@ -516,6 +517,7 @@ class CreateNewProject(object):
              relations[str(id)]={"oTable":relDesc.originClassNames[0],"dTable":relDesc.destinationClassNames[0],"oJoinKey":relDesc.originClassKeys[0][0],"dJoinKey":relDesc.originClassKeys[1][0],"oId":originId,"dId":destId}
 
              relObj = {"id":id,"name":relDesc.forwardPathLabel,"relatedTableId":destId,"cardinality":"esriRelCardinality"+relDesc.cardinality,"role":"esriRelRoleOrigin","keyField":relDesc.originClassKeys[0][0],"composite":relDesc.isComposite}
+             destIds[str(originId)]=id
              id=id+1
 
              try:
@@ -530,10 +532,19 @@ class CreateNewProject(object):
              except:
                 relationshipObj[relDesc.destinationClassNames[0]]=[]
 
-             relObj = {"id":id,"name":relDesc.backwardPathLabel,"relatedTableId":originId,"cardinality":"esriRelCardinality"+relDesc.cardinality,"role":"esriRelRoleDestination","keyField":relDesc.originClassKeys[1][0],"composite":relDesc.isComposite}
+             #if relationship already exists, use its id instead
+             destId = id
+             #if destIds[originId]:
+             try:
+                 destId = destIds[str(originId)]
+             except:
+                 pass
+
+             relObj = {"id":destId,"name":relDesc.backwardPathLabel,"relatedTableId":originId,"cardinality":"esriRelCardinality"+relDesc.cardinality,"role":"esriRelRoleDestination","keyField":relDesc.originClassKeys[1][0],"composite":relDesc.isComposite}
              relationshipObj[relDesc.destinationClassNames[0]].append(relObj)
 
            #printMessage(json.dumps(relationshipObj, indent=4, sort_keys=True))
+           print(destIds)
            config["services"][serviceName]["relationships"]=relations
            #return
 
