@@ -964,6 +964,65 @@ func StartGorillaMux() *mux.Router {
 		name := vars["name"]
 		id := vars["id"]
 		idInt, _ := strconv.Atoi(id)
+		where := r.FormValue("where")
+		outFields := r.FormValue("outFields")
+		returnGeometry := r.FormValue("returnGeometry")
+		objectIds := r.FormValue("objectIds")
+
+		log.Println(r.FormValue("returnGeometry"))
+		log.Println(r.FormValue("outFields"))
+		//sql := "select "+outFields + " from " +
+
+		if len(where) > 0 {
+			w.Header().Set("Content-Type", "application/json")
+			var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
+			w.Write(response)
+
+		} else if len(objectIds) > 0 {
+			response := config.GetArcService(name, "FeatureServer", idInt, "query")
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+
+			}
+		} else if returnGeometry == "false" && strings.Index(outFields, "OBJECTID") > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/objectid")
+
+			response := config.GetArcService(name, "FeatureServer", idInt, "objectid")
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".objectid.json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".objectid.json")
+			}
+		} else {
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query")
+
+			response := config.GetArcService(name, "FeatureServer", idInt, "query")
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+
+			}
+		}
+
+		//http.ServeFile(w, r, config.DataPath + "/" + id  + "query.json")
+
+	}).Methods("GET", "POST")
+
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryLocal", func(w http.ResponseWriter, r *http.Request) {
+		//if(req.query.outFields=='OBJECTID'){
+		vars := mux.Vars(r)
+		name := vars["name"]
+		id := vars["id"]
+		idInt, _ := strconv.Atoi(id)
 		log.Println(r.FormValue("returnGeometry"))
 		log.Println(r.FormValue("outFields"))
 
@@ -1009,6 +1068,7 @@ func StartGorillaMux() *mux.Router {
 		//http.ServeFile(w, r, config.DataPath + "/" + id  + "query.json")
 
 	}).Methods("GET", "POST")
+
 	/*
 		r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/query", func(w http.ResponseWriter, r *http.Request) {
 			vars := mux.Vars(r)
@@ -1253,12 +1313,9 @@ func StartGorillaMux() *mux.Router {
 		var sql string
 		if config.DbSource == config.PGSQL {
 			sql = "select json->'fields' from services where service=$1 and name=$2 and layerid=$3 and type=$4"
-
 			log.Printf("select json->'fields' from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
 		} else if config.DbSource == config.SQLITE3 {
-
 			sql = "select json from services where service=? and name=? and layerid=? and type=?"
-
 			log.Printf("select json from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
 		}
 		stmt, err := config.Db.Prepare(sql)
@@ -1274,14 +1331,11 @@ func StartGorillaMux() *mux.Router {
 			return
 		}
 		//_, err = w.Write(fields)
-
 		//return
-
 		//var replicaDb = config.RootPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
 		var tableName = config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string)
 		log.Println(tableName)
 		//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
-
 		//var jsonFields=JSON.parse(file)
 		//log.Println("sqlite: " + replicaDb)
 		//var db = new sqlite3.Database(replicaDb)
@@ -1384,7 +1438,23 @@ func StartGorillaMux() *mux.Router {
 		w.Header().Set("Content-Type", "application/json")
 		//response = "{fields:" + fields + "," + response[1]
 		w.Write([]byte("{\"fields\":"))
-		w.Write(fields)
+		if config.DbSource == config.SQLITE3 {
+			//fields = fields["fields"]
+			var fieldObj structs.FeatureTable
+			//map[string]map[string]map[string]
+			err = json.Unmarshal(fields, &fieldObj)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(fields))
+				log.Println(err.Error())
+			}
+			b, err1 := json.Marshal(fieldObj.Fields)
+			if err1 != nil {
+				log.Println(err1)
+			}
+			w.Write(b)
+		} else {
+			w.Write(fields)
+		}
 		w.Write([]byte(","))
 		w.Write(response)
 		//w.Write([]byte("}"))
@@ -1397,6 +1467,19 @@ func StartGorillaMux() *mux.Router {
 		id := vars["id"]
 		//idInt, _ := strconv.Atoi(id)
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/applyEdits")
+		var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+		log.Println("Table name: " + tableName)
+		//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
+		var response []byte
+		if len(r.FormValue("updates")) > 0 {
+			response = Updates(name, id, tableName, r.FormValue("updates"))
+		} else if len(r.FormValue("adds")) > 0 {
+			response = Adds(name, id, tableName, r.FormValue("adds"))
+		} else if len(r.FormValue("deletes")) > 0 {
+			response = Deletes(name, id, tableName, r.FormValue("deletes"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(response)
 
 		/*
 			sql := "select json->'fields' from services where service=$1 and name=$2 and layerid=$3 and type=$4"
@@ -1449,9 +1532,6 @@ func StartGorillaMux() *mux.Router {
 		*/
 
 		//var replicaDb = config.RootPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
-		var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
-		log.Println("Table name: " + tableName)
-		//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 
 		//var jsonFields=JSON.parse(file)
 		//log.Println("sqlite: " + replicaDb)
@@ -1482,282 +1562,6 @@ func StartGorillaMux() *mux.Router {
 
 		//now read posted JSON
 		//var updates = map[string]interface{}{}
-		var updates structs.Record
-		var updateTxt = r.FormValue("updates")
-		log.Println(updateTxt)
-		decoder := json.NewDecoder(strings.NewReader(updateTxt)) //r.Body
-
-		err := decoder.Decode(&updates)
-		if err != nil {
-			panic(err)
-		}
-		defer r.Body.Close()
-		cols := ""
-		sep := ""
-		c := 1
-		//var vals := []interface{}
-		//objectid := 1
-		var objectid int
-		//var globalID string
-		var results []interface{}
-		var objId string
-
-		for _, i := range updates {
-			var vals []interface{}
-
-			result := map[string]interface{}{}
-			for key, j := range i.Attributes {
-				//fmt.Println(key + ":  ")
-				//var objectid = updates[0].Attributes["OBJECTID"]
-				//var globalId = updates[0].Attributes["GlobalID"]
-				if key == "OBJECTID" {
-					objectid = int(j.(float64))
-					result["objectId"] = objectid
-					vals = append(vals, objectid)
-					objId = strconv.Itoa(c)
-					c++
-					//} else if key == "GlobalID" {
-					//	globalID = j.(string)
-					//	result["globalId"] = globalID
-				} else {
-					cols += sep + key + "=$" + strconv.Itoa(c)
-					sep = ","
-					vals = append(vals, j)
-					//fmt.Println(j)
-					c++
-				}
-			}
-			log.Println("update " + tableName + " set " + cols + " where OBJECTID=$" + objId)
-			log.Print(vals)
-			log.Print(objId)
-
-			sql := "update " + tableName + " set " + cols + " where OBJECTID=$" + objId
-			stmt, err := config.Db.Prepare(sql)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			//err = stmt.QueryRow(name, "FeatureServer", idInt, "").Scan(&fields)
-			_, err = stmt.Exec(vals...)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			result["success"] = true
-			result["globalId"] = nil
-			results = append(results, result)
-
-			/*
-				select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=0 and elem->'attributes'->>'OBJECTID'='$1')::int
-
-				update services set json=jsonb_set(json,
-				'{features,26,attributes}',
-				'{"OBJECTID":27,"acres":3.12,"lease_site":0,"feature_type":1,"climatic_zone":2,"quad_name":"077-SE-196","elevation":6048,"permittee":"Lorraine / Elsie Begay","homesite_id":"H61A"}'::jsonb,
-				false) where type='query' and layerId=0;
-			*/
-			//sql = "update services set json=jsonb_set(json, array('features',elem_index::text, ,false) from (select pos - 1 as elem_index from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=0 and elem->'attributes'->>'OBJECTID'='$2')"
-			sql = "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
-			log.Println(sql)
-			log.Print("Layer ID: ")
-			log.Println(id)
-			log.Print("Objectid: ")
-			log.Println(objectid)
-			rows, err := config.Db.Query(sql, id, objectid)
-			defer rows.Close()
-			var rowId int
-			for rows.Next() {
-				err := rows.Scan(&rowId)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-
-			//var jsonvals []interface{}
-			//updateTxt := "[{\"attributes\":{\"OBJECTID\":27,\"acres\":3.15,\"lease_site\":0,\"feature_type\":1,\"climatic_zone\":2,\"quad_name\":\"077-SE-196\",\"elevation\":6048,\"permittee\":\"Lorraine / Elsie Begay\",\"homesite_id\":\"H61A\"}}]"
-			//updateTxt = strings.Replace(updateTxt[15:len(updateTxt)-1], "\"", "\\\"", -1)
-			updateTxt = updateTxt[15 : len(updateTxt)-2]
-
-			//jsonvals = append(jsonvals, updateTxt)
-			//jsonvals = append(jsonvals, id)
-			//jsonvals = append(jsonvals, rowId)
-
-			/*
-				_, err = stmt.Exec(jsonvals...)
-				if err != nil {
-					log.Println(err.Error())
-				}
-			*/
-			/*
-				sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}','" + updateTxt + "'::jsonb,false) where type='query' and layerId=$1"
-				stmt, err = config.Db.Prepare(sql)
-				if err != nil {
-					log.Println(err.Error())
-				}
-				_, err = stmt.Exec(strconv.Atoi(id))
-				if err != nil {
-					log.Println(err.Error())
-				}
-			*/
-
-			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
-			log.Println(sql)
-			//log.Println(jsonvals)
-			/*
-				_, err = stmt.Exec(sql, updateTxt, id)
-				if err != nil {
-					log.Println(err.Error())
-				}
-			*/
-
-			stmt, err = config.Db.Prepare(sql)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			log.Println(updateTxt)
-			log.Println(id)
-			_, err = stmt.Exec(updateTxt, id)
-			if err != nil {
-				log.Println(err.Error())
-			}
-
-			/*
-				var jsonvals []interface{}
-				jsonvals = append(jsonvals, updateTxt)
-
-				jsonvals = append(jsonvals, id)
-
-			*/
-		}
-		response, _ := json.Marshal(map[string]interface{}{"addResults": []string{}, "updateResults": results, "deleteResults": []string{}})
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(response)
-
-		//find the matching OBJECTID in the query.json file and update fields and save back to disk
-		/*
-			for _, i := range updates {
-				for _, j := range fields.Fields ["features"] {
-					for _, k := range updates[i]["attributes"] {
-
-					}
-
-				}
-			}
-		*/
-
-		/*
-			err2 := json.Unmarshal(r.FormValue("updates"), &updates)
-			if err2 != nil {
-				log.Println("Error reading configuration file: " + r.FormValue("updates"))
-				log.Println(err2.Error())
-			}
-		*/
-		/*
-		   decoder := json.NewDecoder(r.Body)
-		       var t test_struct
-		       err := decoder.Decode(&t)
-		       if err != nil {
-		           panic(err)
-		       }
-		       defer req.Body.Close()
-		*/
-
-		//var jsonFields=JSON.parse(file)
-		//log.Println("sqlite: " + replicaDb)
-		//var db = new sqlite3.Database(replicaDb)
-		/*
-			var sqlstr = "update " + outFields + " from " +
-				config.Services[name]["relationships"][id]["dTable"].(string) +
-				" where " +
-				config.Services[name]["relationships"][id]["dJoinKey"].(string) + " in (select " +
-				config.Services[name]["relationships"][id]["oJoinKey"].(string) + " from " +
-				config.Services[name]["relationships"][id]["oTable"].(string) +
-				" where OBJECTID=?)"
-
-			db, err := sql.Open("sqlite3", replicaDb)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer Db.Close()
-			stmt, err := Db.Prepare(sqlstr)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer stmt.Close()
-			//outArr := []interface{}{}
-			rows, err := stmt.Query(id)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer rows.Close()
-			columns, _ := rows.Columns()
-			count := len(columns)
-			values := make([]interface{}, count)
-			valuePtrs := make([]interface{}, count)
-			//final_result := map[int]map[string]string{}
-			//works final_result := map[int]map[string]interface{}{}
-			final_result := make([]interface{}, 0)
-			result_id := 0
-		*/
-
-		//var updates = JSON.parse(req.body.updates)//JSON.parse(req.query.updates)
-		/*
-				var fs = require("fs')
-				var path=DataPath+"/"+name") +"/FeatureServer."+id") + ".query.json"
-			  var file = fs.readFileSync(path, "utf8")
-			  var json=JSON.parse(file)
-			  var results=[]
-			  var fields=[]
-			  var values=[]
-
-			  for(var u=0;u<updates.length;u++)
-			  {
-				  for(var i=0;i<json.features.length;i++)
-				  {
-				  	//log.Println(json.features[i]['attributes']['OBJECTID'] + ":  " + updates[u].attributes['OBJECTID'])
-				  	if(json.features[i]['attributes']['OBJECTID']==updates[u].attributes['OBJECTID'])
-				  	{
-				  		//json.features.[i]['attributes']=updates
-				  		for(var j in updates[u].attributes)
-				  		{
-				  			for(var k in json.features[i]['attributes'])
-				  			{
-				  				if(j==k)
-				  				{
-				  					if(json.features[i]['attributes'][k] != updates[u].attributes[j])
-				  					{
-				  					    log.Println("Updating record: " + updates[u].attributes['OBJECTID'] + " " + k + "   values: " + json.features[i]['attributes'][k]+ " to " + updates[u].attributes[j] )
-				  					    json.features[i]['attributes'][k]=updates[u].attributes[j]
-			  	              fields.push(k+"=?")
-			  	              values.push(updates[0].attributes[j])
-				  					    break
-				  				  }
-				  				}
-				  			}
-				  		}
-				  		results.push({"objectId":updates[u].attributes['OBJECTID'],"globalId":null,"success":true})
-				  		break
-				  	}
-				  }
-			  }
-			  if(fields.length>0){
-				  //search for id and update all fields
-				  fs.writeFileSync(path, JSON.stringify(json), "utf8")
-
-				  //now update the replica database
-
-				  values.push(parseInt(id")))
-
-				  var replicaDb = ReplicaPath + "/"+name")+".geodatabase"
-				  log.Println("sqlite: " + replicaDb)
-				  var db = new sqlite3.Database(replicaDb)
-				  //create update statement from json
-				  log.Println("UPDATE " + name") + " SET "+fields.join(",")+" WHERE OBJECTID = ?")
-				  log.Println( values )
-
-				  Db.run("UPDATE " + name") + " SET "+fields.join(",")+" WHERE OBJECTID = ?", values)
-			  }else{
-			 	  results={"objectId":updates.length>0?updates[0].attributes['OBJECTID']:0,"globalId":null,"success":true}
-			 	}
-		*/
-		//update json file with updates
 
 	}).Methods("GET", "POST")
 
@@ -1766,4 +1570,388 @@ func StartGorillaMux() *mux.Router {
 
 	return r
 
+}
+
+func Updates(name string, id string, tableName string, updateTxt string) []byte {
+	log.Println(updateTxt)
+
+	var updates structs.Record
+	decoder := json.NewDecoder(strings.NewReader(updateTxt)) //r.Body
+
+	err := decoder.Decode(&updates)
+	if err != nil {
+		panic(err)
+	}
+	//defer r.Body.Close()
+	cols := ""
+	sep := ""
+	c := 1
+	//var vals := []interface{}
+	//objectid := 1
+	var objectid int
+	//var globalID string
+	var results []interface{}
+	var objId string
+
+	for _, i := range updates {
+		var vals []interface{}
+
+		result := map[string]interface{}{}
+		for key, j := range i.Attributes {
+			//fmt.Println(key + ":  ")
+			//var objectid = updates[0].Attributes["OBJECTID"]
+			//var globalId = updates[0].Attributes["GlobalID"]
+			if key == "OBJECTID" {
+				objectid = int(j.(float64))
+				result["objectId"] = objectid
+				vals = append(vals, objectid)
+				objId = strconv.Itoa(c)
+				c++
+				//} else if key == "GlobalID" {
+				//	globalID = j.(string)
+				//	result["globalId"] = globalID
+			} else {
+				cols += sep + key + "=$" + strconv.Itoa(c)
+				sep = ","
+				vals = append(vals, j)
+				//fmt.Println(j)
+				c++
+			}
+		}
+		log.Println("update " + tableName + " set " + cols + " where OBJECTID=$" + objId)
+		log.Print(vals)
+		log.Print(objId)
+		var sql string
+		if config.DbSource == config.PGSQL {
+			sql = "update " + tableName + " set " + cols + " where OBJECTID=$" + objId
+		} else if config.DbSource == config.SQLITE3 {
+			sql = "update " + tableName + " set " + cols + " where OBJECTID=?"
+		}
+
+		stmt, err := config.Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		//err = stmt.QueryRow(name, "FeatureServer", idInt, "").Scan(&fields)
+		_, err = stmt.Exec(vals...)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		result["success"] = true
+		result["globalId"] = nil
+		results = append(results, result)
+
+		/*
+			select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=0 and elem->'attributes'->>'OBJECTID'='$1')::int
+
+			update services set json=jsonb_set(json,
+			'{features,26,attributes}',
+			'{"OBJECTID":27,"acres":3.12,"lease_site":0,"feature_type":1,"climatic_zone":2,"quad_name":"077-SE-196","elevation":6048,"permittee":"Lorraine / Elsie Begay","homesite_id":"H61A"}'::jsonb,
+			false) where type='query' and layerId=0;
+		*/
+		//sql = "update services set json=jsonb_set(json, array('features',elem_index::text, ,false) from (select pos - 1 as elem_index from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=0 and elem->'attributes'->>'OBJECTID'='$2')"
+		if config.DbSource == config.PGSQL {
+			sql = "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
+		} else if config.DbSource == config.SQLITE3 {
+			sql = "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
+		}
+
+		log.Println(sql)
+		log.Print("Layer ID: ")
+		log.Println(id)
+		log.Print("Objectid: ")
+		log.Println(objectid)
+		rows, err := config.Db.Query(sql, id, objectid)
+		defer rows.Close()
+		var rowId int
+		for rows.Next() {
+			err := rows.Scan(&rowId)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		//var jsonvals []interface{}
+		//updateTxt := "[{\"attributes\":{\"OBJECTID\":27,\"acres\":3.15,\"lease_site\":0,\"feature_type\":1,\"climatic_zone\":2,\"quad_name\":\"077-SE-196\",\"elevation\":6048,\"permittee\":\"Lorraine / Elsie Begay\",\"homesite_id\":\"H61A\"}}]"
+		//updateTxt = strings.Replace(updateTxt[15:len(updateTxt)-1], "\"", "\\\"", -1)
+		updateTxt = updateTxt[15 : len(updateTxt)-2]
+
+		//jsonvals = append(jsonvals, updateTxt)
+		//jsonvals = append(jsonvals, id)
+		//jsonvals = append(jsonvals, rowId)
+
+		/*
+			_, err = stmt.Exec(jsonvals...)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		*/
+		/*
+			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}','" + updateTxt + "'::jsonb,false) where type='query' and layerId=$1"
+			stmt, err = config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			_, err = stmt.Exec(strconv.Atoi(id))
+			if err != nil {
+				log.Println(err.Error())
+			}
+		*/
+		if config.DbSource == config.PGSQL {
+			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+		} else if config.DbSource == config.SQLITE3 {
+
+			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+		}
+
+		log.Println(sql)
+		//log.Println(jsonvals)
+		/*
+			_, err = stmt.Exec(sql, updateTxt, id)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		*/
+
+		stmt, err = config.Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		log.Println(updateTxt)
+		log.Println(id)
+		_, err = stmt.Exec(updateTxt, id)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		/*
+			var jsonvals []interface{}
+			jsonvals = append(jsonvals, updateTxt)
+
+			jsonvals = append(jsonvals, id)
+
+		*/
+	}
+	response, _ := json.Marshal(map[string]interface{}{"addResults": []string{}, "updateResults": results, "deleteResults": []string{}})
+	return response
+
+	//find the matching OBJECTID in the query.json file and update fields and save back to disk
+	/*
+		for _, i := range updates {
+			for _, j := range fields.Fields ["features"] {
+				for _, k := range updates[i]["attributes"] {
+
+				}
+
+			}
+		}
+	*/
+
+	/*
+		err2 := json.Unmarshal(r.FormValue("updates"), &updates)
+		if err2 != nil {
+			log.Println("Error reading configuration file: " + r.FormValue("updates"))
+			log.Println(err2.Error())
+		}
+	*/
+	/*
+	   decoder := json.NewDecoder(r.Body)
+	       var t test_struct
+	       err := decoder.Decode(&t)
+	       if err != nil {
+	           panic(err)
+	       }
+	       defer req.Body.Close()
+	*/
+
+	//var jsonFields=JSON.parse(file)
+	//log.Println("sqlite: " + replicaDb)
+	//var db = new sqlite3.Database(replicaDb)
+	/*
+		var sqlstr = "update " + outFields + " from " +
+			config.Services[name]["relationships"][id]["dTable"].(string) +
+			" where " +
+			config.Services[name]["relationships"][id]["dJoinKey"].(string) + " in (select " +
+			config.Services[name]["relationships"][id]["oJoinKey"].(string) + " from " +
+			config.Services[name]["relationships"][id]["oTable"].(string) +
+			" where OBJECTID=?)"
+
+		db, err := sql.Open("sqlite3", replicaDb)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer Db.Close()
+		stmt, err := Db.Prepare(sqlstr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer stmt.Close()
+		//outArr := []interface{}{}
+		rows, err := stmt.Query(id)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+		columns, _ := rows.Columns()
+		count := len(columns)
+		values := make([]interface{}, count)
+		valuePtrs := make([]interface{}, count)
+		//final_result := map[int]map[string]string{}
+		//works final_result := map[int]map[string]interface{}{}
+		final_result := make([]interface{}, 0)
+		result_id := 0
+	*/
+
+	//var updates = JSON.parse(req.body.updates)//JSON.parse(req.query.updates)
+	/*
+			var fs = require("fs')
+			var path=DataPath+"/"+name") +"/FeatureServer."+id") + ".query.json"
+		  var file = fs.readFileSync(path, "utf8")
+		  var json=JSON.parse(file)
+		  var results=[]
+		  var fields=[]
+		  var values=[]
+
+		  for(var u=0;u<updates.length;u++)
+		  {
+			  for(var i=0;i<json.features.length;i++)
+			  {
+			  	//log.Println(json.features[i]['attributes']['OBJECTID'] + ":  " + updates[u].attributes['OBJECTID'])
+			  	if(json.features[i]['attributes']['OBJECTID']==updates[u].attributes['OBJECTID'])
+			  	{
+			  		//json.features.[i]['attributes']=updates
+			  		for(var j in updates[u].attributes)
+			  		{
+			  			for(var k in json.features[i]['attributes'])
+			  			{
+			  				if(j==k)
+			  				{
+			  					if(json.features[i]['attributes'][k] != updates[u].attributes[j])
+			  					{
+			  					    log.Println("Updating record: " + updates[u].attributes['OBJECTID'] + " " + k + "   values: " + json.features[i]['attributes'][k]+ " to " + updates[u].attributes[j] )
+			  					    json.features[i]['attributes'][k]=updates[u].attributes[j]
+		  	              fields.push(k+"=?")
+		  	              values.push(updates[0].attributes[j])
+			  					    break
+			  				  }
+			  				}
+			  			}
+			  		}
+			  		results.push({"objectId":updates[u].attributes['OBJECTID'],"globalId":null,"success":true})
+			  		break
+			  	}
+			  }
+		  }
+		  if(fields.length>0){
+			  //search for id and update all fields
+			  fs.writeFileSync(path, JSON.stringify(json), "utf8")
+
+			  //now update the replica database
+
+			  values.push(parseInt(id")))
+
+			  var replicaDb = ReplicaPath + "/"+name")+".geodatabase"
+			  log.Println("sqlite: " + replicaDb)
+			  var db = new sqlite3.Database(replicaDb)
+			  //create update statement from json
+			  log.Println("UPDATE " + name") + " SET "+fields.join(",")+" WHERE OBJECTID = ?")
+			  log.Println( values )
+
+			  Db.run("UPDATE " + name") + " SET "+fields.join(",")+" WHERE OBJECTID = ?", values)
+		  }else{
+		 	  results={"objectId":updates.length>0?updates[0].attributes['OBJECTID']:0,"globalId":null,"success":true}
+		 	}
+	*/
+	//update json file with updates
+}
+
+func Deletes(name string, id string, tableName string, deletesTxt string) []byte {
+	//deletesTxt should be a objectId
+
+	return []byte("")
+}
+func Adds(name string, id string, tableName string, addsTxt string) []byte {
+	log.Println(addsTxt)
+
+	var adds structs.Record
+	decoder := json.NewDecoder(strings.NewReader(addsTxt)) //r.Body
+
+	err := decoder.Decode(&adds)
+	if err != nil {
+		panic(err)
+	}
+	cols := ""
+	sep := ""
+	c := 1
+	var objectid int
+	var results []interface{}
+	var objId string
+
+	for _, i := range adds {
+		var vals []interface{}
+
+		result := map[string]interface{}{}
+		for key, j := range i.Attributes {
+			if key == "OBJECTID" {
+				objectid = int(j.(float64))
+				result["objectId"] = objectid
+				vals = append(vals, objectid)
+				objId = strconv.Itoa(c)
+				c++
+			} else {
+				cols += sep + key + "=$" + strconv.Itoa(c)
+				sep = ","
+				vals = append(vals, j)
+				c++
+			}
+		}
+		log.Println("insert into " + tableName + " values( " + cols + " where OBJECTID=$" + objId)
+		log.Print(vals)
+		log.Print(objId)
+
+		sql := "insert into " + tableName + " values " + cols + " where OBJECTID=$" + objId
+		stmt, err := config.Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		_, err = stmt.Exec(vals...)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		result["success"] = true
+		result["globalId"] = nil
+		results = append(results, result)
+		sql = "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
+		log.Println(sql)
+		log.Print("Layer ID: ")
+		log.Println(id)
+		log.Print("Objectid: ")
+		log.Println(objectid)
+		rows, err := config.Db.Query(sql, id, objectid)
+		defer rows.Close()
+		var rowId int
+		for rows.Next() {
+			err := rows.Scan(&rowId)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		addsTxt = addsTxt[15 : len(addsTxt)-2]
+
+		sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+		log.Println(sql)
+		stmt, err = config.Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		log.Println(addsTxt)
+		log.Println(id)
+		_, err = stmt.Exec(addsTxt, id)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}
+	response, _ := json.Marshal(map[string]interface{}{"addResults": results, "updateResults": []string{}, "deleteResults": []string{}})
+	return response
 }

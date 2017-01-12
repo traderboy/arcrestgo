@@ -9,6 +9,58 @@
     <script>
 
         function populateDropdown() {
+            var serviceUrl = location.href + (location.href.substring(location.href.length-1)=='/'?"":"/")+"arcgis/rest/services"
+            loadJSON(serviceUrl,
+                function (data) {
+                    //console.log(data);
+                    //get list of folders
+                    var service = data.folders[0]
+                    document.getElementById("serviceUrl").value = serviceUrl + "/" + service
+                    loadServices()
+                    //document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Loaded service</b>"
+                    //populateDropdownFromService(serviceUrl, service, data)
+                },
+                function (xhr) {
+                    console.error(xhr);
+                    document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Service URL not found</b>"
+                }
+            )
+
+        }
+
+        function loadServices() {
+            var url = document.getElementById("serviceUrl").value
+            if (url == '') {
+                document.getElementById('urlLbl').innerHTML = "<b style='color:red'>No service url!</b>"
+                return
+            }
+            var urlsplit = url.split("/")
+            var service = urlsplit[6]
+            for (var i=0;i< urlsplit.length;i++)
+            {
+                if (urlsplit[i].toLowerCase() == 'service' && urlsplit.length>i){
+                    service = urlsplit[i+1]
+                }
+            }
+            
+            var serviceUrl = urlsplit[0] + "//" + urlsplit[2]
+
+            loadJSON(url,
+                function (data) {
+                    console.log(data);
+                    //get list of folders
+                    editor.set({});
+                    document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Loaded service</b>"
+                    populateDropdownFromService(serviceUrl, service, data)
+                },
+                function (xhr) {
+                    console.error(xhr);
+                    document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Service URL not found</b>"
+                }
+            );
+
+        }
+        function populateDropdownInitial() {
             var select = document.getElementById("urls")
             var pre = location.host
             var langArray = [
@@ -41,6 +93,7 @@
                 option.appendChild(document.createTextNode(langArray[i].text));
                 select.appendChild(option);
             }
+
         }
         function populateDropdownFromService(url, service, data) {
             var select = document.getElementById("urls")
@@ -51,12 +104,12 @@
                 { "value": "", "text": "" },
                 { "value": url + "/config", "text": "Configuration" },
                 //{ "value": url+"sharing/rest/accounts/self", "text": "Accounts self" },
-                { "value": url + "/sharing/rest/portals/self", "text": "Portals self" },
-                { "value": url + "/sharing/rest/search", "text": "Search" },
-                { "value": url + "/sharing/rest/content/items/" + service, "text": "Content items" },
-                { "value": url + "/sharing/rest/content/items/" + service + "/data", "text": "Content items data" },
-                { "value": url + "/arcgis/rest/services", "text": "Services" },
-                { "value": url + "/arcgis/rest/services/" + service + "/FeatureServer", "text": "FeatureServer" }
+                { "value": url + "/sharing/rest/portals/self?f=json", "text": "Portals self" },
+                { "value": url + "/sharing/rest/search?f=json", "text": "Search" },
+                { "value": url + "/sharing/rest/content/items/" + service+"?f=json", "text": "Content items" },
+                { "value": url + "/sharing/rest/content/items/" + service + "/data?f=json", "text": "Content items data" },
+                { "value": url + "/arcgis/rest/services?f=json", "text": "Services" },
+                { "value": url + "/arcgis/rest/services/" + service + "/FeatureServer?f=json", "text": "FeatureServer" }
                 /*                
                 
                 { "value": "arcgis/rest/services/leasecompliancefor2016/FeatureServer/0", "text": "FeatureServer 0" },
@@ -68,12 +121,11 @@
                 { "value": "arcgis/rest/services/leasecompliancefor2016/FeatureServer/6", "text": "FeatureServer 6" }
                 */
             ]
-            for (var i =0; i<  data.layers.length; i++) {
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id, "text": data.layers[i].name })
+            for (var i = 0; i < data.layers.length; i++) {
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id+"?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
             }
-            for (var i =0; i<  data.tables.length; i++) {
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id, "text": data.tables[i].name })
-
+            for (var i = 0; i < data.tables.length; i++) {
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id+"?f=json", "text": data.tables[i].name + " (" + data.tables[i].id + ")" })
             }
             var il = langArray.length;
             var i = 0;
@@ -245,28 +297,7 @@
 
                                 };
                                 document.getElementById('svcform').onsubmit = function () {
-                                    var url = document.getElementById("serviceUrl").value
-                                    if (url == '') {
-                                        document.getElementById('urlLbl').innerHTML = "<b style='color:red'>No service url!</b>"
-                                        return
-                                    }
-                                    var urlsplit = url.split("/")
-                                    var service = urlsplit[6]
-                                    var serviceUrl = urlsplit[0] + "//" + urlsplit[2]
-
-                                    loadJSON(url,
-                                        function (data) {
-                                            console.log(data);
-                                            //get list of folders
-                                            editor.set({});
-                                            document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Loaded service</b>"
-                                            populateDropdownFromService(serviceUrl, service, data)
-                                        },
-                                        function (xhr) {
-                                            console.error(xhr);
-                                            document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Service URL not found</b>"
-                                        }
-                                    );
+                                    loadServices()
                                     return false
                                 }
 </script>

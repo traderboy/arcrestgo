@@ -250,3 +250,23 @@ func SetArcCatalog(json string, service string, dtype string) bool {
 
 	return true
 }
+
+/*
+func RunQuery(sql string) bool {
+	sql := "update catalog set json=" + GetParam(1) + " where name=" + GetParam(2) + " and type=" + GetParam(3)
+	log.Printf("Query: update catalog set json=<json> where name='%v' and type='%v'", service, dtype)
+
+	stmt, err := Db.Prepare(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	_, err = stmt.Exec(json, service, dtype)
+	if err != nil {
+		log.Println(err.Error())
+		return false
+	}
+
+	return true
+}
+*/

@@ -15,5 +15,5 @@
     "go.goroot": "D:/go",
     "go.gopath": "D:/workspace/go/",
     "go.gocodeAutoBuild": false,
-    "python.linting.pylintEnabled": true
+    "python.linting.pylintEnabled": false
 }
