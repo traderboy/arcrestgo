@@ -39,6 +39,8 @@ var configFile = RootPath + string(os.PathSeparator) + "config.json"
 var ArcGisVersion = "3.8"
 
 var Db *sql.DB
+var DbQuery *sql.DB
+
 var port = ":8080"
 
 var DataPath = RootPath        //+ string(os.PathSeparator)        //+ string(os.PathSeparator) //+ "services"
@@ -62,6 +64,7 @@ func Initialize() {
 	}
 	RootPath = pwd + string(os.PathSeparator) + RootPath //+ string(os.PathSeparator)
 	var DbName string
+	var RootName string
 
 	if len(os.Args) > 1 {
 		for i := 1; i < len(os.Args); i++ {
@@ -83,6 +86,7 @@ func Initialize() {
 				Schema = "postgres."
 			} else if os.Args[i] == "-root" && len(os.Args) > i {
 				RootPath, _ = filepath.Abs(os.Args[i+1])
+				RootName = os.Args[i+1]
 			} else if os.Args[i] == "-p" && len(os.Args) > i {
 				HTTPPort = ":" + os.Args[i+1]
 			} else if os.Args[i] == "-https" && len(os.Args) > i {
@@ -100,6 +104,7 @@ func Initialize() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		DbQuery = Db
 		log.Print("Postgresql database: " + DbName)
 		log.Print("Pinging Postgresql: ")
 		log.Println(Db.Ping)
@@ -109,6 +114,12 @@ func Initialize() {
 			log.Fatal(err)
 		}
 		log.Print("Sqlite database: " + DbName)
+		DbQuery, err = sql.Open("sqlite3", RootPath+string(os.PathSeparator)+RootName+string(os.PathSeparator)+"replicas"+string(os.PathSeparator)+RootName+".geodatabase")
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Print("Sqlite database: " + RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase")
+
 		//defer db.Close()
 	}
 	/*

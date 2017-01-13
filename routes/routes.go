@@ -1310,26 +1310,55 @@ func StartGorillaMux() *mux.Router {
 		var outFields = r.FormValue("outFields")
 		//get fields for the related table
 		dID := config.Project.Services[name]["relationships"][relationshipId]["dId"]
+		//get the fields json
 		var sql string
+		var fields []byte
+
 		if config.DbSource == config.PGSQL {
 			sql = "select json->'fields' from services where service=$1 and name=$2 and layerid=$3 and type=$4"
 			log.Printf("select json->'fields' from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
+			stmt, err := config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+			err = stmt.QueryRow(name, "FeatureServer", dID, "").Scan(&fields)
+			if err != nil {
+				log.Println(err.Error())
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte("{\"fields\":[],\"relatedRecordGroups\":[]}"))
+				return
+			}
 		} else if config.DbSource == config.SQLITE3 {
 			sql = "select json from services where service=? and name=? and layerid=? and type=?"
 			log.Printf("select json from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
+			stmt, err := config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+			err = stmt.QueryRow(name, "FeatureServer", dID, "").Scan(&fields)
+			if err != nil {
+				log.Println(err.Error())
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte("{\"fields\":[],\"relatedRecordGroups\":[]}"))
+				return
+			}
+			//fields = fields["fields"]
+			var fieldObj structs.FeatureTable
+			//map[string]map[string]map[string]
+			err = json.Unmarshal(fields, &fieldObj)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(fields))
+				log.Println(err.Error())
+			}
+			fields, err = json.Marshal(fieldObj.Fields)
+			if err != nil {
+				log.Println(err)
+			}
+
 		}
-		stmt, err := config.Db.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		var fields []byte
-		err = stmt.QueryRow(name, "FeatureServer", dID, "").Scan(&fields)
-		if err != nil {
-			log.Println(err.Error())
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte("{\"fields\":[],\"relatedRecordGroups\":[]}"))
-			return
-		}
+
 		//_, err = w.Write(fields)
 		//return
 		//var replicaDb = config.RootPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
@@ -1350,7 +1379,7 @@ func StartGorillaMux() *mux.Router {
 		//_, err = w.Write([]byte(sqlstr))
 		log.Println(strings.Replace(sqlstr, config.GetParam(1), objectIds, -1))
 
-		stmt, err = config.Db.Prepare(sqlstr)
+		stmt, err := config.DbQuery.Prepare(sqlstr)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -1438,23 +1467,7 @@ func StartGorillaMux() *mux.Router {
 		w.Header().Set("Content-Type", "application/json")
 		//response = "{fields:" + fields + "," + response[1]
 		w.Write([]byte("{\"fields\":"))
-		if config.DbSource == config.SQLITE3 {
-			//fields = fields["fields"]
-			var fieldObj structs.FeatureTable
-			//map[string]map[string]map[string]
-			err = json.Unmarshal(fields, &fieldObj)
-			if err != nil {
-				log.Println("Error unmarshalling fields into features object: " + string(fields))
-				log.Println(err.Error())
-			}
-			b, err1 := json.Marshal(fieldObj.Fields)
-			if err1 != nil {
-				log.Println(err1)
-			}
-			w.Write(b)
-		} else {
-			w.Write(fields)
-		}
+		w.Write(fields)
 		w.Write([]byte(","))
 		w.Write(response)
 		//w.Write([]byte("}"))
@@ -1628,7 +1641,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			sql = "update " + tableName + " set " + cols + " where OBJECTID=?"
 		}
 
-		stmt, err := config.Db.Prepare(sql)
+		stmt, err := config.DbQuery.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -1661,7 +1674,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 		log.Println(id)
 		log.Print("Objectid: ")
 		log.Println(objectid)
-		rows, err := config.Db.Query(sql, id, objectid)
+		rows, err := config.DbQuery.Query(sql, id, objectid)
 		defer rows.Close()
 		var rowId int
 		for rows.Next() {
@@ -1713,7 +1726,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			}
 		*/
 
-		stmt, err = config.Db.Prepare(sql)
+		stmt, err = config.DbQuery.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
 		}
