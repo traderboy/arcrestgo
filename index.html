@@ -123,9 +123,14 @@
             ]
             for (var i = 0; i < data.layers.length; i++) {
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id+"?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id+"/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id+"/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
             }
             for (var i = 0; i < data.tables.length; i++) {
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id+"?f=json", "text": data.tables[i].name + " (" + data.tables[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id+"/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.tables[i].name + " ObjectID (" + data.tables[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id+"/query?f=json", "text": data.tables[i].name + " Query (" + data.tables[i].id + ")" })
+
             }
             var il = langArray.length;
             var i = 0;

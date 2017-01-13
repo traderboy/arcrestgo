@@ -1663,31 +1663,45 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			false) where type='query' and layerId=0;
 		*/
 		//sql = "update services set json=jsonb_set(json, array('features',elem_index::text, ,false) from (select pos - 1 as elem_index from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=0 and elem->'attributes'->>'OBJECTID'='$2')"
+
+		updateTxt = updateTxt[15 : len(updateTxt)-2]
 		if config.DbSource == config.PGSQL {
 			sql = "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
-		} else if config.DbSource == config.SQLITE3 {
-			sql = "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
-		}
 
-		log.Println(sql)
-		log.Print("Layer ID: ")
-		log.Println(id)
-		log.Print("Objectid: ")
-		log.Println(objectid)
-		rows, err := config.DbQuery.Query(sql, id, objectid)
-		defer rows.Close()
-		var rowId int
-		for rows.Next() {
-			err := rows.Scan(&rowId)
-			if err != nil {
-				log.Fatal(err)
+			log.Println(sql)
+			log.Print("Layer ID: ")
+			log.Println(id)
+			log.Print("Objectid: ")
+			log.Println(objectid)
+			rows, err := config.Db.Query(sql, id, objectid)
+			defer rows.Close()
+			var rowId int
+			for rows.Next() {
+				err := rows.Scan(&rowId)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
+			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+			stmt, err = config.DbQuery.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			log.Println(updateTxt)
+			log.Println(id)
+			_, err = stmt.Exec(updateTxt, id)
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+		} else if config.DbSource == config.SQLITE3 {
+			sql = "select json from services where type='query' and layerId=$1 "
+			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
 		}
 
 		//var jsonvals []interface{}
 		//updateTxt := "[{\"attributes\":{\"OBJECTID\":27,\"acres\":3.15,\"lease_site\":0,\"feature_type\":1,\"climatic_zone\":2,\"quad_name\":\"077-SE-196\",\"elevation\":6048,\"permittee\":\"Lorraine / Elsie Begay\",\"homesite_id\":\"H61A\"}}]"
 		//updateTxt = strings.Replace(updateTxt[15:len(updateTxt)-1], "\"", "\\\"", -1)
-		updateTxt = updateTxt[15 : len(updateTxt)-2]
 
 		//jsonvals = append(jsonvals, updateTxt)
 		//jsonvals = append(jsonvals, id)
@@ -1710,14 +1724,8 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 				log.Println(err.Error())
 			}
 		*/
-		if config.DbSource == config.PGSQL {
-			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
-		} else if config.DbSource == config.SQLITE3 {
 
-			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
-		}
-
-		log.Println(sql)
+		//log.Println(sql)
 		//log.Println(jsonvals)
 		/*
 			_, err = stmt.Exec(sql, updateTxt, id)
@@ -1725,17 +1733,6 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 				log.Println(err.Error())
 			}
 		*/
-
-		stmt, err = config.DbQuery.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		log.Println(updateTxt)
-		log.Println(id)
-		_, err = stmt.Exec(updateTxt, id)
-		if err != nil {
-			log.Println(err.Error())
-		}
 
 		/*
 			var jsonvals []interface{}
