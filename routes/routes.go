@@ -979,6 +979,7 @@ func StartGorillaMux() *mux.Router {
 			w.Write(response)
 
 		} else if len(objectIds) > 0 {
+			//only get the select objectIds
 			response := config.GetArcService(name, "FeatureServer", idInt, "query")
 			if len(response) > 0 {
 				w.Header().Set("Content-Type", "application/json")
@@ -1586,7 +1587,7 @@ func StartGorillaMux() *mux.Router {
 }
 
 func Updates(name string, id string, tableName string, updateTxt string) []byte {
-	log.Println(updateTxt)
+	//log.Println(updateTxt)
 
 	var updates structs.Record
 	decoder := json.NewDecoder(strings.NewReader(updateTxt)) //r.Body
@@ -1604,9 +1605,9 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 	var objectid int
 	//var globalID string
 	var results []interface{}
-	var objId string
+	//var objId int
 
-	for _, i := range updates {
+	for num, i := range updates {
 		var vals []interface{}
 
 		result := map[string]interface{}{}
@@ -1617,26 +1618,27 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			if key == "OBJECTID" {
 				objectid = int(j.(float64))
 				result["objectId"] = objectid
-				vals = append(vals, objectid)
-				objId = strconv.Itoa(c)
-				c++
+
+				//objId = c
+				//c++
 				//} else if key == "GlobalID" {
 				//	globalID = j.(string)
 				//	result["globalId"] = globalID
 			} else {
-				cols += sep + key + "=$" + strconv.Itoa(c)
+				cols += sep + key + "=" + config.GetParam(c)
 				sep = ","
 				vals = append(vals, j)
 				//fmt.Println(j)
 				c++
 			}
 		}
-		log.Println("update " + tableName + " set " + cols + " where OBJECTID=$" + objId)
+		vals = append(vals, objectid)
+		log.Println("update " + tableName + " set " + cols + " where OBJECTID=" + config.GetParam(len(vals)))
 		log.Print(vals)
-		log.Print(objId)
+		//log.Print(objId)
 		var sql string
 		if config.DbSource == config.PGSQL {
-			sql = "update " + tableName + " set " + cols + " where OBJECTID=$" + objId
+			sql = "update " + tableName + " set " + cols + " where OBJECTID=" + config.GetParam(len(vals))
 		} else if config.DbSource == config.SQLITE3 {
 			sql = "update " + tableName + " set " + cols + " where OBJECTID=?"
 		}
@@ -1683,7 +1685,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 				}
 			}
 			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
-			stmt, err = config.DbQuery.Prepare(sql)
+			stmt, err = config.Db.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
 			}
@@ -1695,9 +1697,57 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			}
 
 		} else if config.DbSource == config.SQLITE3 {
-			sql = "select json from services where type='query' and layerId=$1 "
-			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+			sql = "select json from services where type='query' and layerId=?"
+			stmt, err = config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			rows, err := config.Db.Query(sql, id, objectid)
+			defer rows.Close()
+			var row []byte
+			for rows.Next() {
+				err := rows.Scan(&row)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+
+			var fieldObj structs.FeatureTable
+			//map[string]map[string]map[string]
+			err = json.Unmarshal(row, &fieldObj)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(row))
+				log.Println(err.Error())
+			}
+			for k, i := range fieldObj.Features {
+				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
+				log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
+				if int(i.Attributes["OBJECTID"].(float64)) == objectid {
+					//i.Attributes["OBJECTID"]
+					fieldObj.Features[k].Attributes = updates[num].Attributes
+					break
+				}
+			}
+			var jsonstr []byte
+			jsonstr, err = json.Marshal(fieldObj)
+			if err != nil {
+				log.Println(err)
+			}
+
+			sql = "update services set json=? where type='query' and layerId=?"
+			stmt, err = config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			idInt, _ := strconv.Atoi(id)
+			log.Printf("%v\n%v", string(jsonstr), idInt)
+			_, err = stmt.Exec(string(jsonstr), idInt)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			//sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
 		}
+		//curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d 'rollbackOnFailure=true&updates=[{"attributes":{"OBJECTID":3,"permittee":"Jack/Bessie Hatathlie","homesite_id":"9w3hdseq78dy","range_unit":551,"acres":3,"lease_site":0,"feature_type":0,"climatic_zone":2,"quad_name":"099-NW-004","elevation":6040,"permittee_globalid":"{D1A2F0B1-6F46-477A-80A9-CF550915B6BB}","has_permittee":1}}]&f=json' http://localhost:81/arcgis/rest/services/leasecompliance2016/FeatureServer/0/applyEdits
 
 		//var jsonvals []interface{}
 		//updateTxt := "[{\"attributes\":{\"OBJECTID\":27,\"acres\":3.15,\"lease_site\":0,\"feature_type\":1,\"climatic_zone\":2,\"quad_name\":\"077-SE-196\",\"elevation\":6048,\"permittee\":\"Lorraine / Elsie Begay\",\"homesite_id\":\"H61A\"}}]"
