@@ -144,9 +144,20 @@ class CreateNewProject(object):
         except Exception as e:
            pass        
 
+        pg = arcpy.Parameter()
+        pg.name = u'Output_DB_String'
+        pg.displayName = u'Postgresql database connection string  Example: PG:"host=localhost user=postgres dbname=gis"'
+        pg.parameterType = 'Optional'
+        pg.direction = 'Output'
+        pg.datatype = u'GPString'
+        try:
+            pg.value= Config.get("settings","pg")
+        except Exception as e:
+           pass        
+
         #param0.filter.type = "ValueList"
         #param0.filter.list = ["Street","Aerial","Terrain","Topographic"]
-        parameters = [servername,username,outputfolder,sqlitedb]
+        parameters = [servername,username,outputfolder,sqlitedb,pg]
         #username,projecttitle,projectname,tags,summary,description,
         return parameters
 
@@ -169,19 +180,24 @@ class CreateNewProject(object):
         username = parameters[1].valueAsText        
         baseDestinationPath = parameters[2].valueAsText
         sqliteDb = parameters[3].valueAsText
+        pg  = parameters[4].valueAsText
         created_ts=int(time.time()*1000)
 
         # suppose you want to add it to the current MXD (open MXD)
         try:
-           if type(messages)==types.StringType:
-              vals = messages.split("|")
+           if type(messages)==types.ListType:
+              vals = messages
+              #vals = messages.split("|")
               if len(vals)>1:
                  serverName = vals[1]
               if len(vals)>2:
                  username= vals[2]
               if len(vals)>3:
                  baseDestinationPath=vals[3].replace("\\","/")
-              sqliteDb=vals[4]
+              if len(vals)>4:
+                  sqliteDb=vals[4]
+              if len(vals)>5:
+                  pg=vals[5]
               mxdName=vals[0].replace("\\","/")
               mxd = arcpy.mapping.MapDocument(mxdName)
            else:
@@ -225,11 +241,14 @@ class CreateNewProject(object):
         printMessage("User name: " + username)
         printMessage("Destination path: " + baseDestinationPath)
         printMessage("Sqlite path: " + sqliteDb)
+        printMessage("Postgresql connection: " + pg)
+
 
         Config.set("settings","server",serverName)
         Config.set("settings","username",username)
         Config.set("settings","destination",baseDestinationPath)
         Config.set("settings","sqlitedb",sqliteDb)
+        Config.set("settings","pg",pg)
         Config.write(cfgfile)
         cfgfile.close()
         del cfgfile       
@@ -299,6 +318,8 @@ class CreateNewProject(object):
         config["username"]=username
         config["mxd"]=mxd.filePath
         config["sqliteDb"]=sqliteDb
+        config["pg"]=pg
+
         
         #config["services"][serviceName]["layers"]={}
 
@@ -516,7 +537,7 @@ class CreateNewProject(object):
              key=""
              relations[str(id)]={"oTable":relDesc.originClassNames[0],"dTable":relDesc.destinationClassNames[0],"oJoinKey":relDesc.originClassKeys[0][0],"dJoinKey":relDesc.originClassKeys[1][0],"oId":originId,"dId":destId}
 
-              relObj = {"id":id,"name":relDesc.forwardPathLabel,"relatedTableId":destId,"cardinality":"esriRelCardinality"+relDesc.cardinality,"role":"esriRelRoleOrigin","keyField":relDesc.originClassKeys[0][0],"composite":relDesc.isComposite}
+             relObj = {"id":id,"name":relDesc.forwardPathLabel,"relatedTableId":destId,"cardinality":"esriRelCardinality"+relDesc.cardinality,"role":"esriRelRoleOrigin","keyField":relDesc.originClassKeys[0][0],"composite":relDesc.isComposite}
              destIds[str(originId)]=id
              id=id+1
 
@@ -908,6 +929,10 @@ class CreateNewProject(object):
                    saveToSqlite(lyr,sqliteDb)
                    if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
                       saveToSqlite(inFeaturesGDB+"/"+featureName+"__ATTACH",sqliteDb)
+               if pg:
+                   saveToPg(lyr,pg)
+                   if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
+                      saveToPg(inFeaturesGDB+"/"+featureName+"__ATTACH",pg)
 
                fSet = arcpy.FeatureSet()
                fSet.load(desc.dataElement.catalogPath)
@@ -984,6 +1009,10 @@ class CreateNewProject(object):
                    saveToSqlite(tbl,sqliteDb)
                    if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
                       saveToSqlite(inFeaturesGDB+"/"+featureName+"__ATTACH",sqliteDb)   
+               if pg:
+                   saveToPg(tbl,pg)
+                   if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
+                      saveToPg(inFeaturesGDB+"/"+featureName+"__ATTACH",pg)
 
                feature_json=openJSON(templatePath + "/name.RecordSet.id.json")
                #feature_json['description'] = tbl.description
@@ -1076,11 +1105,11 @@ class CreateNewProject(object):
         LoadCatalog(sqliteDb,"MapServer", "",file)
         file=saveJSON(baseDestinationPath + "/config.json",config)
         LoadCatalog(sqliteDb,"config", "",file)
+        if pg:
+             saveSqliteToPG(["catalog","services"],sqliteDb,pg)
  
         #conn.close()
         printMessage("Finished")
-
-
 
 def openJSON(name):
     printMessage("Loading JSON template: " +name)
@@ -2431,6 +2460,31 @@ def getSymbol(lyr,sym,name):
    
    return drawingInfo
 
+def saveSqliteToPG(tables,sqliteDb,pg):
+    #-lco LAUNDER=NO keeps the case for column names
+    #must run the following in the Database afterwards
+    #alter table services alter column json type jsonb using json::jsonb;
+    #alter table catalog alter column json type jsonb using json::jsonb;
+    for table in tables:
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe  -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + sqliteDb + "\" " + table + " -nlt None -overwrite"
+       printMessage("Running " + cmd)
+       try:
+           os.system(cmd)
+       except:
+           printMessage("Unable to run sql commands")
+
+def saveToPg(lyr,pg):
+   desc = arcpy.Describe(lyr)
+   if hasattr(desc,"shapeType"):
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -overwrite"
+   else:
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -overwrite"
+   printMessage("Running " + cmd)
+   try:
+        os.system(cmd)
+   except:
+        printMessage("Unable to run sql commands")
+
 def saveToSqlite(lyr,sqliteDb):
    desc = arcpy.Describe(lyr)
    if hasattr(desc,"shapeType"):
@@ -2954,11 +3008,12 @@ def main():
     root=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016"
     db=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
     mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"
-    
+    pg="user=postgres dbname=gis host=192.168.99.100"
+
     #tool.execute(tool.getParameterInfo(),r"C:\hpl\distribution\aar\leasecompliance2014.gdb.mxd")
     #mxd,server,user,outputfolder
     #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd|gis.biz.tm|shale|D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016")
-    tool.execute(tool.getParameterInfo(),mxd+"|"+host+"|"+user+"|"+root+"|"+db)
+    tool.execute(tool.getParameterInfo(),[mxd,host,user,root,db,pg])
     
     #tool.execute(tool.getParameterInfo(),r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd|gis.biz.tm|shale|C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016|C:\docker\src\github.com\traderboy\arcrestgo\arcrest.sqlite")
     

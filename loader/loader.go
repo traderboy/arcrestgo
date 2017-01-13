@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -30,6 +31,27 @@ var Db *sql.DB
 
 //_ "github.com/mattn/go-sqlite3"
 func main() {
+	/*
+		pwd, err := os.Getwd()
+		if err != nil {
+			log.Println("Unable to get current directory")
+		}
+
+		cmd := filepath.Clean(pwd + "\\..\\gdal\\ogr2ogr.exe")
+		fmt.Println(cmd)
+		//gdal_data := filepath.Clean(pwd + "\\..\\gdal\\gdal-data\\")
+		params := strings.Split("--formats -version", " ")
+		// -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA " + gdal_data + " -f \"SQLITE\" -overwrite"
+		//fmt.Println(cmd)
+
+		c, err := exec.Command(cmd, params...).Output()
+		if err != nil {
+			fmt.Println("Error: ", err)
+		}
+		fmt.Println(string(c))
+
+		return
+	*/
 	if len(os.Args) > 1 {
 		loadServices()
 		return
@@ -288,9 +310,9 @@ func LoadGIS(configFile string, DbName string) {
 		fmt.Println("Service name: " + name)
 		for _, layer := range project.Services[name]["layers"] {
 			if layer["type"] == "layer" {
-				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + project.FGDB + "\" " + layer["data"].(string))
+				fmt.Println("ogr2ogr -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \"../gdal/gdal-data\" -f \"SQLITE\" \"" + dbPath + "\" \"" + project.FGDB + "\" " + layer["data"].(string))
 			} else {
-				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + project.FGDB + "\" " + layer["data"].(string) + " -nlt None -overwrite")
+				fmt.Println("ogr2ogr -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \"../gdal/gdal-data\" -f \"SQLITE\" \"" + dbPath + "\" \"" + project.FGDB + "\" " + layer["data"].(string) + " -nlt None -overwrite")
 			}
 		}
 	}
@@ -305,16 +327,41 @@ func LoadGISDocker(configFile string, DbName string) {
 	fmt.Println("docker cp " + dbFullPath + " determined_pare:/data")
 
 	fmt.Println("Source FGDB: " + project.FGDB)
-	dbPath := filepath.Base(DbName)
+	//dbPath, _ := filepath.Abs(DbName)
 
-	fgdb := filepath.Base(project.FGDB)
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Println("Unable to get current directory")
+	}
+
+	cmd := filepath.Clean(pwd + "\\..\\gdal\\ogr2ogr.exe")
+	fmt.Println(cmd)
+	gdal_data := filepath.Clean(pwd + "\\..\\gdal\\gdal-data\\")
+	//fgdb := filepath.Base(project.FGDB)
+	fgdb, _ := filepath.Abs(project.FGDB)
+
 	for name := range project.Services {
 		fmt.Println("Service name: " + name)
 		for _, layer := range project.Services[name]["layers"] {
 			if layer["type"] == "layer" {
-				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + fgdb + "\" " + layer["data"].(string) + " -append")
+				params := " -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \"" + gdal_data + "\" -f \"Postgresql\" PG:\"" + DbName + "\" \"" + fgdb + "\" \"" + layer["data"].(string) + "\" -overwrite"
+				fmt.Println(cmd + params)
+
+				c, err := exec.Command("cmd.exe", "/c", cmd+params).Output()
+				if err != nil {
+					fmt.Println("Error: ", err)
+				}
+				fmt.Println(string(c))
+
 			} else {
-				fmt.Println("ogr2ogr -f \"SQLITE\" \"" + dbPath + "\" \"" + fgdb + "\" " + layer["data"].(string) + " -nlt None -append")
+				params := " -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \"" + gdal_data + "\" -f \"Postgresql\" PG:\"" + DbName + "\" \"" + fgdb + "\" \"" + layer["data"].(string) + "\" -nlt None -overwrite"
+				fmt.Println(cmd + params)
+
+				c, err := exec.Command("cmd.exe", "/c", cmd+params).Output()
+				if err != nil {
+					fmt.Println("Error: ", err)
+				}
+				fmt.Println(string(c))
 			}
 		}
 	}

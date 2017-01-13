@@ -86,7 +86,7 @@ func Initialize() {
 				Schema = "postgres."
 			} else if os.Args[i] == "-root" && len(os.Args) > i {
 				RootPath, _ = filepath.Abs(os.Args[i+1])
-				RootName = os.Args[i+1]
+				RootName = filepath.Base(os.Args[i+1])
 			} else if os.Args[i] == "-p" && len(os.Args) > i {
 				HTTPPort = ":" + os.Args[i+1]
 			} else if os.Args[i] == "-https" && len(os.Args) > i {
@@ -109,17 +109,43 @@ func Initialize() {
 		log.Print("Pinging Postgresql: ")
 		log.Println(Db.Ping)
 	} else if DbSource == SQLITE3 {
+		initializeStr := `PRAGMA automatic_index = ON;
+        PRAGMA cache_size = 32768;
+        PRAGMA cache_spill = OFF;
+        PRAGMA foreign_keys = ON;
+        PRAGMA journal_size_limit = 67110000;
+        PRAGMA locking_mode = NORMAL;
+        PRAGMA page_size = 4096;
+        PRAGMA recursive_triggers = ON;
+        PRAGMA secure_delete = ON;
+        PRAGMA synchronous = NORMAL;
+        PRAGMA temp_store = MEMORY;
+        PRAGMA journal_mode = WAL;
+        PRAGMA wal_autocheckpoint = 16384;
+		`
+		//log.Println(initializeStr)
+		initializeStr = "PRAGMA synchronous = OFF;PRAGMA cache_size=100000;PRAGMA journal_mode=WAL;"
+		log.Println(initializeStr)
+
 		Db, err = sql.Open("sqlite3", DbName)
 		if err != nil {
 			log.Fatal(err)
 		}
+		//Db.Exec(initializeStr)
 		log.Print("Sqlite database: " + DbName)
-		DbQuery, err = sql.Open("sqlite3", RootPath+string(os.PathSeparator)+RootName+string(os.PathSeparator)+"replicas"+string(os.PathSeparator)+RootName+".geodatabase")
+		//defer Db.Close()
+		//Db.SetMaxOpenConns(1)
+
+		DbQueryName := RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase"
+		log.Println("DbQueryName: " + DbQueryName)
+		DbQuery, err = sql.Open("sqlite3", DbQueryName)
 		if err != nil {
 			log.Fatal(err)
 		}
+		//defer DbQuery.Close()
+		//DbQuery.SetMaxOpenConns(1)
 		log.Print("Sqlite database: " + RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase")
-
+		//DbQuery.Exec(initializeStr)
 		//defer db.Close()
 	}
 	/*

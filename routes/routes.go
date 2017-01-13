@@ -1704,6 +1704,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			}
 			rows, err := config.Db.Query(sql, id, objectid)
 			defer rows.Close()
+
 			var row []byte
 			for rows.Next() {
 				err := rows.Scan(&row)
@@ -1711,6 +1712,8 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 					log.Fatal(err)
 				}
 			}
+			rows.Close()
+			stmt.Close()
 
 			var fieldObj structs.FeatureTable
 			//map[string]map[string]map[string]
@@ -1721,7 +1724,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			}
 			for k, i := range fieldObj.Features {
 				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
-				log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
+				//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
 				if int(i.Attributes["OBJECTID"].(float64)) == objectid {
 					//i.Attributes["OBJECTID"]
 					fieldObj.Features[k].Attributes = updates[num].Attributes
@@ -1733,67 +1736,78 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			if err != nil {
 				log.Println(err)
 			}
+			tx, err := config.Db.Begin()
+			if err != nil {
+				log.Fatal(err)
+			}
 
 			sql = "update services set json=? where type='query' and layerId=?"
-			stmt, err = config.Db.Prepare(sql)
+
+			stmt, err = tx.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
 			}
+
 			idInt, _ := strconv.Atoi(id)
-			log.Printf("%v\n%v", string(jsonstr), idInt)
-			_, err = stmt.Exec(string(jsonstr), idInt)
+			//log.Printf("%v\n%v", string(jsonstr), idInt)
+			//sql = "PRAGMA synchronous = OFF;PRAGMA cache_size=100000;PRAGMA journal_mode=WAL;"
+			//tx.Exec(sql)
+
+			_, err = tx.Stmt(stmt).Exec(string(jsonstr), idInt)
 			if err != nil {
 				log.Println(err.Error())
 			}
+			tx.Commit()
 			//sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
 		}
-		//curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d 'rollbackOnFailure=true&updates=[{"attributes":{"OBJECTID":3,"permittee":"Jack/Bessie Hatathlie","homesite_id":"9w3hdseq78dy","range_unit":551,"acres":3,"lease_site":0,"feature_type":0,"climatic_zone":2,"quad_name":"099-NW-004","elevation":6040,"permittee_globalid":"{D1A2F0B1-6F46-477A-80A9-CF550915B6BB}","has_permittee":1}}]&f=json' http://localhost:81/arcgis/rest/services/leasecompliance2016/FeatureServer/0/applyEdits
-
-		//var jsonvals []interface{}
-		//updateTxt := "[{\"attributes\":{\"OBJECTID\":27,\"acres\":3.15,\"lease_site\":0,\"feature_type\":1,\"climatic_zone\":2,\"quad_name\":\"077-SE-196\",\"elevation\":6048,\"permittee\":\"Lorraine / Elsie Begay\",\"homesite_id\":\"H61A\"}}]"
-		//updateTxt = strings.Replace(updateTxt[15:len(updateTxt)-1], "\"", "\\\"", -1)
-
-		//jsonvals = append(jsonvals, updateTxt)
-		//jsonvals = append(jsonvals, id)
-		//jsonvals = append(jsonvals, rowId)
-
-		/*
-			_, err = stmt.Exec(jsonvals...)
-			if err != nil {
-				log.Println(err.Error())
-			}
-		*/
-		/*
-			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}','" + updateTxt + "'::jsonb,false) where type='query' and layerId=$1"
-			stmt, err = config.Db.Prepare(sql)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			_, err = stmt.Exec(strconv.Atoi(id))
-			if err != nil {
-				log.Println(err.Error())
-			}
-		*/
-
-		//log.Println(sql)
-		//log.Println(jsonvals)
-		/*
-			_, err = stmt.Exec(sql, updateTxt, id)
-			if err != nil {
-				log.Println(err.Error())
-			}
-		*/
-
-		/*
-			var jsonvals []interface{}
-			jsonvals = append(jsonvals, updateTxt)
-
-			jsonvals = append(jsonvals, id)
-
-		*/
 	}
 	response, _ := json.Marshal(map[string]interface{}{"addResults": []string{}, "updateResults": results, "deleteResults": []string{}})
 	return response
+
+	//curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d 'rollbackOnFailure=true&updates=[{"attributes":{"OBJECTID":3,"permittee":"Jack/Bessie Hatathlie","homesite_id":"9w3hdseq78dy","range_unit":551,"acres":3,"lease_site":0,"feature_type":0,"climatic_zone":2,"quad_name":"099-NW-004","elevation":6040,"permittee_globalid":"{D1A2F0B1-6F46-477A-80A9-CF550915B6BB}","has_permittee":1}}]&f=json' http://localhost:81/arcgis/rest/services/leasecompliance2016/FeatureServer/0/applyEdits
+
+	//var jsonvals []interface{}
+	//updateTxt := "[{\"attributes\":{\"OBJECTID\":27,\"acres\":3.15,\"lease_site\":0,\"feature_type\":1,\"climatic_zone\":2,\"quad_name\":\"077-SE-196\",\"elevation\":6048,\"permittee\":\"Lorraine / Elsie Begay\",\"homesite_id\":\"H61A\"}}]"
+	//updateTxt = strings.Replace(updateTxt[15:len(updateTxt)-1], "\"", "\\\"", -1)
+
+	//jsonvals = append(jsonvals, updateTxt)
+	//jsonvals = append(jsonvals, id)
+	//jsonvals = append(jsonvals, rowId)
+
+	/*
+		_, err = stmt.Exec(jsonvals...)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	*/
+	/*
+		sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}','" + updateTxt + "'::jsonb,false) where type='query' and layerId=$1"
+		stmt, err = config.Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		_, err = stmt.Exec(strconv.Atoi(id))
+		if err != nil {
+			log.Println(err.Error())
+		}
+	*/
+
+	//log.Println(sql)
+	//log.Println(jsonvals)
+	/*
+		_, err = stmt.Exec(sql, updateTxt, id)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	*/
+
+	/*
+		var jsonvals []interface{}
+		jsonvals = append(jsonvals, updateTxt)
+
+		jsonvals = append(jsonvals, id)
+
+	*/
 
 	//find the matching OBJECTID in the query.json file and update fields and save back to disk
 	/*
@@ -1927,66 +1941,33 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 
 func Deletes(name string, id string, tableName string, deletesTxt string) []byte {
 	//deletesTxt should be a objectId
-
-	return []byte("")
-}
-func Adds(name string, id string, tableName string, addsTxt string) []byte {
-	log.Println(addsTxt)
-
-	var adds structs.Record
-	decoder := json.NewDecoder(strings.NewReader(addsTxt)) //r.Body
-
-	err := decoder.Decode(&adds)
-	if err != nil {
-		panic(err)
-	}
-	cols := ""
-	sep := ""
-	c := 1
-	var objectid int
+	var objectid, _ = strconv.Atoi(deletesTxt)
 	var results []interface{}
-	var objId string
+	result := map[string]interface{}{}
+	result["objectId"] = objectid
+	result["success"] = true
+	result["globalId"] = nil
+	results = append(results, result)
+	//delete from table
+	log.Println("delete from " + tableName + " where OBJECTID=" + config.GetParam(0))
+	var sql = "delete from " + tableName + " where OBJECTID=" + config.GetParam(0)
+	stmt, err := config.DbQuery.Prepare(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	//err = stmt.QueryRow(name, "FeatureServer", idInt, "").Scan(&fields)
+	_, err = stmt.Exec(objectid)
+	if err != nil {
+		log.Println(err.Error())
+	}
 
-	for _, i := range adds {
-		var vals []interface{}
+	if config.DbSource == config.PGSQL {
+		sql := "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
 
-		result := map[string]interface{}{}
-		for key, j := range i.Attributes {
-			if key == "OBJECTID" {
-				objectid = int(j.(float64))
-				result["objectId"] = objectid
-				vals = append(vals, objectid)
-				objId = strconv.Itoa(c)
-				c++
-			} else {
-				cols += sep + key + "=$" + strconv.Itoa(c)
-				sep = ","
-				vals = append(vals, j)
-				c++
-			}
-		}
-		log.Println("insert into " + tableName + " values( " + cols + " where OBJECTID=$" + objId)
-		log.Print(vals)
-		log.Print(objId)
-
-		sql := "insert into " + tableName + " values " + cols + " where OBJECTID=$" + objId
-		stmt, err := config.Db.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		_, err = stmt.Exec(vals...)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		result["success"] = true
-		result["globalId"] = nil
-		results = append(results, result)
-		sql = "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
 		log.Println(sql)
-		log.Print("Layer ID: ")
-		log.Println(id)
-		log.Print("Objectid: ")
-		log.Println(objectid)
+		log.Printf("Layer ID: %v", id)
+		log.Printf("Objectid: %v", objectid)
+
 		rows, err := config.Db.Query(sql, id, objectid)
 		defer rows.Close()
 		var rowId int
@@ -1996,21 +1977,226 @@ func Adds(name string, id string, tableName string, addsTxt string) []byte {
 				log.Fatal(err)
 			}
 		}
-
-		addsTxt = addsTxt[15 : len(addsTxt)-2]
-
-		sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+		//sql = "update services set json=json->'features' - " + strconv.Itoa(rowId) + " where type='query' and layerId=$1"
+		sql = "update services set json=json #- '{features," + strconv.Itoa(rowId) + "}' where type='query' and layerId=$1"
 		log.Println(sql)
-		stmt, err = config.Db.Prepare(sql)
+		log.Printf("Row id: %v", rowId)
+		stmt, err := config.Db.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
 		}
-		log.Println(addsTxt)
-		log.Println(id)
-		_, err = stmt.Exec(addsTxt, id)
+		_, err = stmt.Exec(id)
 		if err != nil {
 			log.Println(err.Error())
 		}
+
+	} else if config.DbSource == config.SQLITE3 {
+		sql := "select json from services where type='query' and layerId=?"
+		stmt, err := config.Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		rows, err := config.Db.Query(sql, id, objectid)
+		defer rows.Close()
+
+		var row []byte
+		for rows.Next() {
+			err := rows.Scan(&row)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		rows.Close()
+		stmt.Close()
+
+		var fieldObj structs.FeatureTable
+		//map[string]map[string]map[string]
+		err = json.Unmarshal(row, &fieldObj)
+		if err != nil {
+			log.Println("Error unmarshalling fields into features object: " + string(row))
+			log.Println(err.Error())
+		}
+		for k, i := range fieldObj.Features {
+			//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
+			//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
+			if int(i.Attributes["OBJECTID"].(float64)) == objectid {
+				//i.Attributes["OBJECTID"]
+				//fieldObj.Features = fieldObj.Features[k]
+				fieldObj.Features = append(fieldObj.Features[:k], fieldObj.Features[k+1:]...)
+				//fieldObj.Features[k].Attributes = updates[num].Attributes
+				break
+			}
+		}
+		var jsonstr []byte
+		jsonstr, err = json.Marshal(fieldObj)
+		if err != nil {
+			log.Println(err)
+		}
+		tx, err := config.Db.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		sql = "update services set json=? where type='query' and layerId=?"
+
+		stmt, err = tx.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		idInt, _ := strconv.Atoi(id)
+
+		_, err = tx.Stmt(stmt).Exec(string(jsonstr), idInt)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		tx.Commit()
+		//sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+	}
+	response, _ := json.Marshal(map[string]interface{}{"addResults": []string{}, "updateResults": []string{}, "deleteResults": results})
+	return response
+
+}
+func Adds(name string, id string, tableName string, addsTxt string) []byte {
+	var results []interface{}
+	var objectid int
+	log.Println(addsTxt)
+	var adds []structs.Feature
+	decoder := json.NewDecoder(strings.NewReader(addsTxt)) //r.Body
+	err := decoder.Decode(&adds)
+	if err != nil {
+		panic(err)
+	}
+	cols := ""
+	p := ""
+	sep := ""
+	c := 1
+
+	sql := "select max(OBJECTID)+1 from " + tableName
+	log.Println(sql)
+	rows, err := config.Db.Query(sql)
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(&objectid)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	for _, i := range adds {
+		var vals []interface{}
+
+		for key, j := range i.Attributes {
+			if key == "OBJECTID" {
+				cols += sep + key
+				p += sep + config.GetParam(c)
+				sep = ","
+				vals = append(vals, objectid)
+				c++
+			} else {
+				cols += sep + key
+				p += sep + config.GetParam(c)
+				sep = ","
+				vals = append(vals, j)
+				c++
+			}
+		}
+		cols += sep + "GlobalId"
+		p += sep + config.GetParam(c)
+		vals = append(vals, "")
+
+		log.Println("insert into " + tableName + "(" + cols + ") values( " + p + ")")
+		log.Print(vals)
+		sql := "insert into " + tableName + "(" + cols + ") values( " + p + ")"
+		stmt, err := config.Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		_, err = stmt.Exec(vals...)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		result := map[string]interface{}{}
+		result["objectId"] = objectid
+		result["success"] = true
+		result["globalId"] = nil
+
+		results = append(results, result)
+
+		if config.DbSource == config.PGSQL {
+
+			//addsTxt = addsTxt[15 : len(addsTxt)-2]
+
+			sql = "update services set json=jsonb_set(json,'{features}',$1::jsonb,false) where type='query' and layerId=$2"
+			log.Println(sql)
+			stmt, err = config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			log.Println(i)
+			log.Println(id)
+			var jsonstr []byte
+			jsonstr, err = json.Marshal(i)
+			if err != nil {
+				log.Println(err)
+			}
+
+			_, err = stmt.Exec(jsonstr, id)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		} else if config.DbSource == config.SQLITE3 {
+			sql := "select json from services where type='query' and layerId=?"
+			stmt, err := config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			rows, err := config.Db.Query(sql, id, objectid)
+			defer rows.Close()
+
+			var row []byte
+			for rows.Next() {
+				err := rows.Scan(&row)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+			rows.Close()
+			stmt.Close()
+
+			var fieldObj structs.FeatureTable
+			err = json.Unmarshal(row, &fieldObj)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(row))
+				log.Println(err.Error())
+			}
+			var jsonstr []byte
+			jsonstr, err = json.Marshal(fieldObj)
+			if err != nil {
+				log.Println(err)
+			}
+			fieldObj.Features = append(fieldObj.Features, i)
+			tx, err := config.Db.Begin()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			sql = "update services set json=? where type='query' and layerId=?"
+
+			stmt, err = tx.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+			idInt, _ := strconv.Atoi(id)
+
+			_, err = tx.Stmt(stmt).Exec(string(jsonstr), idInt)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			tx.Commit()
+		}
+		objectid++
 	}
 	response, _ := json.Marshal(map[string]interface{}{"addResults": results, "updateResults": []string{}, "deleteResults": []string{}})
 	return response
