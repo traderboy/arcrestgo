@@ -23,10 +23,11 @@ import (
 const (
 	PGSQL   = 1
 	SQLITE3 = 2
+	FILE    = 3
 )
 
 var Schema = "postgres."
-var DbSource = PGSQL
+var DbSource = FILE
 var Project structs.JSONConfig
 var RootPath = "leasecompliance2016"
 var HTTPPort = ":80"
@@ -91,6 +92,8 @@ func Initialize() {
 				HTTPPort = ":" + os.Args[i+1]
 			} else if os.Args[i] == "-https" && len(os.Args) > i {
 				HTTPSPort = ":" + os.Args[i+1]
+			} else if os.Args[i] == "-file" {
+				DbSource = FILE
 			} else if os.Args[i] == "-h" {
 				fmt.Println("Usage:")
 				fmt.Println("go run server.go -p HTTP Port -https HTTPS Port -root <path to service folder> -sqlite <path to service .sqlite> -pgsql <connection string for Postgresql> -h [show help]")
@@ -108,6 +111,7 @@ func Initialize() {
 		log.Print("Postgresql database: " + DbName)
 		log.Print("Pinging Postgresql: ")
 		log.Println(Db.Ping)
+		LoadConfiguration()
 	} else if DbSource == SQLITE3 {
 		initializeStr := `PRAGMA automatic_index = ON;
         PRAGMA cache_size = 32768;
@@ -147,6 +151,9 @@ func Initialize() {
 		log.Print("Sqlite database: " + RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase")
 		//DbQuery.Exec(initializeStr)
 		//defer db.Close()
+		LoadConfiguration()
+	} else if DbSource == FILE {
+		LoadConfigurationFromFile()
 	}
 	/*
 		Db, err = sql.Open("postgres", "user=postgres DbSource=gis host=192.168.99.100")
@@ -163,7 +170,6 @@ func Initialize() {
 	log.Println("Data path: " + DataPath)
 	log.Println("Replica path: " + ReplicaPath)
 	log.Println("Attachments path: " + AttachmentsPath)
-	LoadConfiguration()
 
 }
 
@@ -217,6 +223,9 @@ func LoadConfigurationFromFile() {
 
 //GetArcService queries the database for service layer entries
 func GetArcService(catalog string, service string, layerid int, dtype string) []byte {
+	if DbSource == FILE {
+		return []byte("")
+	}
 	sql := "select json from services where service like " + GetParam(1) + " and name=" + GetParam(2) + " and layerid=" + GetParam(3) + " and type=" + GetParam(4)
 	log.Printf("Query: select json from services where service like '%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
 	stmt, err := Db.Prepare(sql)
@@ -234,6 +243,9 @@ func GetArcService(catalog string, service string, layerid int, dtype string) []
 
 //GetArcCatalog queries the database for top level catalog entries
 func GetArcCatalog(service string, dtype string) []byte {
+	if DbSource == FILE {
+		return []byte("")
+	}
 	sql := "select json from catalog where name=" + GetParam(1) + " and type=" + GetParam(2)
 	log.Printf("Query: select json from catalog where name='%v' and type='%v'", service, dtype)
 

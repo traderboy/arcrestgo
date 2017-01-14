@@ -1305,13 +1305,86 @@ func StartGorillaMux() *mux.Router {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		//id := vars["id"]
-		//idInt, _ := strconv.Atoi(id)
 		var relationshipId = r.FormValue("relationshipId")
 		var objectIds = r.FormValue("objectIds")
 		var outFields = r.FormValue("outFields")
+		var objectId, _ = strconv.Atoi(objectIds)
 		//get fields for the related table
 		dID := config.Project.Services[name]["relationships"][relationshipId]["dId"]
 		//get the fields json
+
+		if config.DbSource == config.FILE {
+
+			jsonFile := config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + strconv.Itoa(int(dID.(float64))) + ".query.json"
+			log.Println(jsonFile)
+			file, err1 := ioutil.ReadFile(jsonFile)
+			if err1 != nil {
+				log.Println(err1)
+			}
+			var fieldObj structs.FeatureTable
+
+			//map[string]map[string]map[string]
+			err := json.Unmarshal(file, &fieldObj)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(file))
+				log.Println(err.Error())
+			}
+			var records structs.RelatedRecords
+			records.Fields = fieldObj.Fields
+
+			var record structs.RelatedRecordGroup
+			record.ObjectId = objectId
+
+			//records.RelatedRecordGroups.ObjectId = objectId
+			//records.ObjectId = objectId
+			//records.RelatedRecord = map[string]interface{}
+			for k, i := range fieldObj.Features {
+				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
+				//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
+				if int(i.Attributes["OBJECTID"].(float64)) == objectId {
+					//i.Attributes["OBJECTID"]
+					//fieldObj.Features[k].Attributes = updates[num].Attributes
+					//break
+
+					record.RelatedRecord = append(record.RelatedRecord, fieldObj.Features[k].Attributes)
+				}
+			}
+			records.RelatedRecordGroups = append(records.RelatedRecordGroups, record)
+			var jsonstr []byte
+			jsonstr, err = json.Marshal(records)
+			if err != nil {
+				log.Println(err)
+			}
+			/*
+				tx, err := config.Db.Begin()
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				var response []byte
+				if len(final_result) > 0 {
+					var result = map[string]interface{}{}
+					result["objectId"] = objectIds //strconv.Atoi(objectIds)
+					result["relatedRecords"] = final_result
+					response, _ = json.Marshal(map[string]interface{}{"relatedRecordGroups": []interface{}{result}})
+					response = response[1:]
+				} else {
+					response = []byte("\"relatedRecordGroups\":[]}")
+				}
+			*/
+
+			//var response []byte
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonstr)
+			return
+			//response = "{fields:" + fields + "," + response[1]
+			//w.Write([]byte("{\"fields\":"))
+			//w.Write(fields)
+			//w.Write([]byte(","))
+			//w.Write(response)
+		}
+		//idInt, _ := strconv.Atoi(id)
+
 		var sql string
 		var fields []byte
 
@@ -1481,16 +1554,138 @@ func StartGorillaMux() *mux.Router {
 		id := vars["id"]
 		//idInt, _ := strconv.Atoi(id)
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/applyEdits")
-		var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
-		log.Println("Table name: " + tableName)
-		//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 		var response []byte
-		if len(r.FormValue("updates")) > 0 {
-			response = Updates(name, id, tableName, r.FormValue("updates"))
-		} else if len(r.FormValue("adds")) > 0 {
-			response = Adds(name, id, tableName, r.FormValue("adds"))
-		} else if len(r.FormValue("deletes")) > 0 {
-			response = Deletes(name, id, tableName, r.FormValue("deletes"))
+		if config.DbSource == config.FILE {
+
+			//get the fields json
+
+			jsonFile := config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json"
+			log.Println(jsonFile)
+			file, err1 := ioutil.ReadFile(jsonFile)
+			if err1 != nil {
+				log.Println(err1)
+			}
+			var fieldObj structs.FeatureTable
+
+			//map[string]map[string]map[string]
+			err := json.Unmarshal(file, &fieldObj)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(file))
+				log.Println(err.Error())
+			}
+			var objectid int
+			//var globalID string
+			var results []interface{}
+			if len(r.FormValue("updates")) > 0 {
+				var updates structs.Record
+				decoder := json.NewDecoder(strings.NewReader(r.FormValue("updates"))) //r.Body
+				err := decoder.Decode(&updates)
+				if err != nil {
+					panic(err)
+				}
+				//var objId int
+				for k, i := range fieldObj.Features {
+					//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
+					//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
+					if int(i.Attributes["OBJECTID"].(float64)) == objectid {
+						//i.Attributes["OBJECTID"]
+						fieldObj.Features[k].Attributes = updates[0].Attributes
+						break
+					}
+				}
+				var jsonstr []byte
+				jsonstr, err = json.Marshal(fieldObj)
+				if err != nil {
+					log.Println(err)
+				}
+				err = ioutil.WriteFile(jsonFile, jsonstr, 0644)
+				if err != nil {
+					log.Println(err1)
+				}
+				//write json back to file
+				result := map[string]interface{}{}
+				result["objectId"] = objectid
+				result["success"] = true
+				result["globalId"] = nil
+				results = append(results, result)
+				response, _ = json.Marshal(map[string]interface{}{"addResults": []string{}, "updateResults": results, "deleteResults": []string{}})
+
+				//response = Updates(name, id, tableName, r.FormValue("updates"))
+			} else if len(r.FormValue("adds")) > 0 {
+				//response = Adds(name, id, tableName, r.FormValue("adds"))
+
+				var adds []structs.Feature
+				decoder := json.NewDecoder(strings.NewReader(r.FormValue("adds"))) //r.Body
+				err := decoder.Decode(&adds)
+				if err != nil {
+					panic(err)
+				}
+				objectid = len(fieldObj.Features) + 1
+				for _, i := range adds {
+					i.Attributes["objectId"] = objectid
+					fieldObj.Features = append(fieldObj.Features, i)
+					objectid++
+				}
+
+				var jsonstr []byte
+				jsonstr, err = json.Marshal(fieldObj)
+				if err != nil {
+					log.Println(err)
+				}
+				err = ioutil.WriteFile(jsonFile, jsonstr, 0644)
+				if err != nil {
+					log.Println(err1)
+				}
+				//write json back to file
+				result := map[string]interface{}{}
+				result["objectId"] = objectid
+				result["success"] = true
+				result["globalId"] = nil
+				results = append(results, result)
+				response, _ = json.Marshal(map[string]interface{}{"addResults": results, "updateResults": []string{}, "deleteResults": []string{}})
+			} else if len(r.FormValue("deletes")) > 0 {
+				//response = Deletes(name, id, tableName, r.FormValue("deletes"))
+				objectid, _ = strconv.Atoi(r.FormValue("deletes"))
+				if objectid == 0 {
+					return
+				}
+				for k, i := range fieldObj.Features {
+					if int(i.Attributes["OBJECTID"].(float64)) == objectid {
+						//i.Attributes["OBJECTID"]
+						fieldObj.Features = append(fieldObj.Features[:k], fieldObj.Features[k+1:]...)
+						break
+					}
+				}
+				var jsonstr []byte
+				jsonstr, err = json.Marshal(fieldObj)
+				if err != nil {
+					log.Println(err)
+				}
+				err = ioutil.WriteFile(jsonFile, jsonstr, 0644)
+				if err != nil {
+					log.Println(err1)
+				}
+				//write json back to file
+				result := map[string]interface{}{}
+				result["objectId"] = objectid
+				result["success"] = true
+				result["globalId"] = nil
+				results = append(results, result)
+				response, _ = json.Marshal(map[string]interface{}{"addResults": []string{}, "updateResults": []string{}, "deleteResults": results})
+			}
+
+		} else {
+			var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			log.Println("Table name: " + tableName)
+			//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
+
+			if len(r.FormValue("updates")) > 0 {
+				response = Updates(name, id, tableName, r.FormValue("updates"))
+			} else if len(r.FormValue("adds")) > 0 {
+				response = Adds(name, id, tableName, r.FormValue("adds"))
+			} else if len(r.FormValue("deletes")) > 0 {
+				response = Deletes(name, id, tableName, r.FormValue("deletes"))
+			}
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
@@ -1765,6 +1960,8 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 	return response
 
 	//curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d 'rollbackOnFailure=true&updates=[{"attributes":{"OBJECTID":3,"permittee":"Jack/Bessie Hatathlie","homesite_id":"9w3hdseq78dy","range_unit":551,"acres":3,"lease_site":0,"feature_type":0,"climatic_zone":2,"quad_name":"099-NW-004","elevation":6040,"permittee_globalid":"{D1A2F0B1-6F46-477A-80A9-CF550915B6BB}","has_permittee":1}}]&f=json' http://localhost:81/arcgis/rest/services/leasecompliance2016/FeatureServer/0/applyEdits
+
+	//curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d 'rollbackOnFailure=true&adds=[{"geometry":"attributes":{"OBJECTID":3,"permittee":"Jack/Bessie Hatathlie","homesite_id":"9w3hdseq78dy","range_unit":551,"acres":3,"lease_site":0,"feature_type":0,"climatic_zone":2,"quad_name":"099-NW-004","elevation":6040,"permittee_globalid":"{D1A2F0B1-6F46-477A-80A9-CF550915B6BB}","has_permittee":1}}]&f=json' http://localhost:81/arcgis/rest/services/leasecompliance2016/FeatureServer/0/applyEdits
 
 	//var jsonvals []interface{}
 	//updateTxt := "[{\"attributes\":{\"OBJECTID\":27,\"acres\":3.15,\"lease_site\":0,\"feature_type\":1,\"climatic_zone\":2,\"quad_name\":\"077-SE-196\",\"elevation\":6048,\"permittee\":\"Lorraine / Elsie Begay\",\"homesite_id\":\"H61A\"}}]"
@@ -2127,7 +2324,7 @@ func Adds(name string, id string, tableName string, addsTxt string) []byte {
 
 			//addsTxt = addsTxt[15 : len(addsTxt)-2]
 
-			sql = "update services set json=jsonb_set(json,'{features}',$1::jsonb,false) where type='query' and layerId=$2"
+			sql = "update services set json=jsonb_set(json,'{features}',$1::jsonb,true) where type='query' and layerId=$2"
 			log.Println(sql)
 			stmt, err = config.Db.Prepare(sql)
 			if err != nil {

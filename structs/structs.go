@@ -10,8 +10,8 @@ type JSONConfig struct {
 	Hostname string `json:"hostname"`
 	//Services
 	Services map[string]map[string]map[string]map[string]interface{} `json:"services"`
-	FGDB string `json:fgdb`
-	MXD string `json:mxd`
+	FGDB     string                                                  `json:fgdb`
+	MXD      string                                                  `json:mxd`
 	//Services map[string]map[string]Service
 	//map[string]Service
 }
@@ -46,9 +46,24 @@ type Domain struct {
 	Name string `json:"name,omitempty"`
 	Type string `json:"type,omitempty"`
 }
+type RelatedRecords struct {
+	Fields              []Field              `json:"fields,omitempty"`
+	RelatedRecordGroups []RelatedRecordGroup `json:"relatedRecordGroups"`
+}
+
+type RelatedRecordGroup struct {
+	ObjectId      int                      `json:"objectId"`
+	RelatedRecord []map[string]interface{} `json:"relatedRecords"`
+	//RelatedRecord Attribute `json:"relatedRecords"`
+}
+
+type Attribute struct {
+	Attributes map[string]interface{} `json:"attributes"`
+}
 
 type Record []struct {
-	Attributes map[string]interface{} `json:"attributes"`
+	Attributes          map[string]interface{} `json:"attributes"`
+	RelatedRecordGroups RelatedRecordGroup     `json:"relatedRecordGroups"`
 }
 
 type Geometry struct {
@@ -56,8 +71,10 @@ type Geometry struct {
 	Y     float64       `json:"y,omitempty"`
 	X     float64       `json:"x,omitempty"`
 }
+
 type Feature struct {
-	Geometry   *Geometry              `json:"geometry,omitempty"`
+	Geometry *Geometry `json:"geometry,omitempty"`
+	//Attributes Attribute `json:"attributes,omitempty"`
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 }
 
