@@ -13,9 +13,11 @@ import (
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+
 	structs "github.com/traderboy/arcrestgo/structs"
 )
 
+//"github.com/traderboy/arcrestgo/config"
 //_ "github.com/mattn/go-sqlite3"
 //_ "github.com/traderboy/arcrestgo/controllers"
 //_ "github.com/traderboy/arcrestgo/models"
@@ -26,10 +28,18 @@ const (
 	FILE    = 3
 )
 
+var Catalogs map[string]structs.Catalog
+
+//map[string]Service
+var DbSource = SQLITE3
+
 var Schema = "postgres."
-var DbSource = FILE
+
 var Project structs.JSONConfig
-var RootPath = "leasecompliance2016"
+var RootPath = "catalogs"
+
+//leasecompliance2016
+var RootName string
 var HTTPPort = ":80"
 var HTTPSPort = ":443"
 
@@ -65,7 +75,6 @@ func Initialize() {
 	}
 	RootPath = pwd + string(os.PathSeparator) + RootPath //+ string(os.PathSeparator)
 	var DbName string
-	var RootName string
 
 	if len(os.Args) > 1 {
 		for i := 1; i < len(os.Args); i++ {
@@ -100,6 +109,31 @@ func Initialize() {
 				os.Exit(0)
 			}
 		}
+	} else {
+		//read all folder in catalogs
+		/*
+				files, _ := ioutil.ReadDir(RootPath)
+
+				for _, f := range files {
+					if f.IsDir() {
+					}
+				}
+
+
+			LoadConfigurationFromFile()
+			RootPath, _ = filepath.Abs(os.Args[i+1])
+			RootName = filepath.Base(os.Args[i+1])
+
+			if Project.DataSource == "pg" {
+				DbSource = PGSQL
+				DbSource = Project.PG
+			} else if Project.DataSource == "sqlite" {
+				DbSource = SQLITE3
+				DbSource = Project.SqlitDb
+
+			} else if Project.DataSource == "pg" {
+			}
+		*/
 	}
 
 	if DbSource == PGSQL {
@@ -113,25 +147,27 @@ func Initialize() {
 		log.Println(Db.Ping)
 		LoadConfiguration()
 	} else if DbSource == SQLITE3 {
-		initializeStr := `PRAGMA automatic_index = ON;
-        PRAGMA cache_size = 32768;
-        PRAGMA cache_spill = OFF;
-        PRAGMA foreign_keys = ON;
-        PRAGMA journal_size_limit = 67110000;
-        PRAGMA locking_mode = NORMAL;
-        PRAGMA page_size = 4096;
-        PRAGMA recursive_triggers = ON;
-        PRAGMA secure_delete = ON;
-        PRAGMA synchronous = NORMAL;
-        PRAGMA temp_store = MEMORY;
-        PRAGMA journal_mode = WAL;
-        PRAGMA wal_autocheckpoint = 16384;
-		`
+		/*
+					initializeStr := `PRAGMA automatic_index = ON;
+			        PRAGMA cache_size = 32768;
+			        PRAGMA cache_spill = OFF;
+			        PRAGMA foreign_keys = ON;
+			        PRAGMA journal_size_limit = 67110000;
+			        PRAGMA locking_mode = NORMAL;
+			        PRAGMA page_size = 4096;
+			        PRAGMA recursive_triggers = ON;
+			        PRAGMA secure_delete = ON;
+			        PRAGMA synchronous = NORMAL;
+			        PRAGMA temp_store = MEMORY;
+			        PRAGMA journal_mode = WAL;
+			        PRAGMA wal_autocheckpoint = 16384;
+					`
+		*/
 		//log.Println(initializeStr)
-		initializeStr = "PRAGMA synchronous = OFF;PRAGMA cache_size=100000;PRAGMA journal_mode=WAL;"
-		log.Println(initializeStr)
+		//initializeStr = "PRAGMA synchronous = OFF;PRAGMA cache_size=100000;PRAGMA journal_mode=WAL;"
+		//log.Println(initializeStr)
 
-		Db, err = sql.Open("sqlite3", DbName)
+		Db, err = sql.Open("sqlite3", "file:"+DbName+"?PRAGMA journal_mode=WAL")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -140,9 +176,16 @@ func Initialize() {
 		//defer Db.Close()
 		//Db.SetMaxOpenConns(1)
 
+		LoadConfiguration()
+		//get RootName
+		for i, _ := range Project.Services {
+			RootName = i
+			//RootName = val[i]
+		}
 		DbQueryName := RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase"
 		log.Println("DbQueryName: " + DbQueryName)
-		DbQuery, err = sql.Open("sqlite3", DbQueryName)
+		DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+"?PRAGMA journal_mode=WAL")
+		//DbQuery, err = sql.Open("sqlite3", DbQueryName)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -151,7 +194,6 @@ func Initialize() {
 		log.Print("Sqlite database: " + RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase")
 		//DbQuery.Exec(initializeStr)
 		//defer db.Close()
-		LoadConfiguration()
 	} else if DbSource == FILE {
 		LoadConfigurationFromFile()
 	}
@@ -179,8 +221,45 @@ func GetParam(i int) string {
 	}
 	return "$" + strconv.Itoa(i)
 }
+func SetDatasource(newDatasource int) {
+	if DbSource == newDatasource {
+		return
+	}
+	if newDatasource == FILE {
+		DbSource = FILE
+		//close db
+		Db.Close()
+		return
+	}
+
+	var err error
+	if newDatasource == PGSQL {
+
+		Db, err = sql.Open("postgres", Project.PG)
+		if err != nil {
+			log.Fatal(err)
+		}
+		DbQuery = Db
+		log.Print("Postgresql database: " + Project.PG)
+		log.Print("Pinging Postgresql: ")
+		log.Println(Db.Ping)
+	} else if newDatasource == SQLITE3 {
+		Db, err = sql.Open("sqlite3", "file:"+Project.SqliteDb+"?PRAGMA journal_mode=WAL")
+		if err != nil {
+			log.Fatal(err)
+		}
+		DbQueryName := RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase"
+		log.Println("DbQueryName: " + DbQueryName)
+		DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+"?PRAGMA journal_mode=WAL")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
 
 func LoadConfiguration() {
+
 	sql := "select json from catalog where name=" + GetParam(1)
 	log.Printf("Query: select json from catalog where name='config'")
 	stmt, err := Db.Prepare(sql)
@@ -224,7 +303,28 @@ func LoadConfigurationFromFile() {
 //GetArcService queries the database for service layer entries
 func GetArcService(catalog string, service string, layerid int, dtype string) []byte {
 	if DbSource == FILE {
-		return []byte("")
+		if len(service) > 0 {
+			service += "."
+		}
+		sp := ""
+		if layerid > -1 {
+			sp = fmt.Sprint(layerid, ".")
+		}
+
+		if len(dtype) > 0 {
+			if dtype == "data" && service == "content" {
+				dtype = "items." + dtype + "."
+			} else {
+				dtype += "."
+			}
+
+		}
+		jsonFile := fmt.Sprint(DataPath, string(os.PathSeparator), catalog, string(os.PathSeparator), "services", string(os.PathSeparator), service, sp, dtype, "json")
+		file, err := ioutil.ReadFile(jsonFile)
+		if err != nil {
+			log.Println(err)
+		}
+		return file
 	}
 	sql := "select json from services where service like " + GetParam(1) + " and name=" + GetParam(2) + " and layerid=" + GetParam(3) + " and type=" + GetParam(4)
 	log.Printf("Query: select json from services where service like '%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
@@ -244,7 +344,22 @@ func GetArcService(catalog string, service string, layerid int, dtype string) []
 //GetArcCatalog queries the database for top level catalog entries
 func GetArcCatalog(service string, dtype string) []byte {
 	if DbSource == FILE {
-		return []byte("")
+		if len(service) > 0 {
+			service += "."
+		}
+
+		if len(dtype) > 0 {
+			dtype += "."
+		}
+
+		jsonFile := fmt.Sprint(DataPath, string(os.PathSeparator), service, dtype, "json")
+		file, err := ioutil.ReadFile(jsonFile)
+		if err != nil {
+			log.Println(err)
+		}
+
+		return file
+
 	}
 	sql := "select json from catalog where name=" + GetParam(1) + " and type=" + GetParam(2)
 	log.Printf("Query: select json from catalog where name='%v' and type='%v'", service, dtype)
@@ -264,7 +379,32 @@ func GetArcCatalog(service string, dtype string) []byte {
 	return json
 }
 
-func SetArcService(json string, catalog string, service string, layerid int, dtype string) bool {
+func SetArcService(json []byte, catalog string, service string, layerid int, dtype string) bool {
+	if DbSource == FILE {
+		if len(service) > 0 {
+			service += "."
+		}
+		sp := ""
+		if layerid > -1 {
+			sp = fmt.Sprint(layerid, ".")
+		}
+
+		if len(dtype) > 0 {
+			if dtype == "data" && service == "content" {
+				dtype = "items." + dtype + "."
+			} else {
+				dtype += "."
+			}
+		}
+
+		jsonFile := fmt.Sprint(DataPath, string(os.PathSeparator), catalog, string(os.PathSeparator), "services", string(os.PathSeparator), service, sp, dtype, "json")
+		err := ioutil.WriteFile(jsonFile, json, 0644)
+		if err != nil {
+			return false
+		}
+		return true
+	}
+
 	sql := "update services set json=" + GetParam(1) + " where service like " + GetParam(2) + " and name=" + GetParam(3) + " and layerid=" + GetParam(4) + " and type=" + GetParam(5)
 	log.Printf("Query: update services set json=<json> where service like '%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
 	stmt, err := Db.Prepare(sql)
@@ -282,7 +422,24 @@ func SetArcService(json string, catalog string, service string, layerid int, dty
 }
 
 //GetArcCatalog queries the database for top level catalog entries
-func SetArcCatalog(json string, service string, dtype string) bool {
+func SetArcCatalog(json []byte, service string, dtype string) bool {
+	if DbSource == FILE {
+		if len(service) > 0 {
+			service += "."
+		}
+		if len(dtype) > 0 {
+			dtype += "."
+		}
+
+		jsonFile := fmt.Sprint(DataPath, string(os.PathSeparator), service, dtype, "json")
+		err := ioutil.WriteFile(jsonFile, json, 0644)
+		if err != nil {
+			return false
+		}
+		return true
+
+	}
+
 	sql := "update catalog set json=" + GetParam(1) + " where name=" + GetParam(2) + " and type=" + GetParam(3)
 	log.Printf("Query: update catalog set json=<json> where name='%v' and type='%v'", service, dtype)
 

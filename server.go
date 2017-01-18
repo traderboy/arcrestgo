@@ -13,6 +13,7 @@ import (
 	"database/sql"
 
 	"github.com/gorilla/handlers"
+	//_ "github.com/mattn/go-sqlite3"
 
 	_ "github.com/lib/pq"
 
@@ -37,6 +38,8 @@ var logPath = "logfile.txt"
 //var configuration Configuration
 //var resultscache={}
 func main() {
+	//TestDb()
+	//return
 	if false {
 		Db, err1 := sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
 		if err1 != nil {
@@ -134,6 +137,74 @@ func main() {
 
 	//http.ListenAndServe(":8080", http.HandlerFunc(redirectToHttps))
 
+}
+func TestDb() {
+	Db, err := sql.Open("sqlite3", "file:"+"D:/workspace/go/src/github.com/traderboy/arcrestgo/arcrest.sqlite"+"?PRAGMA journal_mode=WAL")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sql := "select json from services where type='query' and layerId=0"
+	stmt, err := Db.Prepare(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	rows, err := Db.Query(sql)
+	defer rows.Close()
+
+	var row []byte
+	for rows.Next() {
+		err := rows.Scan(&row)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	rows.Close()
+	stmt.Close()
+
+	sql = "delete from services where type='query' and layerId=10"
+	_, err = Db.Exec(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	sql = "insert into services(type,layerId) values('query',10)"
+	_, err = Db.Exec(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	//'" + string(row) + "'
+	sql = "update services set json=? where type='query' and layerId=10"
+	_, err = Db.Exec(sql, string(row))
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	/*
+		tx, err := Db.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = tx.Exec("PRAGMA journal_mode=WAL")
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+
+
+		stmt, err = tx.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		_, err = tx.Stmt(stmt).Exec(string(row))
+		if err != nil {
+			log.Println(err.Error())
+		}
+		tx.Commit()
+	*/
+	log.Println("Done")
 }
 
 /*

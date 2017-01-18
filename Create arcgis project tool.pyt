@@ -131,7 +131,7 @@ class CreateNewProject(object):
            pass
         
         if not outputfolder.value:
-            outputfolder.value="C:/massappraisal/agolnode/hpl12"
+            outputfolder.value=os.getcwd().replace("\\","/")
 
         sqlitedb = arcpy.Parameter()
         sqlitedb.name = u'Output_Report_File'
@@ -255,9 +255,9 @@ class CreateNewProject(object):
         
         if baseDestinationPath:
               baseDestinationPath = unicode(baseDestinationPath).encode('unicode-escape')
-              baseDestinationPath=baseDestinationPath.replace("\\","/")
+              baseDestinationPath=baseDestinationPath.replace("\\","/")+ os.sep +"catalogs"
         else:
-              baseDestinationPath = toolkitPath
+              baseDestinationPath = toolkitPath+ os.sep +"catalogs"
 
         #baseDestinationPath = baseDestinationPath + os.sep + serviceName
         serviceDestinationPath = baseDestinationPath + os.sep + serviceName
@@ -316,10 +316,18 @@ class CreateNewProject(object):
 
         config["hostname"]=serverName
         config["username"]=username
+        
+        #config["services"][serviceName]["mxd"]=mxd.filePath
+        #config["services"][serviceName]["sqliteDb"]=sqliteDb
+        #config["services"][serviceName]["pg"]=pg
+        #config["services"][serviceName]["dataSource"]="sqlite"
+        #config["services"][serviceName]["rootPath"]=baseDestinationPath
+
         config["mxd"]=mxd.filePath
         config["sqliteDb"]=sqliteDb
         config["pg"]=pg
-
+        config["dataSource"]="sqlite"
+        config["rootPath"]=baseDestinationPath
         
         #config["services"][serviceName]["layers"]={}
 
@@ -2465,8 +2473,9 @@ def saveSqliteToPG(tables,sqliteDb,pg):
     #must run the following in the Database afterwards
     #alter table services alter column json type jsonb using json::jsonb;
     #alter table catalog alter column json type jsonb using json::jsonb;
+    #--config OGR_SQLITE_CACHE 1024
     for table in tables:
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe  -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + sqliteDb + "\" " + table + " -nlt None -overwrite"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe  -lco FID=OBJECTID -preserve_fid  --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + sqliteDb + "\" " + table + " -nlt None -overwrite"
        printMessage("Running " + cmd)
        try:
            os.system(cmd)
@@ -2476,9 +2485,9 @@ def saveSqliteToPG(tables,sqliteDb,pg):
 def saveToPg(lyr,pg):
    desc = arcpy.Describe(lyr)
    if hasattr(desc,"shapeType"):
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -overwrite"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid  --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -overwrite"
    else:
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -overwrite"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -overwrite"
    printMessage("Running " + cmd)
    try:
         os.system(cmd)
@@ -2488,9 +2497,9 @@ def saveToPg(lyr,pg):
 def saveToSqlite(lyr,sqliteDb):
    desc = arcpy.Describe(lyr)
    if hasattr(desc,"shapeType"):
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -append"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid  --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -append"
    else:
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_CACHE 1024 --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -append"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid  --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -append"
    printMessage("Running " + cmd)
    try:
         os.system(cmd)
@@ -3005,7 +3014,7 @@ def main():
     #host="gis.biz.tm"
     host="reais.x10host.com"
     user="shale"
-    root=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\leasecompliance2016"
+    root=r"D:\workspace\go\src\github.com\traderboy\arcrestgo"
     db=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
     mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"
     pg="user=postgres dbname=gis host=192.168.99.100"

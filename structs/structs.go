@@ -1,17 +1,35 @@
 package structs
 
 import (
+	"database/sql"
 	"encoding/json"
 )
+
+type Catalog struct {
+	Services        JSONConfig
+	DataSource      int
+	SqliteSource    string
+	Postgresql      string
+	RootPath        string
+	Schema          string
+	Db              *sql.DB
+	DbQuery         *sql.DB
+	DataPath        string
+	ReplicaPath     string
+	AttachmentsPath string
+}
 
 //JSONConfig stores the metadata about a service
 type JSONConfig struct {
 	Username string `json:"username"`
 	Hostname string `json:"hostname"`
 	//Services
-	Services map[string]map[string]map[string]map[string]interface{} `json:"services"`
-	FGDB     string                                                  `json:fgdb`
-	MXD      string                                                  `json:mxd`
+	Services   map[string]map[string]map[string]map[string]interface{} `json:"services"`
+	FGDB       string                                                  `json:fgdb`
+	MXD        string                                                  `json:mxd`
+	PG         string                                                  `json:pg`
+	SqliteDb   string                                                  `json:sqliteDb`
+	DataSource string                                                  `json:dataSource`
 	//Services map[string]map[string]Service
 	//map[string]Service
 }
@@ -52,18 +70,24 @@ type RelatedRecords struct {
 }
 
 type RelatedRecordGroup struct {
-	ObjectId      int                      `json:"objectId"`
-	RelatedRecord []map[string]interface{} `json:"relatedRecords"`
-	//RelatedRecord Attribute `json:"relatedRecords"`
+	ObjectId int `json:"objectId"`
+	//RelatedRecord []map[string]interface{} `json:"relatedRecords"`
+	RelatedRecords []RelatedRecord `json:"relatedRecords"`
 }
-
-type Attribute struct {
+type RelatedRecord struct {
+	//Attributes []Attribute `json:"attributes"`
 	Attributes map[string]interface{} `json:"attributes"`
 }
 
+/*
+type Attribute struct {
+	Attributes map[string]interface{}
+	//`json:"attributes"`
+}
+*/
 type Record []struct {
-	Attributes          map[string]interface{} `json:"attributes"`
-	RelatedRecordGroups RelatedRecordGroup     `json:"relatedRecordGroups"`
+	Attributes map[string]interface{} `json:"attributes"`
+	//RelatedRecordGroups RelatedRecordGroup     `json:"relatedRecordGroups"`
 }
 
 type Geometry struct {
@@ -76,6 +100,7 @@ type Feature struct {
 	Geometry *Geometry `json:"geometry,omitempty"`
 	//Attributes Attribute `json:"attributes,omitempty"`
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	//Attributes map[string][]Attribute `json:"attributes,omitempty"`
 }
 
 type FeatureTable struct {

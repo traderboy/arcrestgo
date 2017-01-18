@@ -37,7 +37,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcCatalog(string(body), "config", "")
+			ret := config.SetArcCatalog(body, "config", "")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -53,6 +53,47 @@ func StartGorillaMux() *mux.Router {
 			http.ServeFile(w, r, config.RootPath+string(os.PathSeparator)+"config.json")
 		}
 	}).Methods("GET", "PUT")
+
+	r.HandleFunc("/db", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("/db (" + r.Method + ")")
+		//vars := mux.Vars(r)
+		var id int
+		idstr := r.URL.Query().Get("id")
+
+		if len(idstr) > 0 {
+			id, _ = strconv.Atoi(idstr)
+		} else {
+			id = config.DbSource
+		}
+
+		str := ""
+		//	PGSQL   = 1
+		//	SQLITE3 = 2
+		//	FILE    = 3
+
+		if id == 3 {
+			str += "<li>Static JSON files <b style='color:red'>active </b></li>"
+			config.SetDatasource(config.FILE)
+		} else {
+			str += "<li>Static JSON files <a href='/db?id=3'>enable</a> </li>"
+		}
+		if id == 2 {
+			str += "<li>Sqlite <b style='color:red'>active </b> </li>"
+			config.SetDatasource(config.SQLITE3)
+		} else {
+			str += "<li>Sqlite <a href='/db?id=2'>enable</a> </li>"
+		}
+		if id == 1 {
+			str += "<li>Postgresql <b style='color:red'>active </b> </li>"
+			config.SetDatasource(config.PGSQL)
+		} else {
+			str += "<li>Postgresql <a href='/db?id=1'>enable</a> </li>"
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("<h1>Current data source</h1><ul>" + str + "</ul>"))
+
+	}).Methods("GET")
+
 	//r.StrictSlash(true)
 	/*
 	   Download certs
@@ -263,7 +304,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcCatalog(string(body), "portals", "self")
+			ret := config.SetArcCatalog(body, "portals", "self")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -287,7 +328,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcCatalog(string(body), "account", "self")
+			ret := config.SetArcCatalog(body, "account", "self")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -314,7 +355,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcCatalog(string(body), "portals", "self")
+			ret := config.SetArcCatalog(body, "portals", "self")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -346,17 +387,19 @@ func StartGorillaMux() *mux.Router {
 		w.Write(response)
 	}).Methods("GET")
 
-	r.HandleFunc("/sharing/rest/content/items/{id}", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/sharing/rest/content/items/{name}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		id := vars["id"]
-		log.Println("/sharing/rest/content/items/" + id + "(" + r.Method + ")")
+		name := vars["name"]
+		//temp
+		name = "%"
+		log.Println("/sharing/rest/content/items/" + name + "(" + r.Method + ")")
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), "%", "content", -1, "items")
+			ret := config.SetArcService(body, name, "content", -1, "items")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -364,41 +407,44 @@ func StartGorillaMux() *mux.Router {
 		}
 
 		//load from db
-		response := config.GetArcService("%", "content", -1, "items")
+		response := config.GetArcService(name, "content", -1, "items")
 		if len(response) > 0 {
 			//log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + id + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "content.items.json")
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(response)
 		} else {
-			log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + id + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "content.items.json")
-			http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+id+"services"+string(os.PathSeparator)+"content.items.json")
+			log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "content.items.json")
+			http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+"services"+string(os.PathSeparator)+"content.items.json")
 		}
 	}).Methods("GET", "PUT")
 
-	r.HandleFunc("/sharing/rest/content/items/{id}/data", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/sharing/rest/content/items/{name}/data", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		id := vars["id"]
-		log.Println("/sharing/rest/content/items/" + id + "/data (" + r.Method + ")")
+		name := vars["name"]
+		if config.DbSource != config.FILE {
+			name = "%"
+		}
+		log.Println("/sharing/rest/content/items/" + name + "/data (" + r.Method + ")")
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), "%", "content", -1, "data")
+			ret := config.SetArcService(body, name, "content", -1, "data")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
 			return
 		}
 
-		response := config.GetArcService("%", "content", -1, "data")
+		response := config.GetArcService(name, "content", -1, "data")
 		if len(response) > 0 {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(response)
 		} else {
-			log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + id + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "content.items.data.json")
-			http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+id+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"content.items.data.json")
+			log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "content.items.data.json")
+			http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"content.items.data.json")
 		}
 	}).Methods("GET", "PUT")
 
@@ -416,7 +462,7 @@ func StartGorillaMux() *mux.Router {
 					w.Write([]byte("Error"))
 					return
 				}
-				ret := config.SetArcCatalog(string(body), "community", "groups")
+				ret := config.SetArcCatalog(body, "community", "groups")
 				w.Header().Set("Content-Type", "application/json")
 				response, _ := json.Marshal(map[string]interface{}{"response": ret})
 				w.Write(response)
@@ -439,7 +485,7 @@ func StartGorillaMux() *mux.Router {
 					w.Write([]byte("Error"))
 					return
 				}
-				ret := config.SetArcCatalog(string(body), "search", "")
+				ret := config.SetArcCatalog(body, "search", "")
 				w.Header().Set("Content-Type", "application/json")
 				response, _ := json.Marshal(map[string]interface{}{"response": ret})
 				w.Write(response)
@@ -484,7 +530,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcCatalog(string(body), "community", "users")
+			ret := config.SetArcCatalog(body, "community", "users")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -513,7 +559,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcCatalog(string(body), "community", "users")
+			ret := config.SetArcCatalog(body, "community", "users")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -540,7 +586,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcCatalog(string(body), "community", "users")
+			ret := config.SetArcCatalog(body, "community", "users")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -707,7 +753,20 @@ func StartGorillaMux() *mux.Router {
 	}).Methods("GET")
 
 	r.HandleFunc("/arcgis/rest/services", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("/arcgis/rest/services")
+		log.Println("/arcgis/rest/services (" + r.Method + ")")
+		if r.Method == "PUT" {
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				w.Write([]byte("Error"))
+				return
+			}
+
+			ret := config.SetArcCatalog(body, "FeatureServer", "")
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": ret})
+			w.Write(response)
+			return
+		}
 
 		response := config.GetArcCatalog("FeatureServer", "")
 		if len(response) > 0 {
@@ -717,7 +776,7 @@ func StartGorillaMux() *mux.Router {
 			log.Println("Sending: " + config.DataPath + "FeatureServer.json")
 			http.ServeFile(w, r, config.DataPath+"FeatureServer.json")
 		}
-	}).Methods("GET")
+	}).Methods("GET", "PUT")
 
 	r.HandleFunc("/arcgis/rest/services", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("/arcgis/rest/services (post)")
@@ -796,7 +855,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), name, "", -1, "")
+			ret := config.SetArcService(body, name, "", -1, "")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -824,7 +883,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), name, "FeatureServer", -1, "")
+			ret := config.SetArcService(body, name, "FeatureServer", -1, "")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -869,7 +928,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), name, "FeatureServer", -1, "")
+			ret := config.SetArcService(body, name, "FeatureServer", -1, "")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -910,7 +969,7 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("Error"))
 				return
 			}
-			ret := config.SetArcService(string(body), name, "FeatureServer", idInt, "")
+			ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": ret})
 			w.Write(response)
@@ -1304,57 +1363,117 @@ func StartGorillaMux() *mux.Router {
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryRelatedRecords", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
-		//id := vars["id"]
+		id := vars["id"]
 		var relationshipId = r.FormValue("relationshipId")
 		var objectIds = r.FormValue("objectIds")
 		var outFields = r.FormValue("outFields")
 		var objectId, _ = strconv.Atoi(objectIds)
 		//get fields for the related table
 		dID := config.Project.Services[name]["relationships"][relationshipId]["dId"]
+
 		//get the fields json
 
 		if config.DbSource == config.FILE {
+			//have to find the joinAttribute value for source and destination
+			/*
+				var sqlstr = "select " + outFields + " from " + config.Schema +
+					config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string) +
+					" where " +
+					config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string) + " in (select " +
+					config.Project.Services[name]["relationships"][relationshipId]["oJoinKey"].(string) + " from " +
+					config.Project.Services[name]["relationships"][relationshipId]["oTable"].(string) +
+					" where OBJECTID in(" + config.GetParam(1) + "))"
+			*/
+			var dJoinKey = config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string)
+			var oJoinKey = config.Project.Services[name]["relationships"][relationshipId]["oJoinKey"].(string)
 
-			jsonFile := config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + strconv.Itoa(int(dID.(float64))) + ".query.json"
+			jsonFile := fmt.Sprint(config.DataPath, string(os.PathSeparator), name+string(os.PathSeparator), "services", string(os.PathSeparator), "FeatureServer.", id, ".query.json")
 			log.Println(jsonFile)
 			file, err1 := ioutil.ReadFile(jsonFile)
+			if err1 != nil {
+				log.Println(err1)
+			}
+			var srcObj structs.FeatureTable
+
+			//map[string]map[string]map[string]
+			err := json.Unmarshal(file, &srcObj)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(file))
+				log.Println(err.Error())
+			}
+
+			var oJoinVal interface{}
+			for _, i := range srcObj.Features {
+				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
+				//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
+
+				if int(i.Attributes["OBJECTID"].(float64)) == objectId {
+					oJoinVal = i.Attributes[oJoinKey]
+					//i.Attributes["OBJECTID"]
+					//fieldObj.Features[k].Attributes = updates[num].Attributes
+					break
+					//record.RelatedRecord = append(record.RelatedRecord, fieldObj.Features[k].Attributes)
+				}
+			}
+
+			//strconv.Itoa(int(dID.(float64)))
+			jsonFile = fmt.Sprint(config.DataPath, string(os.PathSeparator), name, string(os.PathSeparator), "services", string(os.PathSeparator), "FeatureServer.", dID, ".query.json")
+			log.Println(jsonFile)
+			file, err1 = ioutil.ReadFile(jsonFile)
 			if err1 != nil {
 				log.Println(err1)
 			}
 			var fieldObj structs.FeatureTable
 
 			//map[string]map[string]map[string]
-			err := json.Unmarshal(file, &fieldObj)
+			err = json.Unmarshal(file, &fieldObj)
 			if err != nil {
 				log.Println("Error unmarshalling fields into features object: " + string(file))
 				log.Println(err.Error())
 			}
-			var records structs.RelatedRecords
-			records.Fields = fieldObj.Fields
+			var relRecords structs.RelatedRecords
+			relRecords.Fields = fieldObj.Fields
 
-			var record structs.RelatedRecordGroup
-			record.ObjectId = objectId
+			var recordGroup structs.RelatedRecordGroup
+			recordGroup.ObjectId = objectId
 
 			//records.RelatedRecordGroups.ObjectId = objectId
 			//records.ObjectId = objectId
 			//records.RelatedRecord = map[string]interface{}
+			//c := 0
+			log.Printf("Finding: %v", oJoinVal)
+
 			for k, i := range fieldObj.Features {
 				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
 				//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
-				if int(i.Attributes["OBJECTID"].(float64)) == objectId {
+
+				if i.Attributes[dJoinKey] == oJoinVal {
+					log.Printf("Found: %v", i.Attributes[dJoinKey])
+					var rec structs.RelatedRecord
 					//i.Attributes["OBJECTID"]
 					//fieldObj.Features[k].Attributes = updates[num].Attributes
 					//break
-
-					record.RelatedRecord = append(record.RelatedRecord, fieldObj.Features[k].Attributes)
+					//var attributes structs.Attribute
+					//attributes = fieldObj.Features[k].Attributes
+					//rec.Attributes = append(rec.Attributes, fieldObj.Features[k].Attributes)
+					rec.Attributes = fieldObj.Features[k].Attributes
+					recordGroup.RelatedRecords = append(recordGroup.RelatedRecords, rec)
+					//c++
 				}
+
 			}
-			records.RelatedRecordGroups = append(records.RelatedRecordGroups, record)
+
 			var jsonstr []byte
-			jsonstr, err = json.Marshal(records)
+			//if c == 0 {
+			//	records.RelatedRecordGroups = records.RelatedRecordGroups[:0]
+			//}
+			relRecords.RelatedRecordGroups = append(relRecords.RelatedRecordGroups, recordGroup)
+
+			jsonstr, err = json.Marshal(relRecords)
 			if err != nil {
 				log.Println(err)
 			}
+
 			/*
 				tx, err := config.Db.Begin()
 				if err != nil {

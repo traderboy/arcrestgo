@@ -1,5 +1,6 @@
 services/*
 hpl12/*
+catalogs/*
 services.unused/*
 services.old/*
 leasecompliance/*
