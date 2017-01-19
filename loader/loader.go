@@ -17,10 +17,15 @@ import (
 	structs "github.com/traderboy/arcrestgo/structs"
 )
 
+/*
+alter table services alter column json type jsonb using json::jsonb;
+alter table catalog alter column json type jsonb using json::jsonb;
+*/
 //data sources
 const (
 	PGSQL   = 1 //Postgresql
 	SQLITE3 = 2 //Sqlite 3
+	FILE    = 3
 )
 
 //DbSource is the current data source

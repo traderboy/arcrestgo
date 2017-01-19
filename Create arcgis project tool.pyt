@@ -976,10 +976,26 @@ class CreateNewProject(object):
                file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".query.json",feature_json)
                LoadService(sqliteDb,serviceName,"FeatureServer", id,"query",file)
 
+               #create file containing objectid,globalid and has_permittee
+               valid_fields = ["OBJECTID","GlobalID","GlobalGUID","has_permittee"]
+               for i in feature_json['fields']:
+                  if i['name'] not in valid_fields:
+                     del i
+               for i in feature_json['features']:
+                  for j in i['attributes'].keys():
+                     if j not in valid_fields:
+                        del i['attributes'][j]
+               file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".outfields.json",feature_json)
+               LoadService(sqliteDb,serviceName,"FeatureServer", id,"outfields",file)
+
                #create a JSON OBJECTID file used in ArcGIS for showing the attribute table
                #remove all fields except OBJECTID
                #feature_json['fields']=[{"alias":"OBJECTID","name":"OBJECTID","type":"esriFieldTypeInteger","alias":"OBJECTID","sqlType":"sqlTypeOther","defaultValue":None,"domain":None}]
-               feature_json['fields']=[{"alias":"OBJECTID","name":"OBJECTID","type":"esriFieldTypeOID","sqlType":"sqlTypeOther","defaultValue":None,"domain":None,"nullable":False,"editable":False}]
+               #OBJECTID,GlobalID,has_permittee
+
+               feature_json['fields']=[
+                   {"alias":"OBJECTID","name":"OBJECTID","type":"esriFieldTypeOID","sqlType":"sqlTypeOther","defaultValue":None,"domain":None,"nullable":False,"editable":False}
+               ]
                features=[]
                #for i in feature_json['fields']:
                #   if i['name'] != 'OBJECTID':
@@ -1088,6 +1104,18 @@ class CreateNewProject(object):
                printMessage("Saving table " + str(id) + " to JSON")
                file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".query.json",feature_json)
                LoadService(sqliteDb,serviceName,"FeatureServer", id,"query",file)
+
+               valid_fields = ["OBJECTID","GlobalID","GlobalGUID","has_permittee"]
+               for i in feature_json['fields']:
+                  if i['name'] not in valid_fields:
+                     del i
+               for i in feature_json['features']:
+                  for j in i['attributes'].keys():
+                     if j not in valid_fields:
+                        del i['attributes'][j]
+               file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".outfields.json",feature_json)
+               LoadService(sqliteDb,serviceName,"FeatureServer", id,"outfields",file)
+               
 
                id = id+1
 
@@ -2480,7 +2508,22 @@ def saveSqliteToPG(tables,sqliteDb,pg):
        try:
            os.system(cmd)
        except:
-           printMessage("Unable to run sql commands")
+           printMessage("Unable to run sql commands: " + cmd)
+    
+    cmd = toolkitPath+"/gdal/ogrinfo.exe  PG:\"" + pg + "\"  -sql \"alter table services alter column json type jsonb using json::jsonb\""
+    printMessage("Running " + cmd)
+    try:
+           os.system(cmd)
+    except:
+           printMessage("Unable to run sql commands: " + cmd)
+    cmd = toolkitPath+"/gdal/ogrinfo.exe  PG:\"" + pg + "\"  -sql \"alter table catalog alter column json type jsonb using json::jsonb\""
+    printMessage("Running " + cmd)
+    try:
+           os.system(cmd)
+    except:
+           printMessage("Unable to run sql commands: " + cmd)
+
+    
 
 def saveToPg(lyr,pg):
    desc = arcpy.Describe(lyr)
@@ -2577,425 +2620,6 @@ def LoadService(sqliteDb,service,name,  layerid,dtype,file):
     c.close()
     conn.commit()
     conn.close()
-
-
-
-   #if sym[0].getElementsByTagName("OutlineColor").length > 0:
-   #  printMessage("OutlineColor len: "+ str(sym[0].getElementsByTagName("OutlineColor").length))
-
-   #printMessage("Lookup Symbol length: " + name + ": length: " + str(sym.length))
-   #printMessage("Type: "+sym[0].getAttribute("xsi:type"))
-   #printMessage("Symbol children length: " + str(sym[0].childNodes.length))
-
-   #symbolizer = sym.getElementsByTagName("Symbolizer")
-   #if sym.length > 0:
-   #    symtags = sym[0].getElementsByTagName("Symbol")
-   #    if symtags[0].getAttribute("xsi:type") == 'typens:CIMSymbolReference':
-   #        printMessage("Found new symbol")
-   #        symtags = symtags[0].getElementsByTagName("Symbol")
-
-       #if symtags.length > 0:
-   #    for symbol in symtags:
-   #        symbol = symtags[0].getElementsByTagName("Symbol")
-   #        if symbol.length > 0:
-   #           printMessage("Symbol len: "+ str(symbol.length))
-   #        else:
-   #           continue
-
-   #        printMessage("Symbol: "+symbol[0].getAttribute("xsi:type"))
-   #        symbollayers = symbol[0].getElementsByTagName("SymbolLayers")
-   #        printMessage("SymbolLayers: "+symbollayers[0].getAttribute("xsi:type"))
-
-   #        symbollayer  = symbollayers[0].getElementsByTagName("CIMSymbolLayer")
-   #        printMessage("CIMSymbolLayer 1: "+str(symbollayer.length) + " - " + symbollayer[0].getAttribute("xsi:type"))
-
-   #        fillcolor = symbollayer[0].getElementsByTagName("FillColor")
-   #        if fillcolor.length>0:
-   #            printMessage("FillColor->R,G,B: " + fillcolor[0].childNodes[0].nodeValue)
-
-    #       outlinecolor = symbollayer[0].getElementsByTagName("OutlineColor")
-    #       if outlinecolor.length>0:
-    #           printMessage("OutlineColor->R,G,B: " + outlinecolor[0].childNodes[0].nodeValue)
-
-     #      size = symbollayer[0].getElementsByTagName("Size") #[0].childNodes[0].nodeValue
-     #      if size.length>0:
-     #          printMessage("Size: " + size[0].childNodes[0].nodeValue)
-
-     #      type = symbollayer[0].getElementsByTagName("Type")  #[0].childNodes[0].nodeValue
-     #      if type.length>0:
-     #          printMessage("Type: " + type[0].childNodes[0].nodeValue)
-
-           #if symbollayer[0].getElementsByTagName("FillColor").length > 0:
-           #   fill = symbollayer[0].getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-           #   outline = symbollayer[0].getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-           #   size = symbollayer[0].getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-           #   printMessage("FillColor->R,G,B: " + str(fill))
-           #   printMessage("OutlineColor->R,G,B: " + str(outline))
-           #   printMessage("Size: "+str(size))
-           #elif symbollayer[0].getElementsByTagName("FillColor").length > 0:
-           #   fill = symbollayer[0].getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-           #   outline = symbollayer[0].getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-           #   size = symbollayer[0].getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-           #   printMessage("FillColor->R,G,B: " + str(fill))
-           #   printMessage("OutlineColor->R,G,B: " + str(outline))
-           #   printMessage("Size: "+str(size))
-           #else:
-           #   color = symbollayer[0].getElementsByTagName("Color")
-           #   printMessage("Color: "+color[0].getAttribute("xsi:type"))
-           #   #[0].childNodes[0].nodeValue
-           #   colorStr = str(color[0].getElementsByTagName("R")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("G")[0].childNodes[0].nodeValue) + "," + str(color[0].getElementsByTagName("B")[0].childNodes[0].nodeValue)
-           #   printMessage("Color values: " + colorStr)
-
-
-   #        printMessage("")
-
-
-   #return drawingInfo
-
-  #printMessage(lyr.name + ": " + lyr.symbologyType)
-  #if lyr.symbologyType!="OTHER":
-  #   for i in lyr.symbology:
-  #      printMessage(i)
-
-#Points
-#"drawingInfo": {
-#  "renderer": {
-#   "type": "simple",
-#   "symbol": {
-#    "type": "esriSMS",
-#    "style": "esriSMSCircle",
-#    "color": [135,99,0,255],
-#    "size": 4,
-#    "angle": 0,
-#    "xoffset": 0,
-#    "yoffset": 0,
-#    "outline": {
-#    "color": [0,0,0,255],
-#    "width": 1
-#    }
-#   },
-#   "label": "",
-#   "description": ""
-#  },
-#  "transparency": 0,
-#  "labelingInfo": null
-# },
-
-#Polygons
-#"drawingInfo":
-#{
-#"renderer":
-#{
-#"type":"simple",
-#"symbol":
-#{
-#"type":"esriSFS",
-#"style":"esriSFSSolid",
-#"color":[76,129,205,191],
-#"outline":
-#{
-#"type":"esriSLS",
-#"style":"esriSLSSolid",
-#"color":[0,0,0,255],
-#"width":0.75
-#}
-#}
-#},
-#"transparency":0,"labelingInfo":null
-#},
-
-
-#symbol={"angle":0}
-#if lyr.symbologyType == "GRADUATED_COLORS":
-#     lyr.symbology.valueField = "POP2000"
-#     lyr.symbology.numClasses = 4
-#     lyr.symbology.classBreakValues = [250000, 999999, 4999999, 9999999, 35000000]
-#     lyr.symbology.classBreakLabels = ["250,000 to 999,999", "1,000,000 to 4,999,999",
-#                                       "5,000,000 to 9,999,999", "10,000,000 to 35,000,000"]
-
-#return ""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class LayerExtras(object):
-    """ An object to hold attributes loaded from xml inside the msd."""
-
-    name = ""
-    symbologyFieldName = ""
-
-
-class MxdExtras(dict):
-    """ Exposes extra MXD details by raiding an exported msd
-
-        Treat this object as a dictionary with layer name as the key and a custom object
-        with desired attributes as the value.
-        You must have write access to MXD directory (creates temporary msd file).
-        Only layers in the first dataframe are accessed.
-
-    """
-
-    LYR_NAME_NODE = "Name"
-    LYR_SYMBOL_NODE = "Symbolizer"
-    LYR_FIELD_NODE = "Field"
-    MSD_SUFFIX = "_MxdExtrasTemp.msd"
-    MXD_SUFFIX = ".mxd"
-    EXCLUDED_FILE_NAMES = ["DocumentInfo.xml", "layers/layers.xml"]
-    mxdPath = ""
-
-    def __init__(self, mxdPath):
-
-        self.loadMxdPath(mxdPath)
-
-
-    def loadMxdPath(self, mxd):
-        """ Load mxd from file path """
-
-        #self.mxdPath = mxdPath.lower()
-        #mxd = mapping.MapDocument(self.mxdPath)
-        msdPath = os.path.abspath(os.path.dirname(__file__)).replace("\\","/")+"/output.msd"
-
-        #msdPath = self.mxdPath.replace(self.MXD_SUFFIX, self.MSD_SUFFIX)
-
-        # Delete temporary msd if it exists
-        if os.path.exists(msdPath):
-            os.remove(msdPath)
-
-        mapping.ConvertToMSD(mxd,msdPath)
-
-        zz = zipfile.ZipFile(msdPath)
-
-        for fileName in (fileName for fileName in zz.namelist() if not fileName in self.EXCLUDED_FILE_NAMES):
-            printMessage("Opening: " + fileName)
-            dom = parse(zz.open(fileName))
-            symb = dom.getElementsByTagName(self.LYR_SYMBOL_NODE)
-            #printMessage("Found: " + str(symb.length))
-            name,lyr = self.loadMsdLayerDom(dom)
-            if name != "":
-               self[name] = lyr
-        del zz
-        #os.remove(msdPath)
-
-    def loadMsdLayerDom(self, dom):
-        """ Load dom created from xml file inside the msd. """
-
-        lyr = LayerExtras()
-
-        # Layer name
-        layer = dom.getElementsByTagName(self.LYR_NAME_NODE)
-        if layer.length==0:
-           printMessage("Layer not found")
-           return "",""
-        lyr.name = layer[0].childNodes[0].nodeValue
-
-        labelingInfo=None
-        label = dom.getElementsByTagName("LabelClasses")
-        if label.length>0:
-           cim = label[0].getElementsByTagName("CIMLabelClass")
-           if cim.length > 0:
-              expr = cim[0].getElementsByTagName("Expression")
-              if expr.length > 0:
-                 expression = expr[0].childNodes[0].nodeValue
-              labelingInfo = {
-                "labelPlacement":"esriServerPointLabelPlacementAboveRight",
-                "where":null,
-                "labelExpression":expression,
-                "useCodedValues":true,
-                "symbol": {
-                   "type":"esriTS",
-                   "color":[0,0,0,255],
-                   "backgroundColor":null,
-                   "borderLineColor":null,
-                   "borderLineSize":null,
-                   "verticalAlignment":"bottom",
-                   "horizontalAlignment":"center",
-                   "rightToLeft":false,
-                   "angle":0,
-                   "xoffset":0,
-                   "yoffset":0,
-                   "kerning":true,
-                   "haloColor":null,
-                   "haloSize":null,
-                   "font":{"family":"Arial","size":8,"style":"normal","weight":"normal","decoration":"none"}
-                },
-                "minScale":0,
-                "maxScale":0
-              }
-
-        # Symbology field name.  Create a symbol object
-        drawingInfo= {
-         "renderer": {
-          "type": "simple",
-          "symbol": {
-           "type": "esriSMS",
-           "style": "esriSMSCircle",
-           "color": [135,99,0,255],
-           "size": 4,
-           "angle": 0,
-           "xoffset": 0,
-           "yoffset": 0,
-           "outline": {
-           "color": [0,0,0,255],
-           "width": 1
-           }
-          },
-          "label": "",
-          "description": ""
-         },
-         "transparency": 0,
-         "labelingInfo": labelingInfo
-        }
-
-        symbolizer = dom.getElementsByTagName("Symbolizer")
-        if symbolizer.length > 0:
-           symbologyElement = symbolizer[0]
-           symtags = symbologyElement.getElementsByTagName("Symbol")
-           if symtags.length > 0:
-               symbol = symtags[0].getElementsByTagName("Symbol")[0]
-               #lyr.symbologyFieldName = symtags[0].childNodes[0].nodeValue
-               if symbol.getElementsByTagName("FillColor").length > 0:
-                  fill = symbol.getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-                  outline = symbol.getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-                  size = symbol.getElementsByTagName("FillColor")[0].childNodes[0].nodeValue
-                  printMessage("FillColor->R,G,B: " + str(fill))
-                  printMessage("OutlineColor->R,G,B: " + str(outline))
-                  printMessage("Size: "+str(size))
-               else:
-                  color = symbol.getElementsByTagName("Color")[0].childNodes[0].nodeValue
-                  printMessage("Color: " + str(color))
-           else:
-               printMessage("Not found: " + lyr.name)
-               return "",""
-        else:
-           return "",""
-        return lyr.name,drawingInfo
-
-
-#def getFeatures(lyr):
-   #loop through each row in layer
-
-   #for row in arcpy.SearchCursor(lyr):
-    #df.extent = row.SHAPE.extent #Set the dataframe extent to the extent of the feature
-    #df.scale = df.scale * 1.07 #Optionally give the shape a bit of padding around the edges
-
-   #features = {
-
-   #}
-   #return features
-
-
-#   if 'layerDefinition' in layer:
-#      if 'fields' in layer['layerDefinition']:
-#              for field in layer['layerDefinition']['fields']:
-#                  fieldInfos = None
-#                  if field['type'] == 'esriFieldTypeOID':
-#                      oidFldName = field['name']
-#                      fieldInfos = {
-#                          'fieldName':field['name'],
-#                          'label':field['alias'],
-#                          'isEditable':False,
-#                          'tooltip':'',
-#                          'visible':False,
-#                          'format':None,
-#                          'stringFieldOption':'textbox'
-#                      }
-#
-#                  elif field['type'] == 'esriFieldTypeInteger':
-#                      fieldInfos = {
-#                          'fieldName':field['name'],
-#                          'label':field['alias'],
-#                          'isEditable':True,
-#                          'tooltip':'',
-#                          'visible':True,
-#                          'format':{
-#                              'places':0,
-#                              'digitSeparator':True
-#                          },
-#                          'stringFieldOption':'textbox'
-#                      }
-#                  elif field['type'] == 'esriFieldTypeDouble':
-#                      fieldInfos = {
-#                          'fieldName':field['name'],
-#                          'label':field['alias'],
-#                          'isEditable':True,
-#                          'tooltip':'',
-#                          'visible':True,
-#                          'format':{
-#                              'places':2,
-#                              'digitSeparator':True
-#                              },
-#                          'stringFieldOption':'textbox'
-#                      }
-#                  elif field['type'] == 'esriFieldTypeString':
-#                      fieldInfos = {
-#                          'fieldName':field['name'],
-#                          'label':field['alias'],
-#                          'isEditable':True,
-#                          'tooltip':'',
-#                          'visible':True,
-#                          'format':None,
-#                          'stringFieldOption':'textbox'
-#                      }
-#                  else:
-#                      fieldInfos = {
-#                          'fieldName':field['name'],
-#                          'label':field['alias'],
-#                          'isEditable':True,
-#                          'tooltip':'',
-#                          'visible':True,
-#                          'format':None,
-#                          'stringFieldOption':'textbox'
-#                      }
-#                  if fieldInfos is not None:
-#                      popInfo.append(fieldInfos)
-
-#def getFieldInfos(layer):
-#    # Create a describe object
-#    desc = arcpy.Describe(layer)
-#
-#    # If a feature layer, continue
-#    if desc.dataType == "FeatureLayer":
-#
-#        # Create a fieldinfo object
-#        field_info = desc.fieldInfo
-#
-#        # Use the count property to iterate through all the fields
-#        for index in xrange(0, field_info.count):
-#            # Print fieldinfo properties
-#            printMessage("Field Name: {0}".format(field_info.getFieldName(index)))
-#            printMessage("\tNew Name:   {0}".format(field_info.getNewName(index)))
-#            printMessage("\tSplit Rule: {0}".format(field_info.getSplitRule(index)))
-#            printMessage("\tVisible:    {0}".format(field_info.getVisible(index)))
-
-
-
 
 def printMessage(str):
   if sys.executable.find("python.exe") != -1:

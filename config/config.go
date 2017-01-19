@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 
 	"strconv"
 
@@ -178,10 +180,6 @@ func Initialize() {
 
 		LoadConfiguration()
 		//get RootName
-		for i, _ := range Project.Services {
-			RootName = i
-			//RootName = val[i]
-		}
 		DbQueryName := RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase"
 		log.Println("DbQueryName: " + DbQueryName)
 		DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+"?PRAGMA journal_mode=WAL")
@@ -191,12 +189,13 @@ func Initialize() {
 		}
 		//defer DbQuery.Close()
 		//DbQuery.SetMaxOpenConns(1)
-		log.Print("Sqlite database: " + RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase")
+		//log.Print("Sqlite database: " + DbQueryName)
 		//DbQuery.Exec(initializeStr)
 		//defer db.Close()
 	} else if DbSource == FILE {
 		LoadConfigurationFromFile()
 	}
+
 	/*
 		Db, err = sql.Open("postgres", "user=postgres DbSource=gis host=192.168.99.100")
 		if err != nil {
@@ -208,6 +207,7 @@ func Initialize() {
 	ReplicaPath = RootPath     //+ string(os.PathSeparator)     //+ defaultService + string(os.PathSeparator) + "replicas" + string(os.PathSeparator)
 	AttachmentsPath = RootPath //+ string(os.PathSeparator) //+ defaultService + string(os.PathSeparator) + "attachments" + string(os.PathSeparator)
 
+	log.Println("Root catalog: " + RootName)
 	log.Println("Root path: " + RootPath)
 	log.Println("Data path: " + DataPath)
 	log.Println("Replica path: " + ReplicaPath)
@@ -281,6 +281,11 @@ func LoadConfiguration() {
 		LoadConfigurationFromFile()
 		return
 	}
+	for i, _ := range Project.Services {
+		RootName = i
+		//RootName = val[i]
+	}
+
 }
 
 func LoadConfigurationFromFile() {
@@ -298,6 +303,11 @@ func LoadConfigurationFromFile() {
 		log.Println("Error reading configuration file: " + configFile)
 		log.Println(err2.Error())
 	}
+	for i, _ := range Project.Services {
+		RootName = i
+		//RootName = val[i]
+	}
+
 }
 
 //GetArcService queries the database for service layer entries
@@ -457,22 +467,169 @@ func SetArcCatalog(json []byte, service string, dtype string) bool {
 	return true
 }
 
-/*
-func RunQuery(sql string) bool {
-	sql := "update catalog set json=" + GetParam(1) + " where name=" + GetParam(2) + " and type=" + GetParam(3)
-	log.Printf("Query: update catalog set json=<json> where name='%v' and type='%v'", service, dtype)
-
-	stmt, err := Db.Prepare(sql)
-	if err != nil {
-		log.Println(err.Error())
+func GetArcQuery(catalog string, service string, layerid int, dtype string, objectIds string, where string) []byte {
+	//objectIdsInt, _ := strconv.Atoi(objectIds)
+	objectIdsArr := strings.Split(objectIds, ",")
+	var objectIdsFloat = []float64{}
+	for _, i := range objectIdsArr {
+		j, err := strconv.ParseFloat(i, 64)
+		if err != nil {
+			panic(err)
+		}
+		objectIdsFloat = append(objectIdsFloat, j)
 	}
 
-	_, err = stmt.Exec(json, service, dtype)
-	if err != nil {
-		log.Println(err.Error())
-		return false
-	}
+	if DbSource == FILE {
+		//config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json"
 
-	return true
+		jsonFile := fmt.Sprint(DataPath, string(os.PathSeparator), catalog+string(os.PathSeparator), "services", string(os.PathSeparator), "FeatureServer.", layerid, ".query.json")
+		log.Println(jsonFile)
+		file, err1 := ioutil.ReadFile(jsonFile)
+		if err1 != nil {
+			log.Println(err1)
+		}
+		var srcObj structs.FeatureTable
+
+		//map[string]map[string]map[string]
+		err := json.Unmarshal(file, &srcObj)
+		if err != nil {
+			log.Println("Error unmarshalling fields into features object: " + string(file))
+			log.Println(err.Error())
+		}
+		var results []structs.Feature
+		for _, i := range srcObj.Features {
+			//if int(i.Attributes["OBJECTID"].(float64)) == objectIdsInt {
+			if in_float_array(i.Attributes["OBJECTID"].(float64), objectIdsFloat) {
+				//oJoinVal = i.Attributes[oJoinKey]
+				results = append(results, i)
+				//break
+			}
+		}
+		srcObj.Features = results
+		jsonstr, err := json.Marshal(srcObj)
+		if err != nil {
+			log.Println(err)
+		}
+		return jsonstr
+	} else if DbSource == PGSQL {
+		sql := "select json from services where service=$1 and name=$2 and layerid=$3 and type=$4"
+		log.Printf("select json from services where service='%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
+		stmt, err := Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		var fields []byte
+		err = stmt.QueryRow(catalog, service, layerid, dtype).Scan(&fields)
+		if err != nil {
+			log.Println(err.Error())
+			//w.Header().Set("Content-Type", "application/json")
+			//w.Write([]byte("{\"fields\":[],\"relatedRecordGroups\":[]}"))
+			return []byte("")
+		}
+		var featureObj structs.FeatureTable
+		err = json.Unmarshal(fields, &featureObj)
+		if err != nil {
+			log.Println("Error unmarshalling fields into features object: " + string(fields))
+			log.Println(err.Error())
+		}
+		var results []structs.Feature
+		for _, i := range featureObj.Features {
+			//if int(i.Attributes["OBJECTID"].(float64)) == objectIdsInt {
+			if in_float_array(i.Attributes["OBJECTID"].(float64), objectIdsFloat) {
+				//oJoinVal = i.Attributes[oJoinKey]
+				results = append(results, i)
+				//break
+			}
+		}
+		featureObj.Features = results
+		fields, err = json.Marshal(featureObj)
+		if err != nil {
+			log.Println(err)
+		}
+		return fields
+	} else if DbSource == SQLITE3 {
+		sql := "select json from services where service=? and name=? and layerid=? and type=?"
+		log.Printf("select json from services where service='%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
+		stmt, err := Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		var fields []byte
+		err = stmt.QueryRow(catalog, service, layerid, dtype).Scan(&fields)
+		if err != nil {
+			log.Println(err.Error())
+			//w.Header().Set("Content-Type", "application/json")
+			//w.Write([]byte("{\"fields\":[],\"relatedRecordGroups\":[]}"))
+			return []byte("")
+		}
+		var featureObj structs.FeatureTable
+		err = json.Unmarshal(fields, &featureObj)
+		if err != nil {
+			log.Println("Error unmarshalling fields into features object: " + string(fields))
+			log.Println(err.Error())
+		}
+		var results []structs.Feature
+		for _, i := range featureObj.Features {
+			//if int(i.Attributes["OBJECTID"].(float64)) == objectIdsInt {
+			if in_float_array(i.Attributes["OBJECTID"].(float64), objectIdsFloat) {
+				//oJoinVal = i.Attributes[oJoinKey]
+				results = append(results, i)
+				//break
+			}
+		}
+		featureObj.Features = results
+		fields, err = json.Marshal(featureObj)
+		if err != nil {
+			log.Println(err)
+		}
+		return fields
+	}
+	return []byte("")
+	/*
+		sql := "select * from  set json=" + GetParam(1) + " where name=" + GetParam(2) + " and type=" + GetParam(3)
+		log.Printf("Query: update catalog set json=<json> where name='%v' and type='%v'", service, dtype)
+
+		stmt, err := Db.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		_, err = stmt.Exec(json, service, dtype)
+		if err != nil {
+			log.Println(err.Error())
+			return false
+		}
+
+		return true
+	*/
 }
-*/
+func in_string_array(val string, array []string) (ok bool, i int) {
+	for i = range array {
+		if ok = array[i] == val; ok {
+			return
+		}
+	}
+	return
+}
+func in_float_array(val float64, array []float64) bool {
+	for i := range array {
+		if array[i] == val {
+			return true
+		}
+	}
+	return false
+}
+
+func in_array(v interface{}, in interface{}) (ok bool, i int) {
+	val := reflect.Indirect(reflect.ValueOf(in))
+	switch val.Kind() {
+	case reflect.Slice, reflect.Array:
+		for ; i < val.Len(); i++ {
+			if ok = v == val.Index(i).Interface(); ok {
+				return
+			}
+		}
+	}
+	return
+}

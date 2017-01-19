@@ -1017,65 +1017,6 @@ func StartGorillaMux() *mux.Router {
 			}
 		}).Methods("POST", "PUT")
 	*/
-	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/query", func(w http.ResponseWriter, r *http.Request) {
-		//if(req.query.outFields=='OBJECTID'){
-		vars := mux.Vars(r)
-		name := vars["name"]
-		id := vars["id"]
-		idInt, _ := strconv.Atoi(id)
-		where := r.FormValue("where")
-		outFields := r.FormValue("outFields")
-		returnGeometry := r.FormValue("returnGeometry")
-		objectIds := r.FormValue("objectIds")
-
-		log.Println(r.FormValue("returnGeometry"))
-		log.Println(r.FormValue("outFields"))
-		//sql := "select "+outFields + " from " +
-
-		if len(where) > 0 {
-			w.Header().Set("Content-Type", "application/json")
-			var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
-			w.Write(response)
-
-		} else if len(objectIds) > 0 {
-			//only get the select objectIds
-			response := config.GetArcService(name, "FeatureServer", idInt, "query")
-			if len(response) > 0 {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(response)
-			} else {
-				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
-				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
-
-			}
-		} else if returnGeometry == "false" && strings.Index(outFields, "OBJECTID") > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
-			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/objectid")
-
-			response := config.GetArcService(name, "FeatureServer", idInt, "objectid")
-			if len(response) > 0 {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(response)
-			} else {
-				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".objectid.json")
-				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".objectid.json")
-			}
-		} else {
-			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query")
-
-			response := config.GetArcService(name, "FeatureServer", idInt, "query")
-			if len(response) > 0 {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(response)
-			} else {
-				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
-				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
-
-			}
-		}
-
-		//http.ServeFile(w, r, config.DataPath + "/" + id  + "query.json")
-
-	}).Methods("GET", "POST")
 
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryLocal", func(w http.ResponseWriter, r *http.Request) {
 		//if(req.query.outFields=='OBJECTID'){
@@ -1359,11 +1300,85 @@ func StartGorillaMux() *mux.Router {
 
 	}).Methods("POST")
 
-	//http://192.168.2.59:8080/arcgis/rest/services/accommodationagreementrentals/FeatureServer/1/queryRelatedRecords?objectIds=12&outFields=*&relationshipId=2&returnGeometry=true&f=json
-	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryRelatedRecords", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/query", func(w http.ResponseWriter, r *http.Request) {
+		//if(req.query.outFields=='OBJECTID'){
 		vars := mux.Vars(r)
 		name := vars["name"]
 		id := vars["id"]
+		idInt, _ := strconv.Atoi(id)
+		where := r.FormValue("where")
+		outFields := r.FormValue("outFields")
+		//returnGeometry := r.FormValue("returnGeometry")
+		objectIds := r.FormValue("objectIds")
+
+		log.Println(r.FormValue("returnGeometry"))
+		log.Println(r.FormValue("outFields"))
+		//sql := "select "+outFields + " from " +
+
+		if len(where) > 0 {
+			//response := config.GetArcQuery(name, "FeatureServer", idInt, "query",objectIds,where)
+			w.Header().Set("Content-Type", "application/json")
+			var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
+			w.Write(response)
+
+		} else if len(objectIds) > 0 {
+			//only get the select objectIds
+			//response := config.GetArcService(name, "FeatureServer", idInt, "query")
+			response := config.GetArcQuery(name, "FeatureServer", idInt, "query", objectIds, "")
+
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+
+			}
+			//if returnGeometry == "false" &&
+		} else if strings.Index(outFields, "OBJECTID") > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/outfields")
+
+			response := config.GetArcService(name, "FeatureServer", idInt, "outfields")
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".outfields.json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".outfields.json")
+			}
+		} else {
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query")
+
+			response := config.GetArcService(name, "FeatureServer", idInt, "query")
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+
+			}
+		}
+
+		//http.ServeFile(w, r, config.DataPath + "/" + id  + "query.json")
+
+	}).Methods("GET", "POST")
+
+	//http://192.168.2.59:8080/arcgis/rest/services/accommodationagreementrentals/FeatureServer/1/queryRelatedRecords?objectIds=12&outFields=*&relationshipId=2&returnGeometry=true&f=json
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryRelatedRecords", func(w http.ResponseWriter, r *http.Request) {
+
+		vars := mux.Vars(r)
+		name := vars["name"]
+		id := vars["id"]
+		/*
+			if id == "3" {
+				jsonstr := `{"fields":[{"name":"OBJECTID","type":"esriFieldTypeOID","alias":"OBJECTID","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"cows","type":"esriFieldTypeSmallInteger","alias":"Cows","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"yearling_heifers","type":"esriFieldTypeSmallInteger","alias":"Yearling heifers","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"steer_calves","type":"esriFieldTypeSmallInteger","alias":"Steer calves","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"yearling_steers","type":"esriFieldTypeSmallInteger","alias":"Yearling steers","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"bulls","type":"esriFieldTypeSmallInteger","alias":"Bulls","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"mares","type":"esriFieldTypeSmallInteger","alias":"Mares","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"geldings","type":"esriFieldTypeSmallInteger","alias":"Geldings","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"studs","type":"esriFieldTypeSmallInteger","alias":"Studs","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"fillies","type":"esriFieldTypeSmallInteger","alias":"Fillies","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"colts","type":"esriFieldTypeSmallInteger","alias":"Colts","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"ewes","type":"esriFieldTypeSmallInteger","alias":"Ewes","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"lambs","type":"esriFieldTypeSmallInteger","alias":"Lambs","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"rams","type":"esriFieldTypeSmallInteger","alias":"Rams","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"wethers","type":"esriFieldTypeSmallInteger","alias":"Wethers","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"kids","type":"esriFieldTypeSmallInteger","alias":"Kids","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"billies","type":"esriFieldTypeSmallInteger","alias":"Billies","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"nannies","type":"esriFieldTypeSmallInteger","alias":"Nannies","sqlType":"sqlTypeOther","domain":null,"defaultValue":null},{"name":"Comments","type":"esriFieldTypeString","alias":"Comments","sqlType":"sqlTypeOther","length":8000,"domain":null,"defaultValue":null},{"name":"GlobalGUID","type":"esriFieldTypeGUID","alias":"GlobalGUID","sqlType":"sqlTypeOther","length":38,"domain":null,"defaultValue":null},{"name":"created_user","type":"esriFieldTypeString","alias":"Created user","sqlType":"sqlTypeOther","length":255,"domain":null,"defaultValue":null},{"name":"created_date","type":"esriFieldTypeDate","alias":"Created date","sqlType":"sqlTypeOther","length":8,"domain":null,"defaultValue":null},{"name":"last_edited_user","type":"esriFieldTypeString","alias":"Last edited user","sqlType":"sqlTypeOther","length":255,"domain":null,"defaultValue":null},{"name":"last_edited_date","type":"esriFieldTypeDate","alias":"Last edited date","sqlType":"sqlTypeOther","length":8,"domain":null,"defaultValue":null},{"name":"reviewer_name","type":"esriFieldTypeString","alias":"Reviewer name","sqlType":"sqlTypeOther","length":50,"domain":null,"defaultValue":null},{"name":"reviewer_date","type":"esriFieldTypeDate","alias":"Reviewer date","sqlType":"sqlTypeOther","length":8,"domain":null,"defaultValue":null},{"name":"reviewer_title","type":"esriFieldTypeString","alias":"Reviewer title","sqlType":"sqlTypeOther","length":50,"domain":null,"defaultValue":null},{"name":"GlobalID","type":"esriFieldTypeGlobalID","alias":"GlobalID","sqlType":"sqlTypeOther","length":38,"domain":null,"defaultValue":null}],"relatedRecordGroups":[]}`
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte(jsonstr))
+				return
+			}
+		*/
+
 		var relationshipId = r.FormValue("relationshipId")
 		var objectIds = r.FormValue("objectIds")
 		var outFields = r.FormValue("outFields")
@@ -1585,7 +1600,7 @@ func StartGorillaMux() *mux.Router {
 		}
 		defer rows.Close()
 		//var colLookup = map[string]interface{}{"objectid": "OBJECTID", "globalid": "GlobalID", "creationdate": "CreationDate", "creator": "Creator", "editdate": "EditDate", "editor": "Editor"}
-		var colLookup = map[string]string{"objectid": "OBJECTID", "globalid": "GlobalID", "creationdate": "CreationDate", "creator": "Creator", "editdate": "EditDate", "editor": "Editor"}
+		var colLookup = map[string]string{"objectid": "OBJECTID", "globalguid": "GlobalGUID", "globalid": "GlobalID", "creationdate": "CreationDate", "creator": "Creator", "editdate": "EditDate", "editor": "Editor", "comments": "Comments"}
 		columns, _ := rows.Columns()
 		count := len(columns)
 		values := make([]interface{}, count)
@@ -2396,7 +2411,8 @@ func Adds(name string, id string, tableName string, addsTxt string) []byte {
 	for rows.Next() {
 		err := rows.Scan(&objectid)
 		if err != nil {
-			log.Fatal(err)
+			//log.Fatal(err)
+			objectid = 1
 		}
 	}
 	for _, i := range adds {
