@@ -391,7 +391,7 @@ func StartGorillaMux() *mux.Router {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		//temp
-		name = "%"
+		name = config.RootName
 		log.Println("/sharing/rest/content/items/" + name + "(" + r.Method + ")")
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
@@ -423,7 +423,11 @@ func StartGorillaMux() *mux.Router {
 		name := vars["name"]
 		if config.DbSource != config.FILE {
 			name = "%"
+
 		}
+		log.Println("Old name:  " + name)
+		name = config.RootName
+		log.Println("New name:  " + name)
 		log.Println("/sharing/rest/content/items/" + name + "/data (" + r.Method + ")")
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
@@ -1308,8 +1312,10 @@ func StartGorillaMux() *mux.Router {
 		idInt, _ := strconv.Atoi(id)
 		where := r.FormValue("where")
 		outFields := r.FormValue("outFields")
+		returnIdsOnly := r.FormValue("returnIdsOnly")
 		//returnGeometry := r.FormValue("returnGeometry")
 		objectIds := r.FormValue("objectIds")
+		//returnIdsOnly = true
 
 		log.Println(r.FormValue("returnGeometry"))
 		log.Println(r.FormValue("outFields"))
@@ -1318,10 +1324,23 @@ func StartGorillaMux() *mux.Router {
 		if len(where) > 0 {
 			//response := config.GetArcQuery(name, "FeatureServer", idInt, "query",objectIds,where)
 			w.Header().Set("Content-Type", "application/json")
-			var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
+			//var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
+			var response = []byte(`{"objectIdFieldName":"OBJECTID","globalIdFieldName":"GlobalID","geometryProperties":{"shapeLengthFieldName":"","units":"esriMeters"},"features":[]}`)
 			w.Write(response)
 
+		} else if returnIdsOnly == "true" {
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/objectids")
+
+			response := config.GetArcService(name, "FeatureServer", idInt, "objectids")
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".objectids.json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".objectids.json")
+			}
 		} else if len(objectIds) > 0 {
+
 			//only get the select objectIds
 			//response := config.GetArcService(name, "FeatureServer", idInt, "query")
 			response := config.GetArcQuery(name, "FeatureServer", idInt, "query", objectIds, "")
@@ -1482,8 +1501,11 @@ func StartGorillaMux() *mux.Router {
 			//if c == 0 {
 			//	records.RelatedRecordGroups = records.RelatedRecordGroups[:0]
 			//}
-			relRecords.RelatedRecordGroups = append(relRecords.RelatedRecordGroups, recordGroup)
-
+			if len(recordGroup.RelatedRecords) > 0 {
+				relRecords.RelatedRecordGroups = append(relRecords.RelatedRecordGroups, recordGroup)
+			} else {
+				relRecords.RelatedRecordGroups = make([]structs.RelatedRecordGroup, 0)
+			}
 			jsonstr, err = json.Marshal(relRecords)
 			if err != nil {
 				log.Println(err)

@@ -12,8 +12,9 @@
             "program": "${workspaceRoot}",
             "cwd": "${workspaceRoot}",
             "env": {},
-            //"args" : ["-sqlite","D:/workspace/go/src/github.com/traderboy/arcrestgo/arcrest.sqlite","-root","D:/workspace/go/src/github.com/traderboy/arcrestgo/leasecompliance2016"],
-            "args" : ["-pgsql","user=postgres dbname=gis host=192.168.99.100","-root","D:/workspace/go/src/github.com/traderboy/arcrestgo/leasecompliance2016"],
+            //"args" : ["-sqlite","D:/workspace/go/src/github.com/traderboy/arcrestgo/arcrest.sqlite","-root","D:/workspace/go/src/github.com/traderboy/arcrestgo/catalogs"],
+            //"args" : ["-pgsql","user=postgres dbname=gis host=192.168.99.100","-root","D:/workspace/go/src/github.com/traderboy/arcrestgo/catalogs"],
+            "args" : ["-file","-root","D:/workspace/go/src/github.com/traderboy/arcrestgo/catalogs"],
             //"args": ["D:\\workspace\\go\\src\\github.com\\traderboy\\arcrestgo\\services"],
             "showLog": true
         },

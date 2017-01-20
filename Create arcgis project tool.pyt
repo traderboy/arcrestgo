@@ -15,6 +15,8 @@ import copy
 import shutil
 import types
 import ConfigParser
+import copy
+
 Config = ConfigParser.ConfigParser()
 
 
@@ -519,23 +521,23 @@ class CreateNewProject(object):
              relDesc = arcpy.Describe(rootFGDB+"/"+rc)
              if relDesc.isAttachmentRelationship:
                   continue
-             #printMessage("Relationship Name: " + rc)
-             #printMessage("Origin Class Names")
-             #printMessage(relDesc.originClassNames)
+             printMessage("Relationship Name: " + rc)
+             printMessage("Origin Class Names")
+             printMessage(relDesc.originClassNames)
 
-             #printMessage("Origin Class Keys")
-             #printMessage(relDesc.originClassKeys)
+             printMessage("Origin Class Keys")
+             printMessage(relDesc.originClassKeys)
 
-             #printMessage("Destination Class Names")
-             #printMessage(relDesc.destinationClassNames)
+             printMessage("Destination Class Names")
+             printMessage(relDesc.destinationClassNames)
 
-             #printMessage("Destination Class Keys")
-             #printMessage(relDesc.destinationClassKeys)
+             printMessage("Destination Class Keys")
+             printMessage(relDesc.destinationClassKeys)
 
-             #printMessage("Key type:  "+relDesc.keyType)
-             #printMessage(relDesc.notification)
-             #printMessage("backwardPathLabel:  "+relDesc.backwardPathLabel)
-             #printMessage("forwardPathLabel:  "+relDesc.forwardPathLabel)
+             printMessage("Key type:  "+relDesc.keyType)
+             printMessage(relDesc.notification)
+             printMessage("backwardPathLabel:  "+relDesc.backwardPathLabel)
+             printMessage("forwardPathLabel:  "+relDesc.forwardPathLabel)
 
              originId=getDataIndex(allData,relDesc.originClassNames[0])
              destId=getDataIndex(allData,relDesc.destinationClassNames[0])
@@ -727,7 +729,7 @@ class CreateNewProject(object):
            opLayers = content_items_json['operationalLayers']=getOperationalLayers(operationalLayers,serverName,serviceName,symbols)
            opTables = content_items_json['tables']=getTables(operationalTables,serverName,serviceName,len(opLayers))
 
-           file = saveJSON(servicesDestinationPath + "/content.items.data.json",content_items_json)
+           file = saveJSON(servicesDestinationPath + "/content.data.json",content_items_json)
            LoadService(sqliteDb,serviceName,"content", -1,"data",file)
 
            content_items_json=openJSON(templatePath + "/content.items.json")
@@ -852,6 +854,7 @@ class CreateNewProject(object):
                    feature_json['objectIdFieldName']=desc.OIDFieldName
                if desc.hasGlobalID:
                    feature_json['globalIdField'] = desc.globalIDFieldName
+                   feature_json['globalIdFieldName']=desc.globalIDFieldName
                else:
                    feature_json['globalIdField'] = ""
                feature_json['indexes']=getIndexes(lyr)
@@ -949,7 +952,9 @@ class CreateNewProject(object):
                dataName = os.path.basename(desc.dataElement.catalogPath)
                layerObj={"name":lyr.name,"data":dataName}
 
+               #fields = copy.deepcopy(feature_json['fields'])
                feature_json = json.loads(fdesc.json)
+               feature_json['fields']=getFields(lyr)
                #feature_json=openJSON(templatePath + "/name.FeatureServer.id.query.json")
                #feature_json['features']=getFeatures(lyr)
                #feature_json['fields']=getFields(lyr)
@@ -969,6 +974,7 @@ class CreateNewProject(object):
                    feature_json['objectIdFieldName']=desc.OIDFieldName
                if desc.hasGlobalID:
                    feature_json['globalIdField'] = desc.globalIDFieldName
+                   feature_json['globalIdFieldName']=desc.globalIDFieldName
                    layerObj["globaloidname"]=desc.globalIDFieldName
 
                layerObj["type"]="layer"
@@ -1055,6 +1061,7 @@ class CreateNewProject(object):
                    tableObj["oidname"]=desc.OIDFieldName
                if desc.hasGlobalID:
                    feature_json['globalIdField'] = desc.globalIDFieldName
+                   feature_json['globalIdFieldName']=desc.globalIDFieldName
                    tableObj["globaloidname"]=desc.globalIDFieldName
                else:
                    feature_json['globalIdField'] = ""
@@ -1094,11 +1101,15 @@ class CreateNewProject(object):
                tableObj["itemId"]= tbl.name.replace(" ","_")+str(id)
                config["services"][serviceName]["layers"][str(id)]=tableObj
 
+               #fields = copy.deepcopy(feature_json['fields'])
                fSet = arcpy.RecordSet()
                fSet.load(desc.catalogPath)
                fdesc = arcpy.Describe(fSet)
                #printMessage(fdesc.json)
                feature_json = json.loads(fdesc.json)
+               #replace fields with full fields
+               feature_json['fields']=getFields(tbl)
+
                #dataName = os.path.basename(desc.dataElement.catalogPath)
                #layerObj={"name":lyr.name,"data":dataName}
                printMessage("Saving table " + str(id) + " to JSON")
@@ -1691,6 +1702,9 @@ def getPopupInfo(lyr):
               },
               'fieldInfos': getFieldInfos(lyr)
               }
+   desc = arcpy.Describe(lyr)
+   if not hasAttachments(desc.catalogPath):
+       popInfo["showAttachments"]=False
    return popInfo
 
 #def getLayerDefinition(lyr,symbol):
@@ -1774,6 +1788,18 @@ def getFieldInfos(layer):
                 'format':None,
                 'stringFieldOption':'textbox'
             }
+        elif field.type == 'Date':
+            fieldInfos = {
+                'fieldName':field.name,
+                'label':field.aliasName,
+                'isEditable':field.editable,
+                'isEditableOnLayer':field.editable,
+                'tooltip':'',
+                'visible':True,
+                'format':{"dateFormat":"longMonthDayYear"},
+                'stringFieldOption':'textbox'
+            }
+        
         else:
             fieldInfos = {
                 'fieldName':field.name,

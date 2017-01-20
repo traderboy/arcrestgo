@@ -30,6 +30,7 @@ type JSONConfig struct {
 	PG         string                                                  `json:pg`
 	SqliteDb   string                                                  `json:sqliteDb`
 	DataSource string                                                  `json:dataSource`
+	RootName   string                                                  `json:`
 	//Services map[string]map[string]Service
 	//map[string]Service
 }
@@ -58,12 +59,13 @@ type Field struct {
 
 type Domain struct {
 	CodedValues []struct {
-		Code int    `json:"code"`
-		Name string `json:"name"`
+		Code interface{} `json:"code"`
+		Name string      `json:"name"`
 	} `json:"codedValues,omitempty"`
 	Name string `json:"name,omitempty"`
 	Type string `json:"type,omitempty"`
 }
+
 type RelatedRecords struct {
 	Fields              []Field              `json:"fields,omitempty"`
 	RelatedRecordGroups []RelatedRecordGroup `json:"relatedRecordGroups"`
@@ -74,6 +76,7 @@ type RelatedRecordGroup struct {
 	//RelatedRecord []map[string]interface{} `json:"relatedRecords"`
 	RelatedRecords []RelatedRecord `json:"relatedRecords"`
 }
+
 type RelatedRecord struct {
 	//Attributes []Attribute `json:"attributes"`
 	Attributes map[string]interface{} `json:"attributes"`
@@ -104,13 +107,18 @@ type Feature struct {
 }
 
 type FeatureTable struct {
-	GlobalIDField    string `json:"globalIdField,omitempty"`
-	SpatialReference *struct {
+	GlobalIDField     string `json:"globalIdField,omitempty"`
+	GlobalIDFieldName string `json:"globalIdFieldName,omitempty"`
+	SpatialReference  *struct {
 		Wkid       *int `json:"wkid,omitempty"`
 		LatestWkid *int `json:"latestWkid,omitempty"`
 	} `json:"spatialReference"`
-	GeometryType      string    `json:"geometryType,omitempty"`
-	ObjectIDField     string    `json:"objectIdField,omitempty"`
+	GeometryType       string `json:"geometryType,omitempty"`
+	ObjectIDField      string `json:"objectIdField,omitempty"`
+	GeometryProperties *struct {
+		ShapeLengthFieldName string `json:"shapeLengthFieldName,omitempty"`
+		Units                string `json:"units,omitempty"`
+	} `json:"geometryProperties"`
 	ObjectIDFieldName string    `json:"objectIdFieldName,omitempty"`
 	DisplayFieldName  string    `json:"displayFieldName,omitempty"`
 	Fields            []Field   `json:"fields,omitempty"`

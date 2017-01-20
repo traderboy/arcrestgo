@@ -98,13 +98,14 @@ func Initialize() {
 				Schema = "postgres."
 			} else if os.Args[i] == "-root" && len(os.Args) > i {
 				RootPath, _ = filepath.Abs(os.Args[i+1])
-				RootName = filepath.Base(os.Args[i+1])
+				//RootName = filepath.Base(os.Args[i+1])
 			} else if os.Args[i] == "-p" && len(os.Args) > i {
 				HTTPPort = ":" + os.Args[i+1]
 			} else if os.Args[i] == "-https" && len(os.Args) > i {
 				HTTPSPort = ":" + os.Args[i+1]
 			} else if os.Args[i] == "-file" {
 				DbSource = FILE
+				LoadConfigurationFromFile()
 			} else if os.Args[i] == "-h" {
 				fmt.Println("Usage:")
 				fmt.Println("go run server.go -p HTTP Port -https HTTPS Port -root <path to service folder> -sqlite <path to service .sqlite> -pgsql <connection string for Postgresql> -h [show help]")
@@ -114,28 +115,27 @@ func Initialize() {
 	} else {
 		//read all folder in catalogs
 		/*
-				files, _ := ioutil.ReadDir(RootPath)
+			files, _ := ioutil.ReadDir(RootPath)
 
-				for _, f := range files {
-					if f.IsDir() {
-					}
-				}
-
-
-			LoadConfigurationFromFile()
-			RootPath, _ = filepath.Abs(os.Args[i+1])
-			RootName = filepath.Base(os.Args[i+1])
-
-			if Project.DataSource == "pg" {
-				DbSource = PGSQL
-				DbSource = Project.PG
-			} else if Project.DataSource == "sqlite" {
-				DbSource = SQLITE3
-				DbSource = Project.SqlitDb
-
-			} else if Project.DataSource == "pg" {
+			for _, f := range files {
+				if f.IsDir() {
+			}
 			}
 		*/
+
+		LoadConfigurationFromFile()
+		//RootPath, _ = filepath.Abs(os.Args[i+1])
+		//RootName = filepath.Base(os.Args[i+1])
+		if Project.DataSource == "pg" {
+			DbSource = PGSQL
+			DbName = Project.PG
+			Schema = "postgres."
+		} else if Project.DataSource == "sqlite" {
+			DbSource = SQLITE3
+			DbName = Project.SqliteDb
+		} else if Project.DataSource == "file" {
+			DbSource = FILE
+		}
 	}
 
 	if DbSource == PGSQL {
@@ -192,9 +192,12 @@ func Initialize() {
 		//log.Print("Sqlite database: " + DbQueryName)
 		//DbQuery.Exec(initializeStr)
 		//defer db.Close()
-	} else if DbSource == FILE {
-		LoadConfigurationFromFile()
 	}
+	/*
+		else if DbSource == FILE {
+			LoadConfigurationFromFile()
+		}
+	*/
 
 	/*
 		Db, err = sql.Open("postgres", "user=postgres DbSource=gis host=192.168.99.100")
@@ -221,6 +224,7 @@ func GetParam(i int) string {
 	}
 	return "$" + strconv.Itoa(i)
 }
+
 func SetDatasource(newDatasource int) {
 	if DbSource == newDatasource {
 		return

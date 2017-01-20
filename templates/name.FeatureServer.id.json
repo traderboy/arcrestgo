@@ -16,6 +16,12 @@
     "editingInfo": {
         "lastEditDate": 1440524683722
     },
+    "geometryProperties": {
+        "shapeLengthFieldName": "",
+        "units": "esriMeters"
+    },
+    "hasGeometryProperties": true,
+    "useStandardizedQueries": true,
     "relationships": [],
     "isDataVersioned": false,
     "supportsCalculate": true,
@@ -29,11 +35,16 @@
     "serviceItemId": "55C5E7E4-834D-4D44-A12C-991E7F8B4600",
     "advancedQueryCapabilities": {
         "supportsPagination": true,
+        "supportsQueryRelatedPagination": true,
         "supportsQueryWithDistance": true,
         "supportsReturningQueryExtent": true,
         "supportsStatistics": true,
         "supportsOrderBy": true,
-        "supportsDistinct": true
+        "supportsDistinct": true,
+        "supportsQueryWithResultType": true,
+        "supportsSqlExpression": true,
+        "supportsAdvancedQueryRelated": true,
+        "supportsReturningGeometryCentroid": false
     },
     "geometryType": "esriGeometryPoint",
     "minScale": 0,
