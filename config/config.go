@@ -106,9 +106,9 @@ func Initialize() {
 			} else if os.Args[i] == "-https" && len(os.Args) > i {
 				HTTPSPort = ":" + os.Args[i+1]
 			} else if os.Args[i] == "-pem" && len(os.Args) > i {
-				Pem = ":" + os.Args[i+1]
+				Pem = os.Args[i+1]
 			} else if os.Args[i] == "-cert" && len(os.Args) > i {
-				Cert = ":" + os.Args[i+1]
+				Cert = os.Args[i+1]
 			} else if os.Args[i] == "-file" {
 				DbSource = FILE
 				LoadConfigurationFromFile()
@@ -215,7 +215,7 @@ func Initialize() {
 	DataPath = RootPath        //+ string(os.PathSeparator)        //+ defaultService + string(os.PathSeparator) + "services" + string(os.PathSeparator)
 	ReplicaPath = RootPath     //+ string(os.PathSeparator)     //+ defaultService + string(os.PathSeparator) + "replicas" + string(os.PathSeparator)
 	AttachmentsPath = RootPath //+ string(os.PathSeparator) + RootName + string(os.PathSeparator) + "attachments" //+ string(os.PathSeparator)
-	UploadPath = RootPath + string(os.PathSeparator) + RootName +  string(os.PathSeparator) +"services"+ string(os.PathSeparator) +"attachments"
+	UploadPath = RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "attachments"
 
 	log.Println("Root catalog: " + RootName)
 	log.Println("Root path: " + RootPath)
