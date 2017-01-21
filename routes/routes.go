@@ -1192,11 +1192,15 @@ func StartGorillaMux() *mux.Router {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		id := vars["id"]
+		idInt, _ := strconv.Atoi(id)
 		row := vars["row"]
+
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/" + row + "/addAttachment")
 		// TODO: move and rename the file using req.files.path & .name)
 		//res.send(console.dir(req.files))  // DEBUG: display available fields
-		var uploadPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
+		var uploadPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
+		os.MkdirAll(uploadPath, 0755)
+
 		//w.Write([]byte(uploadPath))
 		if r.Method == "GET" {
 			crutime := time.Now().Unix()
@@ -1207,23 +1211,45 @@ func StartGorillaMux() *mux.Router {
 			t, _ := template.ParseFiles("upload.gtpl")
 			t.Execute(w, token)
 		} else {
-			r.ParseMultipartForm(32 << 20)
-			file, handler, err := r.FormFile("uploadfile")
-			if err != nil {
-				fmt.Println(err)
-				return
+			const MAX_MEMORY = 10 * 1024 * 1024
+			if err := r.ParseMultipartForm(MAX_MEMORY); err != nil {
+				log.Println(err)
+				http.Error(w, err.Error(), http.StatusForbidden)
 			}
-			defer file.Close()
-			fmt.Fprintf(w, "%v", handler.Header)
-			f, err := os.OpenFile(uploadPath+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-			if err != nil {
-				fmt.Println(err)
-				return
+
+			for key, value := range r.MultipartForm.Value {
+				fmt.Fprintf(w, "%s:%s ", key, value)
+				log.Printf("%s:%s", key, value)
 			}
-			defer f.Close()
-			io.Copy(f, file)
+
+			for _, fileHeaders := range r.MultipartForm.File {
+				for _, fileHeader := range fileHeaders {
+					file, _ := fileHeader.Open()
+					path := fmt.Sprintf("%s%s%s", uploadPath, string(os.PathSeparator), fileHeader.Filename)
+					log.Println(path)
+					buf, _ := ioutil.ReadAll(file)
+					ioutil.WriteFile(path, buf, os.ModePerm)
+				}
+			}
+			/*
+				r.ParseMultipartForm(32 << 20)
+				file, handler, err := r.FormFile("uploadfile")
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				defer file.Close()
+				fmt.Fprintf(w, "%v", handler.Header)
+				f, err := os.OpenFile(uploadPath+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				defer f.Close()
+				io.Copy(f, file)
+			*/
 		}
-		response, _ := json.Marshal(map[string]interface{}{"addAttachmentResult": map[string]interface{}{"objectId": id, "globalId": nil, "success": true}})
+		response, _ := json.Marshal(map[string]interface{}{"addAttachmentResult": map[string]interface{}{"objectId": idInt, "globalId": nil, "success": true}})
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 
