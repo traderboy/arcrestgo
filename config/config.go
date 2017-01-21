@@ -44,6 +44,8 @@ var RootPath = "catalogs"
 var RootName string
 var HTTPPort = ":80"
 var HTTPSPort = ":443"
+var Pem = "ssl/reais.x10host.com.key.pem"
+var Cert = "ssl/2_reais.x10host.com.crt"
 
 //"github.com/gin-gonic/gin"
 //Db is the SQLITE databa se object
@@ -103,6 +105,10 @@ func Initialize() {
 				HTTPPort = ":" + os.Args[i+1]
 			} else if os.Args[i] == "-https" && len(os.Args) > i {
 				HTTPSPort = ":" + os.Args[i+1]
+			} else if os.Args[i] == "-pem" && len(os.Args) > i {
+				Pem = ":" + os.Args[i+1]
+			} else if os.Args[i] == "-cert" && len(os.Args) > i {
+				Cert = ":" + os.Args[i+1]
 			} else if os.Args[i] == "-file" {
 				DbSource = FILE
 				LoadConfigurationFromFile()

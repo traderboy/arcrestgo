@@ -978,6 +978,21 @@ class CreateNewProject(object):
                    layerObj["globaloidname"]=desc.globalIDFieldName
 
                layerObj["type"]="layer"
+               #remove the defaultValue is it is NEWID() WITH VALUES
+               #for i in feature_json['fields']:
+               #    try:
+               #        if i.defaultValue=="NEWID() WITH VALUES":
+               #           i.defaultValue=None
+               #    except Exception as e:
+               #        pass        
+
+               globalFields = ["GlobalID","GlobalGUID"]
+               #OBS! must remove the curly brackets around the globalId and GlobalGUID attributes
+               for i in feature_json['features']:
+                  for j in i['attributes']:
+                     if j in globalFields:
+                        i['attributes'][j]=i['attributes'][j].replace("{","").replace("}","")
+               
                printMessage("Saving layer " + str(id) + " to JSON")
                file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(id)+".query.json",feature_json)
                LoadService(sqliteDb,serviceName,"FeatureServer", id,"query",file)
@@ -1109,6 +1124,19 @@ class CreateNewProject(object):
                feature_json = json.loads(fdesc.json)
                #replace fields with full fields
                feature_json['fields']=getFields(tbl)
+               #remove the defaultValue is it is NEWID() WITH VALUES
+               #for i in feature_json['fields']:
+               #    try:
+               #        if i.defaultValue=="NEWID() WITH VALUES":
+               #           i.defaultValue=None
+               #    except Exception as e:
+               #        pass        
+               #OBS! must remove the curly brackets around the globalId and GlobalGUID attributes
+               for i in feature_json['features']:
+                  for j in i['attributes']:
+                     if j in globalFields:
+                        i['attributes'][j]=i['attributes'][j].replace("{","").replace("}","")
+               
 
                #dataName = os.path.basename(desc.dataElement.catalogPath)
                #layerObj={"name":lyr.name,"data":dataName}
@@ -1656,10 +1684,11 @@ def getTables(opTables,serverName,serviceName,id=0):
          #"layerType":"ArcGISFeatureLayer",
          "title": tbl.name,
          "url": "http://"+serverName + "/arcgis/rest/services/"+serviceName+"/FeatureServer/"+str(id),
-         "popupInfo": getPopupInfo(tbl),
+         "popupInfo": getPopupInfo(tbl)
          #"visibility": lyr.visible,
-         "capabilities": "Create,Delete,Query,Update,Editing,Sync"
+         
      }
+     #"capabilities": "Create,Delete,Query,Update,Editing,Sync"
      id=id+1
      tbls.append(opTable)
    return tbls
@@ -1696,12 +1725,14 @@ def getPopupInfo(lyr):
               'description':None,
               'showAttachments': True,
               'mediaInfo': [],
-              'relatedRecordsInfo':{
-                  'showRelatedRecords':True,
-                  'orderByFields':None
-              },
               'fieldInfos': getFieldInfos(lyr)
               }
+
+#              'relatedRecordsInfo':{
+#                  'showRelatedRecords':True,
+#                  'orderByFields':None
+#              },
+
    desc = arcpy.Describe(lyr)
    if not hasAttachments(desc.catalogPath):
        popInfo["showAttachments"]=False
@@ -1904,7 +1935,7 @@ def getFields(layer):
            fieldInfos['type']='esriFieldTypeGUID'
         elif field.type == 'GlobalID':
            fieldInfos['type']='esriFieldTypeGlobalID'
-           fieldInfos['defaultValue']='NEWID() WITH VALUES'
+           #fieldInfos['defaultValue']='NEWID() WITH VALUES'
         else:
            printMessage("Unknown field type for " + field.name + ": " + field.type)
            fieldInfos['type']='esriFieldTypeOID'

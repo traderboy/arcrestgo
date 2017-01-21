@@ -114,16 +114,17 @@ func main() {
 			log.Fatal("HTTP server: ", err1)
 		}
 	}()
+	/*
+		var pem = "ssl/2_gis.biz.tm.key"
+		var cert = "ssl/2_gis.biz.tm.crt"
+		cert = "ssl/agent2-cert.cert"
+		pem = "ssl/agent2-key.pem"
 
-	var pem = "ssl/2_gis.biz.tm.key"
-	var cert = "ssl/2_gis.biz.tm.crt"
-	cert = "ssl/agent2-cert.cert"
-	pem = "ssl/agent2-key.pem"
+		cert = "ssl/2_reais.x10host.com.crt"
+		pem = "ssl/reais.x10host.com.key.pem"
+	*/
 
-	cert = "ssl/2_reais.x10host.com.crt"
-	pem = "ssl/reais.x10host.com.key.pem"
-
-	err := http.ListenAndServeTLS(config.HTTPSPort, cert, pem, handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
+	err := http.ListenAndServeTLS(config.HTTPSPort, config.Cert, config.Pem, handlers.CORS(originsOk, headersOk, methodsOk)(r)) //handlers.CORS()(r))
 	if err != nil {
 		log.Fatal("HTTP server: ", err)
 	}
