@@ -657,7 +657,7 @@ func StartGorillaMux() *mux.Router {
 	r.HandleFunc("/sharing/rest/info", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("/sharing/rest/info")
 		response, _ := json.Marshal(map[string]interface{}{"owningSystemUrl": "http://" + config.Server,
-			"authInfo": map[string]interface{}{"tokenServicesUrl": "https://" + config.Server + "/sharing/rest/generateToken", "isTokenBasedSecurity": true}})
+			"authInfo": map[string]interface{}{"tokenServicesUrl": "https://" + config.Project.Hostname + "/sharing/rest/generateToken", "isTokenBasedSecurity": true}})
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 	}).Methods("GET")
@@ -683,6 +683,7 @@ func StartGorillaMux() *mux.Router {
 
 	   f=json&replicaID=
 	*/
+	//http://reais.x10host.com/arcgis/rest/services/leasecompliance2016/FeatureServer/jobs/replicas?f=json
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/jobs/replicas", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
@@ -691,10 +692,10 @@ func StartGorillaMux() *mux.Router {
 		var lastUpdatedTime int64 = 1441201705967
 		response, _ := json.Marshal(map[string]interface{}{
 			"replicaName": "MyReplica", "replicaID": "58808194-921a-4f9f-ac97-5ffd403368a9", "submissionTime": submissionTime, "lastUpdatedTime": lastUpdatedTime,
-			"status": "Completed", "resultUrl": "http://" + config.Server + "/arcgis/rest/services/" + name + "/FeatureServer/replicas/"})
+			"status": "Completed", "resultUrl": "http://" + config.Project.Hostname + "/arcgis/rest/services/" + name + "/FeatureServer/replicas/"})
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
-	}).Methods("GET")
+	}).Methods("GET", "POST")
 
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/unRegisterReplica", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -705,22 +706,23 @@ func StartGorillaMux() *mux.Router {
 		w.Write(response)
 	}).Methods("POST")
 
-	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/replicas", func(w http.ResponseWriter, r *http.Request) {
+	//http://reais.x10host.com/arcgis/rest/services/leasecompliance2016/FeatureServer/replicas/?f=json
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/replicas/", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/replicas")
-		var fileName = config.ReplicaPath + "/" + name + ".geodatabase"
+		var fileName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
 		log.Println("Sending: " + fileName)
 		http.ServeFile(w, r, fileName) //, { root : __dirname})
-	}).Methods("GET")
+	}).Methods("GET", "POST")
 
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/createReplica", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/createReplica (post)")
-		response, _ := json.Marshal(map[string]interface{}{"statusUrl": "http://" + config.Server + "/arcgis/rest/services/" + name + "/FeatureServer/replicas"})
+		response, _ := json.Marshal(map[string]interface{}{"statusUrl": "http://" + config.Project.Hostname + "/arcgis/rest/services/" + name + "/FeatureServer/replicas"})
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 	}).Methods("POST")
@@ -751,7 +753,7 @@ func StartGorillaMux() *mux.Router {
 		var submissionTime int64 = 1441201696150
 		var lastUpdatedTime int64 = 1441201705967
 		response, _ := json.Marshal(map[string]interface{}{"replicaName": "MyReplica", "replicaID": "58808194-921a-4f9f-ac97-5ffd403368a9", "submissionTime": submissionTime,
-			"lastUpdatedTime": lastUpdatedTime, "status": "Completed", "resultUrl": "http://" + config.Server + "/arcgis/rest/services/" + name + "/FeatureServer/replicas/"})
+			"lastUpdatedTime": lastUpdatedTime, "status": "Completed", "resultUrl": "http://" + config.Project.Hostname + "/arcgis/rest/services/" + name + "/FeatureServer/replicas/"})
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 	}).Methods("GET")
