@@ -2246,6 +2246,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   name=replicaDestinationPath + "/"+serviceName+".sql"
   with open(name,'w') as f:
        f.write("SELECT load_extension( 'stgeometry_sqlite.dll', 'SDE_SQL_funcs_init');\n")
+       f.write("PRAGMA journal_mode=WAL;\n")
+       #f.write(";\n")
+
        f.write(sql1)
        f.write(";\n")
 
@@ -2257,6 +2260,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
           f.write(";\n")
        f.write(sql4)
        f.write(";\n")
+       
+       
        f.close()
   #printMessage("Running \"" + toolkitPath+"/spatialite/spatialite.exe\" \"" + newFullReplicaDB + "\"  < " + name)
   printMessage("Running \"" + toolkitPath+"/spatialite/spatialite.exe\" \"" + newFullReplicaDB + "\"  < " + name)
@@ -2637,7 +2642,8 @@ def initializeSqlite(sqliteDb):
         conn = sqlite3.connect(sqliteDb)
         #conn = sqlite3.connect("c:/massappraisal/colville/"+inFeaturesName+".sqlite")
         c = conn.cursor()
-        
+
+        c.execute("PRAGMA journal_mode=WAL")
         c.execute("DROP TABLE IF EXISTS catalog")
         c.execute("DROP TABLE IF EXISTS services")
         c.execute("CREATE TABLE IF NOT EXISTS catalog (id INTEGER PRIMARY KEY AUTOINCREMENT, name text, type text, json text)")

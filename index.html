@@ -6,10 +6,17 @@
 
     <link href="dist/jsoneditor.css" rel="stylesheet" type="text/css">
     <script src="dist/jsoneditor.js"></script>
+    <script src="dist/vkbeautify.0.99.00.beta.js"></script>
     <script>
-
+        function showSpinner() {
+            document.getElementById("spinner").style.display = 'block'
+        }
+        function hideSpinner() {
+            document.getElementById("spinner").style.display = 'none'
+        }
         function populateDropdown() {
-            var serviceUrl = location.href + (location.href.substring(location.href.length-1)=='/'?"":"/")+"arcgis/rest/services"
+            var serviceUrl = location.href + (location.href.substring(location.href.length - 1) == '/' ? "" : "/") + "arcgis/rest/services"
+            showSpinner()
             loadJSON(serviceUrl,
                 function (data) {
                     //console.log(data);
@@ -23,9 +30,22 @@
                 function (xhr) {
                     console.error(xhr);
                     document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Service URL not found</b>"
+                    hideSpinner()
                 }
             )
 
+        }
+        function xml_to_string(xml_node) {
+            if (xml_node.xml)
+                return xml_node.xml;
+            else if (XMLSerializer) {
+                var xml_serializer = new XMLSerializer();
+                return xml_serializer.serializeToString(xml_node);
+            }
+            else {
+                alert("ERROR: Extremely old browser");
+                return "";
+            }
         }
 
         function loadServices() {
@@ -36,13 +56,12 @@
             }
             var urlsplit = url.split("/")
             var service = urlsplit[6]
-            for (var i=0;i< urlsplit.length;i++)
-            {
-                if (urlsplit[i].toLowerCase() == 'service' && urlsplit.length>i){
-                    service = urlsplit[i+1]
+            for (var i = 0; i < urlsplit.length; i++) {
+                if (urlsplit[i].toLowerCase() == 'service' && urlsplit.length > i) {
+                    service = urlsplit[i + 1]
                 }
             }
-            
+
             var serviceUrl = urlsplit[0] + "//" + urlsplit[2]
 
             loadJSON(url,
@@ -52,10 +71,12 @@
                     editor.set({});
                     document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Loaded service</b>"
                     populateDropdownFromService(serviceUrl, service, data)
+                    hideSpinner()
                 },
                 function (xhr) {
                     console.error(xhr);
                     document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Service URL not found</b>"
+                    hideSpinner()
                 }
             );
 
@@ -106,7 +127,7 @@
                 //{ "value": url+"sharing/rest/accounts/self", "text": "Accounts self" },
                 { "value": url + "/sharing/rest/portals/self?f=json", "text": "Portals self" },
                 { "value": url + "/sharing/rest/search?f=json", "text": "Search" },
-                { "value": url + "/sharing/rest/content/items/" + service+"?f=json", "text": "Content items" },
+                { "value": url + "/sharing/rest/content/items/" + service + "?f=json", "text": "Content items" },
                 { "value": url + "/sharing/rest/content/items/" + service + "/data?f=json", "text": "Content items data" },
                 { "value": url + "/arcgis/rest/services?f=json", "text": "Services" },
                 { "value": url + "/arcgis/rest/services/" + service + "/FeatureServer?f=json", "text": "FeatureServer" }
@@ -122,14 +143,14 @@
                 */
             ]
             for (var i = 0; i < data.layers.length; i++) {
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id+"?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id+"/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id+"/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
             }
             for (var i = 0; i < data.tables.length; i++) {
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id+"?f=json", "text": data.tables[i].name + " (" + data.tables[i].id + ")" })
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id+"/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.tables[i].name + " ObjectID (" + data.tables[i].id + ")" })
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id+"/query?f=json", "text": data.tables[i].name + " Query (" + data.tables[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "?f=json", "text": data.tables[i].name + " (" + data.tables[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.tables[i].name + " ObjectID (" + data.tables[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "/query?f=json", "text": data.tables[i].name + " Query (" + data.tables[i].id + ")" })
 
             }
             var il = langArray.length;
@@ -142,6 +163,7 @@
                 select.appendChild(option);
             }
         }
+
         function updateURL(sel) {
             if (sel.value.substring(0, 4).toLowerCase() == 'http')
                 val = sel.value
@@ -151,6 +173,7 @@
             var url = document.getElementById("url").value = val
             loadURL()
         }
+
         function loadURL() {
             var url = document.getElementById("url").value
             if (url == "") {
@@ -158,19 +181,41 @@
                 return
             }
             document.getElementById('urlLbl').innerHTML = ""
+            showSpinner()
+            if (url.indexOf("/xml/") != -1) {
+                var win = window.open(url, '_blank');
+                win.focus();
+                /*
+                document.getElementById("jsoneditor").style.display = "none"
+                document.getElementById("xmleditor").style.display = "block"
+                loadXML(url,
+                    function (xml) {
+                        document.getElementById("xmleditor").innerHTML = vkbeautify.xml(xml,4)
+                        hideSpinner()
+                    },
+                    function (xhr) {
+                        console.error(xhr);
+                        document.getElementById('urlLbl').innerHTML = "<b style='color:red'>URL not found</b>"
+                        hideSpinner()
+                    }
+                )
+                */
+                return
+            }
+            document.getElementById("jsoneditor").style.display = "block"
+            document.getElementById("xmleditor").style.display = "none"
 
             loadJSON(url,
                 function (data) {
                     console.log(data);
-                    //json = JSON.parse(data)
-                    //alert(json)
                     editor.set(data);
-
+                    hideSpinner()
                 },
                 function (xhr) {
                     console.error(xhr);
                     document.getElementById('urlLbl').innerHTML = "<b style='color:red'>URL not found</b>"
                     editor.set({});
+                    hideSpinner()
                 }
             );
         }
@@ -180,11 +225,14 @@
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === XMLHttpRequest.DONE) {
                     if (xhr.status === 200) {
-                        if (success)
+                        if (success) {
                             success(JSON.parse(xhr.responseText));
+                        }
                     } else {
-                        if (error)
+                        if (error) {
                             error(xhr);
+                            hideSpinner()
+                        }
                     }
                 }
             };
@@ -221,7 +269,26 @@
             //xhr.send(encodeURI(txt));
             xhr.send(txt);
 
-        }   
+        }  
+        function loadXML(path, success, error) {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        if (success) {
+                            //xhr.responseXML
+                            success(xhr.responseText);
+                        }
+                    } else {
+                        if (error) {
+                            error(xhr);
+                        }
+                    }
+                }
+            };
+            xhr.open("GET", path, true);
+            xhr.send();
+        }         
     </script>
 
 <style type="text/css">
@@ -230,6 +297,11 @@
       height: 1200px;
     }
     form{display:inline}
+    #xmleditor{
+      display:none;
+      width: 100%;
+      height: 1200px;
+    }
   </style>
 </head>
 
@@ -252,6 +324,7 @@
 <input type='submit' id="getSvc" value='Load service'></input>
 </span>
 </form>
+<img src="dist/img/spinner.gif" id='spinner' style='left:40%;top:40%;position:absolute;display:none'>
 
 <form id='frm' style='float:right'>
 <input type='submit' style='float:right' id="getJSON" value='Save JSON'></input>
@@ -263,6 +336,9 @@
 </div>
 
 
+<div id="axmleditor"></div>
+<div id="xmleditor">
+</div>
 <div id="jsoneditor"></div>
 
 <script>
@@ -285,13 +361,16 @@
                                     var url = document.getElementById("url").value
                                     //var url_el = document.getElementById("urlstr")
                                     //url_el.value = url
+                                    showSpinner()
                                     putJSON(url, JSON.stringify(json),
                                         function (data) {
                                             document.getElementById('urlLbl').innerHTML = "<b style='color:green'>Success</b>"
+                                            hideSpinner()
                                         },
                                         function (xhr) {
                                             console.error(xhr);
                                             document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Error saving JSON</b>"
+                                            hideSpinner()
                                         }
                                     )
 

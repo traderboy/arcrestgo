@@ -55,6 +55,7 @@ var ArcGisVersion = "3.8"
 
 var Db *sql.DB
 var DbQuery *sql.DB
+var DbSqliteQuery *sql.DB
 
 var port = ":8080"
 
@@ -175,7 +176,9 @@ func Initialize() {
 		//initializeStr = "PRAGMA synchronous = OFF;PRAGMA cache_size=100000;PRAGMA journal_mode=WAL;"
 		//log.Println(initializeStr)
 
-		Db, err = sql.Open("sqlite3", "file:"+DbName+"?PRAGMA journal_mode=WAL")
+		//Db, err = sql.Open("sqlite3", "file:"+DbName+"?PRAGMA journal_mode=WAL")
+		Db, err = sql.Open("sqlite3", DbName)
+
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -188,8 +191,8 @@ func Initialize() {
 		//get RootName
 		DbQueryName := RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase"
 		log.Println("DbQueryName: " + DbQueryName)
-		DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+"?PRAGMA journal_mode=WAL")
-		//DbQuery, err = sql.Open("sqlite3", DbQueryName)
+		//DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+"?PRAGMA journal_mode=WAL")
+		DbQuery, err = sql.Open("sqlite3", DbQueryName)
 		if err != nil {
 			log.Fatal(err)
 		}

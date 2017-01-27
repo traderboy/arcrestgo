@@ -1965,37 +1965,57 @@ func StartGorillaMux() *mux.Router {
 		name := vars["name"]
 		id := vars["id"]
 		idInt, _ := strconv.Atoi(id)
+		fieldStr := r.URL.Query().Get("field")
+		if len(fieldStr) == 0 {
+			fieldStr = "\"ItemInfo\""
+		}
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/db/" + id)
 		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
-		db, err := sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
-		if err != nil {
-			log.Fatal(err)
+		//err := config.DbSqliteQuery.Ping()
+
+		var err error
+		//if err != nil {
+		if config.DbSqliteQuery == nil {
+			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
+			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
-				w.Write([]byte("Error"))
-				w.Write([]byte(err.Error()))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
 				return
 			}
 			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
-			sql := "update \"GDB_ServiceItems\" set \"ItemInfo\"=? where OBJECTID=?"
+			sql := "update \"GDB_ServiceItems\" set " + fieldStr + "=? where OBJECTID=?"
 			log.Println(sql)
-			stmt, err := db.Prepare(sql)
+			//log.Println(body)
+			log.Println(id)
+			stmt, err := config.DbSqliteQuery.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
-				w.Write([]byte(err.Error()))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
 			}
-			_, err = stmt.Exec(body, id)
+			_, err = stmt.Exec(string(body), idInt)
 			//db.Close()
 			if err != nil {
-				w.Write([]byte(err.Error()))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
 				log.Println(err.Error())
 				return
 			}
+			stmt.Close()
 			w.Header().Set("Content-Type", "application/json")
-
 			response, _ := json.Marshal(map[string]interface{}{"response": "ok"})
 			w.Write(response)
 			return
@@ -2003,26 +2023,32 @@ func StartGorillaMux() *mux.Router {
 		//Db.Exec(initializeStr)
 		log.Print("Sqlite database: " + dbName)
 		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT \"ItemInfo\" FROM \"GDB_ServiceItems\" where OBJECTID=?"
+		sql := "SELECT " + fieldStr + " FROM \"GDB_ServiceItems\" where OBJECTID=?"
 		log.Printf("Query: "+sql+"%v", idInt)
-		var itemInfo []byte
-		stmt, err := db.Prepare(sql)
+
+		stmt, err := config.DbSqliteQuery.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
-			w.Write([]byte(err.Error()))
+			//w.Write([]byte(err.Error()))
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+
 			return
 		}
 		//rows := stmt.QueryRow(id)
+		var itemInfo []byte
 		err = stmt.QueryRow(idInt).Scan(&itemInfo)
 		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
 		if err != nil {
-
 			log.Println(err.Error())
-			w.Write([]byte(err.Error()))
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-
 		w.Write(itemInfo)
 		/*
 			for rows.Next() {
@@ -2037,42 +2063,55 @@ func StartGorillaMux() *mux.Router {
 		//db.Close()
 
 	}).Methods("GET", "POST", "PUT")
+
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/xml/{id}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		id := vars["id"]
 		idInt, _ := strconv.Atoi(id)
 
-		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/replicas")
+		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/xml/" + id)
 		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
-		db, err := sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
-		if err != nil {
-			log.Fatal(err)
+		var err error
+		//if err != nil {
+		if config.DbSqliteQuery == nil {
+			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
+			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
-				w.Write([]byte("Error"))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
 				return
 			}
 			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
 			sql := "update \"GDB_Items\" set \"Definition\"=? where OBJECTID=?"
-			stmt, err := db.Prepare(sql)
+			stmt, err := config.DbSqliteQuery.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
-				w.Write([]byte(err.Error()))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
 				return
 			}
 			_, err = stmt.Exec(body, id)
 			if err != nil {
 				w.Write([]byte(err.Error()))
-				log.Println(err.Error())
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
 				return
 			}
 			//db.Close()
-
 			w.Header().Set("Content-Type", "application/json")
-
 			response, _ := json.Marshal(map[string]interface{}{"response": "ok"})
 			w.Write(response)
 			return
@@ -2082,26 +2121,31 @@ func StartGorillaMux() *mux.Router {
 		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
 		sql := "SELECT \"Definition\" FROM \"GDB_Items\" where OBJECTID=?"
 		log.Printf("Query: "+sql+"%v", idInt)
-		var itemInfo []byte
-		stmt, err := db.Prepare(sql)
+
+		stmt, err := config.DbSqliteQuery.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
-			w.Write([]byte(err.Error()))
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+
 		}
 		//rows := stmt.QueryRow(id)
+		var itemInfo []byte
 		err = stmt.QueryRow(idInt).Scan(&itemInfo)
 		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
 		if err != nil {
-
 			log.Println(err.Error())
-			w.Write([]byte(err.Error()))
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+
 			return
 		}
 		w.Header().Set("Content-Type", "application/xml")
-
 		w.Write(itemInfo)
-
 	}).Methods("GET", "POST", "PUT")
+
 	//put this last - serve static content
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir(".")))
 
