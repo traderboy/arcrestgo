@@ -1762,9 +1762,13 @@ def getFieldInfos(layer):
 
    #SmallInteger, Integer, Single, Double, String, Date, OID, Geometry, Blob
    # Iterate through the fields and set them to fieldinfo
+   invisFields = ["GlobalID","Shape_Length","Shape_Area","has_permittee","permittee_globalid"]
    for field in allfields:
         fieldInfos = None
         #printMessage("Field: " + field.name + ":  " + field.type)
+        visible = True
+        if field.name in invisFields:
+            visible=False
         if field.type=='Geometry':
            continue
         if field.type == 'OID':
@@ -1775,7 +1779,7 @@ def getFieldInfos(layer):
                 'isEditable':field.editable,
                 'isEditableOnLayer':field.editable,
                 'tooltip':'',
-                'visible':False,
+                'visible':visible,
                 'format':None,
                 'stringFieldOption':'textbox'
             }
@@ -1787,7 +1791,7 @@ def getFieldInfos(layer):
                 'isEditable':field.editable,
                 'isEditableOnLayer':field.editable,
                 'tooltip':'',
-                'visible':True,
+                'visible':visible,
                 'format':{
                     'places':0,
                     'digitSeparator':True
@@ -1801,7 +1805,7 @@ def getFieldInfos(layer):
                 'isEditable':field.editable,
                 'isEditableOnLayer':field.editable,
                 'tooltip':'',
-                'visible':True,
+                'visible':visible,
                 'format':{
                     'places':2,
                     'digitSeparator':True
@@ -1815,7 +1819,7 @@ def getFieldInfos(layer):
                 'isEditable':field.editable,
                 'isEditableOnLayer':field.editable,
                 'tooltip':'',
-                'visible':True,
+                'visible':visible,
                 'format':None,
                 'stringFieldOption':'textbox'
             }
@@ -1826,7 +1830,7 @@ def getFieldInfos(layer):
                 'isEditable':field.editable,
                 'isEditableOnLayer':field.editable,
                 'tooltip':'',
-                'visible':True,
+                'visible':visible,
                 'format':{"dateFormat":"longMonthDayYear"},
                 'stringFieldOption':'textbox'
             }
@@ -1838,7 +1842,7 @@ def getFieldInfos(layer):
                 'isEditable':field.editable,
                 'isEditableOnLayer':field.editable,
                 'tooltip':'',
-                'visible':True,
+                'visible':visible,
                 'format':None,
                 'stringFieldOption':'textbox'
             }
@@ -2195,7 +2199,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         "<DatasetID>"+str(id)+"</DatasetID>"
         "<DatasetName>"+featureName+"__ATTACH</DatasetName><DatasetType>esriDTTable</DatasetType><LayerID>"+str(id)+"</LayerID><LayerName>"+featureName+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction>"
         "<ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
-        "<ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen><UseGeometry>true</UseGeometry><IncludeRelated>false</IncludeRelated><QueryOption>esriRowsTypeFilter</QueryOption>"
+        "<ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen><UseGeometry>true</UseGeometry><IncludeRelated>true</IncludeRelated><QueryOption>esriRowsTypeFilter</QueryOption>"
         "<IsAttachment>true</IsAttachment></GPSyncDataset>',"
         " NULL, NULL, NULL from GDB_Items"))
 
@@ -2255,13 +2259,13 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
        f.write(";\n")
        f.close()
   #printMessage("Running \"" + toolkitPath+"/spatialite/spatialite.exe\" \"" + newFullReplicaDB + "\"  < " + name)
-  printMessage("Running \"" + toolkitPath+"/bin/sqlite3.exe\" \"" + newFullReplicaDB + "\"  < " + name)
+  printMessage("Running \"" + toolkitPath+"/spatialite/spatialite.exe\" \"" + newFullReplicaDB + "\"  < " + name)
 
-  #try:
-  #   os.system(toolkitPath+"/bin/sqlite3.exe \"" + newFullReplicaDB + "\"  < \"" + name + "\" >>" + replicaDestinationPath + os.sep + "output.log 2>&1")
-  #except:
-  #   printMessage("Unable to run sql commands")
-  #
+  try:
+     os.system(toolkitPath+"/spatialite/spatialite.exe  \"" + newFullReplicaDB + "\"  < \"" + name + "\" >>" + replicaDestinationPath + os.sep + "output.log 2>&1")
+  except:
+     printMessage("Unable to run sql commands")
+  
 
 def getIndexes(lyr):
    indexes=[]
@@ -2686,6 +2690,9 @@ def printMessage(str):
        arcpy.AddMessage(str)
      except Exception as e:
        print(str)
+
+#def fixSqliteReplica():
+#   sql = 'update  "GDB_ServiceItems" set "ItemInfo"=replace("ItemInfo",'"capabilities":"Query"','"capabilities":"Create,Delete,Query,Update,Editing,Sync"')'
 
 
 def main():

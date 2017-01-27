@@ -125,6 +125,35 @@ type FeatureTable struct {
 	Features          []Feature `json:"features,omitempty"`
 }
 
+type Items struct {
+	ObjectID        int    `json:"objectId"`
+	UUID            string `json:"uuid"`
+	Type            string `json:"type"`
+	Name            string `json:"name"`
+	PhysicalName    string `json:"physicalName"`
+	Path            string `json:"path"`
+	Url             string `json:"url"`
+	Properties      int32  `json:"properties"`
+	Defaults        []byte `json:"defaults"`
+	DatasetSubtype1 int32  `json:"datasetSubtype1"`
+	DatasetSubtype2 int32  `json:"datasetSubtype2"`
+	DatasetInfo1    string `json:"datasetInfo1"`
+	DatasetInfo2    string `json:"datasetInfo"`
+	Definition      string `json:"definition"`
+	Documentation   string `json:"documentation"`
+	ItemInfo        string `json:"itemInfo"`
+	Shape           []byte `json:"shape"`
+}
+
+type ServiceItems struct {
+	ObjectID            int    `json:"objectId"`
+	DatasetName         string `json:"datasetName"`
+	ItemType            int32  `json:"itemType"`
+	ItemId              int32  `json:"itemId"`
+	ItemInfo            string `json:"itemInfo"`
+	AdvancedDrawingInfo string `json:"advancedDrawingInfo"`
+}
+
 /*
 type JSON struct{
 Features [] feature `json:"features"`
