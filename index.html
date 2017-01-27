@@ -181,7 +181,6 @@
                 return
             }
             document.getElementById('urlLbl').innerHTML = ""
-            showSpinner()
             if (url.indexOf("/xml/") != -1) {
                 var win = window.open(url, '_blank');
                 win.focus();
@@ -202,6 +201,7 @@
                 */
                 return
             }
+            showSpinner()
             document.getElementById("jsoneditor").style.display = "block"
             document.getElementById("xmleditor").style.display = "none"
 
