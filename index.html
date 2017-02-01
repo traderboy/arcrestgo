@@ -165,6 +165,10 @@
         }
 
         function updateURL(sel) {
+            if (sel.value==""){
+                editor.set({});
+                return
+            }
             if (sel.value.substring(0, 4).toLowerCase() == 'http')
                 val = sel.value
             else {

@@ -1,0 +1,124 @@
+{
+    "name": "leasecompliance2016",
+    "serviceDescription": "Contains the GIS data for the HPL appraisal by REAIS, INC.",
+    "description": "Contains homesites, farm tract and grazing data with the permittee billing for 2001 - 2014.",
+    "type": "FeatureServer",
+    "isView": false,
+    "hasViews": false,
+    "isEnabled": true,
+    "maxRecordCount": 1000,
+    "hasStaticData": false,
+    "capabilities": "Create,Delete,Query,Update,Editing,Sync",
+    "copyrightText": "",
+    "spatialReference": {
+        "wkid": 102100,
+        "latestWkid": 3857
+    },
+    "initialExtent": {
+        "xmin": -12431978.381999318,
+        "ymin": 4252548.578757987,
+        "xmax": -12174494.30180068,
+        "ymax": 4425074.510873067,
+        "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+        }
+    },
+    "fullExtent": {
+        "xmin": -12357247.4576,
+        "ymin": 4231842.0502,
+        "xmax": -12245218.7731,
+        "ymax": 4360029.437299997,
+        "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+        }
+    },
+    "allowGeometryUpdates": true,
+    "units": "esriMeters",
+    "datasource": "db",
+    "publishJobId": "956aad04-31cc-4b8d-af6c-a4f442c02674",
+    "serviceItemId": "351555bd51ae43d9aafa74d3c667d0c4",
+    "editorTrackingInfo": {
+        "enableEditorTracking": true,
+        "enableOwnershipAccessControl": false,
+        "allowOthersToQuery": true,
+        "allowOthersToUpdate": true,
+        "allowOthersToDelete": true,
+        "allowAnonymousToUpdate": true,
+        "allowAnonymousToDelete": true
+    },
+    "xssPreventionInfo": {
+        "xssPreventionEnabled": true,
+        "xssPreventionRule": "InputOnly",
+        "xssInputRule": "rejectInvalid"
+    },
+    "size": 1163264,
+    "syncEnabled": true,
+    "syncIsReady": true,
+    "provider": "mtsds",
+    "layers": [
+        {
+            "name": "Homesites",
+            "id": 8,
+            "layerId": 0,
+            "tableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_HOMESITES",
+            "type": "Feature Layer",
+            "xssTrustedFields": ""
+        },
+        {
+            "name": "Farm tracts",
+            "id": 9,
+            "layerId": 1,
+            "tableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_FARM_TRACTS",
+            "type": "Feature Layer",
+            "xssTrustedFields": ""
+        },
+        {
+            "name": "Grazing",
+            "id": 10,
+            "layerId": 2,
+            "tableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_GRAZING",
+            "type": "Feature Layer",
+            "xssTrustedFields": ""
+        },
+        {
+            "name": "Grazing permittees",
+            "id": 11,
+            "layerId": 3,
+            "tableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_GRAZING_PERMITTEES",
+            "type": "Table",
+            "xssTrustedFields": ""
+        },
+        {
+            "name": "Farm tracts inspections",
+            "id": 12,
+            "layerId": 4,
+            "tableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_FARM_TRACTS_INSPECTIONS",
+            "type": "Table",
+            "xssTrustedFields": "",
+            "attachmentsTableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_FARM_TRACTS_INSPECTIONS__ATTACH",
+            "attachmentsPrimaryKey": "GlobalID"
+        },
+        {
+            "name": "Homesites inspections",
+            "id": 13,
+            "layerId": 5,
+            "tableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_HOMESITES_INSPECTIONS",
+            "type": "Table",
+            "xssTrustedFields": "",
+            "attachmentsTableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_HOMESITES_INSPECTIONS__ATTACH",
+            "attachmentsPrimaryKey": "GlobalID"
+        },
+        {
+            "name": "Grazing inspections",
+            "id": 14,
+            "layerId": 6,
+            "tableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_GRAZING_INSPECTIONS",
+            "type": "Table",
+            "xssTrustedFields": "",
+            "attachmentsTableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_GRAZING_INSPECTIONS__ATTACH",
+            "attachmentsPrimaryKey": "GlobalID"
+        }
+    ]
+}

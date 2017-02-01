@@ -1,0 +1,248 @@
+{
+    "accounts": [
+        {
+            "authType": 2,
+            "cultureInfo": "en-US",
+            "fullName": "Steve Hale",
+            "gpsReceivers": [
+                {
+                    "name": "To Be Filled By O.E.M. To Be Filled By O.E.M.",
+                    "id": "integrated_receiver",
+                    "isActive": true,
+                    "type": "integrated_receiver"
+                }
+            ],
+            "hasEditPrivileges": true,
+            "id": "steve_gis.biz.tm/",
+            "orgName": "HPL GIS",
+            "path": "shale",
+            "portalUnits": "english",
+            "portalUrl": "https://gis.biz.tm",
+            "recentMaps": {
+                "items": [
+                    {
+                        "id": "accommodationagreementrentals",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    },
+                    {
+                        "id": "leasecompliancefor2016",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    },
+                    {
+                        "id": "leasecompliance2016",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    }
+                ]
+            },
+            "settings": {
+                "MeasurementMetricKey": "0"
+            },
+            "showPlace": true,
+            "supportsFavorites": true,
+            "username": "shale"
+        },
+        {
+            "authType": 2,
+            "cultureInfo": "en-US",
+            "fullName": "Steve Hale",
+            "gpsReceivers": [
+                {
+                    "name": "To Be Filled By O.E.M. To Be Filled By O.E.M.",
+                    "id": "integrated_receiver",
+                    "isActive": true,
+                    "type": "integrated_receiver"
+                }
+            ],
+            "hasEditPrivileges": true,
+            "id": "shale_gis.biz.tm/",
+            "orgName": "HPL GIS",
+            "path": "shale_2hhnwwkn.r5w",
+            "portalUnits": "english",
+            "portalUrl": "https://gis.biz.tm",
+            "recentMaps": {
+                "items": [
+                    {
+                        "id": "accommodationagreementrentals",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    },
+                    {
+                        "id": "leasecompliancefor2016",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    },
+                    {
+                        "id": "leasecompliance2016",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    }
+                ]
+            },
+            "settings": {
+                "MeasurementMetricKey": "0"
+            },
+            "showPlace": true,
+            "supportsFavorites": true,
+            "username": "shale"
+        },
+
+        {
+            "authType": 2,
+            "cultureInfo": "en-US",
+            "fullName": "Steve Hale",
+            "gpsReceivers": [
+                {
+                    "name": "To Be Filled By O.E.M. To Be Filled By O.E.M.",
+                    "id": "integrated_receiver",
+                    "isActive": true,
+                    "type": "integrated_receiver"
+                }
+            ],
+            "hasEditPrivileges": true,
+            "id": "shale_reais.x10host.com:446/",
+            "orgName": "HPL GIS",
+            "path": "shale_zdixsw2s.1qb",
+            "portalUnits": "english",
+            "portalUrl": "https://reais.x10host.com:446",
+            "recentMaps": {
+                "items": [
+                    {
+                        "id": "accommodationagreementrentals",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    },
+                    {
+                        "id": "leasecompliancefor2016",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    }
+                ]
+            },
+            "settings": {
+                "MeasurementMetricKey": "0"
+            },
+            "showPlace": true,
+            "supportsFavorites": true,
+            "username": "shale"
+        },
+        {
+            "authType": 2,
+            "cultureInfo": "en-US",
+            "fullName": "Steve Hale",
+            "gpsReceivers": [
+                {
+                    "name": "To Be Filled By O.E.M. To Be Filled By O.E.M.",
+                    "id": "integrated_receiver",
+                    "isActive": true,
+                    "type": "integrated_receiver"
+                }
+            ],
+            "hasEditPrivileges": true,
+            "id": "shale_reais.x10host.com/",
+            "orgName": "HPL GIS",
+            "path": "shale_rnnkbwnv.wgn",
+            "portalUnits": "english",
+            "portalUrl": "https://reais.x10host.com",
+            "recentMaps": {
+                "items": [
+                    {
+                        "id": "leasecompliancefor2016",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    },
+                    {
+                        "id": "Accommodation Agreement Rentals",
+                        "title": "Accommodation Agreement Rentals"
+                    },
+                    {
+                        "id": "leasecompliance2016",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    }
+                ]
+            },
+            "settings": {
+                "MeasurementMetricKey": "0",
+                "PhotoSize": "1",
+                "LocationAccuracyUnitKey": "Feet"
+            },
+            "showPlace": true,
+            "supportsFavorites": true,
+            "username": "shale"
+        },
+        {
+            "authType": 2,
+            "cultureInfo": "en-US",
+            "fullName": "Steve Hale",
+            "gpsReceivers": [
+                {
+                    "name": "To Be Filled By O.E.M. To Be Filled By O.E.M.",
+                    "id": "integrated_receiver",
+                    "isActive": true,
+                    "type": "integrated_receiver"
+                }
+            ],
+            "hasEditPrivileges": true,
+            "id": "shale_arcrest.ddns.net/",
+            "orgName": "HPL GIS",
+            "path": "shale_cwbxqd5u.pqt",
+            "portalUnits": "english",
+            "portalUrl": "https://arcrest.ddns.net",
+            "recentMaps": {
+                "items": [
+                    {
+                        "id": "leasecompliance2016",
+                        "title": "Contains homesites, farm tracts and grazing GIS data combined with the 2001-2014 rental data."
+                    }
+                ]
+            },
+            "replicasNeedingUnregister": [
+                {
+                    "initialCheckDate": 1485543673711,
+                    "replicaId": "{8408AEE5-B51D-4083-990E-25473254AE6C}",
+                    "replicaUrl": "http://gis.biz.tm/arcgis/rest/services/leasecompliance2016/FeatureServer",
+                    "retryCount": 1
+                }
+            ],
+            "settings": {
+                "MeasurementMetricKey": "0"
+            },
+            "showPlace": true,
+            "supportsFavorites": true,
+            "username": "shale"
+        },
+        {
+            "authType": 5,
+            "cultureInfo": "en-US",
+            "fullName": "joe franklin",
+            "gpsReceivers": [
+                {
+                    "name": "To Be Filled By O.E.M. To Be Filled By O.E.M.",
+                    "id": "integrated_receiver",
+                    "type": "integrated_receiver"
+                }
+            ],
+            "hasEditPrivileges": true,
+            "id": "hpluser5_aardemo.maps.arcgis.com",
+            "orgName": "Gov",
+            "path": "hpluser5_qd3vos1n.1xf",
+            "portalUrl": "https://aardemo.maps.arcgis.com",
+            "recentMaps": {
+                "items": [
+                    {
+                        "id": "df5aa0e91991468eb0efadf475bea54e",
+                        "title": "leasecompliance"
+                    }
+                ]
+            },
+            "settings": {
+                "MeasurementMetricKey": "0"
+            },
+            "showPlace": true,
+            "supportsFavorites": true,
+            "username": "hpluser5"
+        }
+    ],
+    "activeAccountId": "hpluser5_aardemo.maps.arcgis.com",
+    "folders": {
+        "steve_gis.biz.tm/": "shale",
+        "shale_gis.biz.tm/": "shale_2hhnwwkn.r5w",
+        "shale_reais.x10host.com:446/": "shale_zdixsw2s.1qb",
+        "hpluser5_aardemo.maps.arcgis.com": "hpluser5_qd3vos1n.1xf",
+        "shale_reais.x10host.com/": "shale_rnnkbwnv.wgn",
+        "shale_arcrest.ddns.net/": "shale_cwbxqd5u.pqt"
+    }
+}
