@@ -1969,9 +1969,21 @@ func StartGorillaMux() *mux.Router {
 		if len(fieldStr) == 0 {
 			fieldStr = "\"ItemInfo\""
 		}
+		dbPath := r.URL.Query().Get("db")
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/db/" + id)
+
 		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
+		if len(dbPath) > 0 {
+			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+			if config.DbSqliteQuery != nil {
+				config.DbSqliteQuery.Close()
+				config.DbSqliteQuery = nil
+				if dbPath == "close" {
+					return
+				}
+			}
+		}
 		//err := config.DbSqliteQuery.Ping()
 
 		var err error
@@ -2063,15 +2075,27 @@ func StartGorillaMux() *mux.Router {
 		//db.Close()
 
 	}).Methods("GET", "POST", "PUT")
-
+	//http://reais.x10host.com/arcgis/rest/services/leasecompliance2016/FeatureServer/xml/31?f=json&db=C:\Users\steve\AppData\Local\Packages\Esri.CollectorforArcGIS_eytg3kh68c6a8\LocalState\hpluser5_qd3vos1n.1xf\df5aa0e91991468eb0efadf475bea54e\n2tel3ls.beb.geodatabase
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/xml/{id}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		id := vars["id"]
 		idInt, _ := strconv.Atoi(id)
+		dbPath := r.URL.Query().Get("db")
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/xml/" + id)
 		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
+		if len(dbPath) > 0 {
+			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+			if config.DbSqliteQuery != nil {
+				config.DbSqliteQuery.Close()
+				config.DbSqliteQuery = nil
+				if dbPath == "close" {
+					return
+				}
+			}
+		}
+
 		var err error
 		//if err != nil {
 		if config.DbSqliteQuery == nil {

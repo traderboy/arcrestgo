@@ -1286,7 +1286,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
     "<Point xsi:type=''typens:PointN''><X>"+maxx+"</X><Y>"+maxy+"</Y></Point><Point xsi:type=''typens:PointN''><X>"+minx+"</X><Y>"+maxy+"</Y></Point>"
     "<Point xsi:type=''typens:PointN''><X>"+minx+"</X><Y>"+miny+"</Y></Point></PointArray></Ring></RingArray>"
     "<SpatialReference xsi:type=''typens:ProjectedCoordinateSystem''><WKT>PROJCS[&quot;WGS_1984_Web_Mercator_Auxiliary_Sphere&quot;,GEOGCS[&quot;GCS_WGS_1984&quot;,DATUM[&quot;D_WGS_1984&quot;,SPHEROID[&quot;WGS_1984&quot;,6378137.0,298.257223563]],PRIMEM[&quot;Greenwich&quot;,0.0],UNIT[&quot;Degree&quot;,0.0174532925199433]],PROJECTION[&quot;Mercator_Auxiliary_Sphere&quot;],PARAMETER[&quot;False_Easting&quot;,0.0],PARAMETER[&quot;False_Northing&quot;,0.0],PARAMETER[&quot;Central_Meridian&quot;,0.0],PARAMETER[&quot;Standard_Parallel_1&quot;,0.0],PARAMETER[&quot;Auxiliary_Sphere_Type&quot;,0.0],UNIT[&quot;Meter&quot;,1.0],AUTHORITY[&quot;EPSG&quot;,3857]]</WKT>"
-    "<XOrigin>-20037700</XOrigin><YOrigin>-30241100</YOrigin><XYScale>10000</XYScale><ZOrigin>-100000</ZOrigin><ZScale>10000</ZScale><MOrigin>-100000</MOrigin><MScale>10000</MScale><XYTolerance>0.001</XYTolerance><ZTolerance>0.001</ZTolerance><MTolerance>0.001</MTolerance><HighPrecision>true</HighPrecision><WKID>102100</WKID><LatestWKID>3857</LatestWKID></SpatialReference></QueryGeometry>")
+    "<XOrigin>-20037700</XOrigin><YOrigin>-30241100</YOrigin><XYScale>10000</XYScale><ZOrigin>-100000</ZOrigin><ZScale>10000</ZScale><MOrigin>-100000</MOrigin><MScale>10000</MScale><XYTolerance>0.001</XYTolerance><ZTolerance>0.001</ZTolerance><MTolerance>0.001</MTolerance><HighPrecision>true</HighPrecision><WKID>102100</WKID><LatestWKID>3857</LatestWKID></SpatialReference></QueryGeometry><GPSyncDatasets xsi:type=''typens:ArrayOfGPSyncDataset''>")
 
   #"<GPSyncDatasets xsi:type=''typens:ArrayOfGPSyncDataset''>"
   #"<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>5</DatasetID><DatasetName>"+layerName+"</DatasetName><DatasetType>esriDTFeatureClass</DatasetType>"
@@ -1331,8 +1331,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          lyrtype = "esriDTFeatureClass"
          useGeometry="true"
 
-     sql1=sql1+ ("<GPSyncDatasets xsi:type=''typens:ArrayOfGPSyncDataset''>"
-        "<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+str(id)+"</DatasetID><DatasetName>"+lyr.name+"</DatasetName><DatasetType>"+lyrtype+"</DatasetType>"
+     dataSetId='||(SELECT ObjectId FROM "GDB_Items" Where Name=\'main.'+lyr.name+"\')||"
+     sql1=sql1+ ("<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+str(id)+"</DatasetID><DatasetName>"+dataSetId+"</DatasetName><DatasetType>"+lyrtype+"</DatasetType>"
         "<LayerID>"+str(id)+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction><ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen>"
         "<ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen><ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>"+useGeometry+"</UseGeometry><IncludeRelated>true</IncludeRelated>"
@@ -1341,7 +1341,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      sql2.append(('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
         " select MAX(ObjectID)+1, '{AE8D3C7E-9890-4BF4-B946-5BE50A1CC2"+str(format(id, '02'))+"}', '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+featureName+"', '"+featureName.upper()+"', 'MyReplica\\"+featureName+"', '', 1, NULL, NULL, NULL, NULL, NULL, "
         "'<GPSyncDataset xsi:type=''typens:GPSyncDataset'' xmlns:xsi=''http://www.w3.org/2001/XMLSchema-instance'' xmlns:xs=''http://www.w3.org/2001/XMLSchema'' xmlns:typens=''http://www.esri.com/schemas/ArcGIS/10.3''>"
-        "<DatasetID>"+str(id)+"</DatasetID>"
+        "<DatasetID>"+dataSetId+"</DatasetID>"
         "<DatasetName>"+lyr.name+"</DatasetName>"
         "<DatasetType>"+lyrtype+"</DatasetType><LayerID>"+str(id)+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction>"
         "<ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
@@ -1351,9 +1351,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
      printMessage("Loading " + lyr.name)
      if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
+        dataSetId='||(SELECT ObjectId FROM "GDB_Items" Where Name=\'main.'+featureName+"__ATTACH"+"\')||"
         printMessage("Found attachment table: " + featureName+"__ATTACH")
-        sql1=sql1+ ("<GPSyncDatasets xsi:type=''typens:ArrayOfGPSyncDataset''>"
-        "<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+str(id)+"</DatasetID><DatasetName>"+lyr.name+"</DatasetName><DatasetType>esriDTFeatureClass</DatasetType>"
+        sql1=sql1+ ("<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+dataSetId+"</DatasetID><DatasetName>"+lyr.name+"</DatasetName><DatasetType>esriDTFeatureClass</DatasetType>"
         "<LayerID>"+str(id)+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction><ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen>"
         "<ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen><ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>false</UseGeometry><IncludeRelated>false</IncludeRelated>"
@@ -1362,7 +1362,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         sql3.append(('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
         " select MAX(ObjectID)+1, '{55C5E7E4-834D-4D44-A12C-991E7F8B46"+str(format(id, '02'))+"}', '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+featureName+"__ATTACH', '"+featureName.upper()+"__ATTACH', 'MyReplica\\"+featureName+"__ATTACH', '', 1, NULL, NULL, NULL, NULL, NULL, "
         "'<GPSyncDataset xsi:type=''typens:GPSyncDataset'' xmlns:xsi=''http://www.w3.org/2001/XMLSchema-instance'' xmlns:xs=''http://www.w3.org/2001/XMLSchema'' xmlns:typens=''http://www.esri.com/schemas/ArcGIS/10.3''>"
-        "<DatasetID>"+str(id)+"</DatasetID>"
+        "<DatasetID>"+dataSetId+"</DatasetID>"
         "<DatasetName>"+featureName+"__ATTACH</DatasetName><DatasetType>esriDTTable</DatasetType><LayerID>"+str(id)+"</LayerID><LayerName>"+featureName+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction>"
         "<ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
         "<ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen><UseGeometry>false</UseGeometry><IncludeRelated>false</IncludeRelated><QueryOption>esriRowsTypeFilter</QueryOption>"
@@ -1387,11 +1387,11 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   sql1=sql1+("</GPSyncDatasets></GPSyncReplica>'"
    ", NULL, NULL, NULL from GDB_Items")
   #serviceRep=[sql1,sql2,sql4]
-
+  #NON_OPTIMIZE_SIZE"
   arcpy.CreateRuntimeContent_management(mxd.filePath,
               replicaDestinationPath + os.sep + serviceName,
               serviceName,"#","#",
-              "FEATURE_AND_TABULAR_DATA","NON_OPTIMIZE_SIZE","ONLINE","PNG","1","#")
+              "FEATURE_AND_TABULAR_DATA","OPTIMIZE_SIZE","ONLINE","PNG","1","#")
   filenames = next(os.walk(replicaDestinationPath + "/"+serviceName+"/data/"))[2]
   printMessage("Rename " + replicaDestinationPath + "/"+serviceName+"/data/"+filenames[0]+" to "+ replicaDestinationPath+"/"+serviceName+".geodatabase")
   #if offline geodatabase exists, must delete first
@@ -1507,6 +1507,9 @@ def createSingleReplica(templatePath,df,lyr,replicaDestinationPath,toolkitPath,f
      except:
         printMessage("Unable to run sql commands")
      #C:\tmp\32bit>spatialite \\192.168.2.124\d\git\arcnodegis\root\replica\rangeland_units.geodatabase < \\192.168.2.124\d\git\arcnodegis\root\replica\rangeland_units.sql
+
+
+
 
 def saveReplica(tmpMxd,replicaPath,lyr,desc):
    arcpy.CreateRuntimeContent_management(tmpMxd,
