@@ -56,6 +56,7 @@ var ArcGisVersion = "3.8"
 var Db *sql.DB
 var DbQuery *sql.DB
 var DbSqliteQuery *sql.DB
+var DbSqliteDbName string
 
 var port = ":8080"
 
