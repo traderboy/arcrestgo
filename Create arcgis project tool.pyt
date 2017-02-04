@@ -1349,6 +1349,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          featureName=os.path.basename(desc.catalogPath)
          inFeaturesGDB=os.path.dirname(desc.catalogPath).replace("\\","/")
 
+     uuid = "(select upper('{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}') from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v))"
      hasAttachments="false"
      hasAttachmentsStr=""
      if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
@@ -1369,7 +1370,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         "<QueryOption>esriRowsTypeFilter</QueryOption>"+hasAttachmentsStr+"</GPSyncDataset>")
 
      sql2.append(('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
-        " select MAX(ObjectID)+1, '{AE8D3C7E-9890-4BF4-B946-5BE50A1CC2"+str(format(id, '02'))+"}', '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+featureName+"', '"+featureName.upper()+"', 'MyReplica\\"+featureName+"', '', 1, NULL, NULL, NULL, NULL, NULL, "
+        " select MAX(ObjectID)+1, "+uuid+", '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+featureName+"', '"+featureName.upper()+"', 'MyReplica\\"+featureName+"', '', 1, NULL, NULL, NULL, NULL, NULL, "
         "'<GPSyncDataset xsi:type=''typens:GPSyncDataset'' xmlns:xsi=''http://www.w3.org/2001/XMLSchema-instance'' xmlns:xs=''http://www.w3.org/2001/XMLSchema'' xmlns:typens=''http://www.esri.com/schemas/ArcGIS/10.3''>"
         "<DatasetID>"+dataSetId+"</DatasetID>"
         "<DatasetName>"+lyr.name+"</DatasetName>"
@@ -1388,12 +1389,12 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      
      sql5.append(('INSERT INTO "GDB_ItemRelationships"("ObjectID", "UUID", "Type", "OriginID", "DestID", "Properties", "Attributes")'
          'VALUES(' 
-         '(select max(OBJECTID) + 1 from "GDB_ItemRelationships"),'
-         "(select '{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}' from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)),"
+         '(select max(OBJECTID) + 1 from "GDB_ItemRelationships"),'+ uuid+','
          '(select UUID from "GDB_ItemRelationshipTypes" where "Name"= \'DatasetOfSyncDataset\' limit 1),'
          '(select UUID from "GDB_Items" where Name="'+featureName+'" limit 1),'
          '(select UUID from "GDB_Items" where Name="main.'+featureName+'" limit 1),'
          '1,NULL)'))
+     #"(select '{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}' from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)),"
      #NEW.range_unit,NEW.stocking_rate,NEW.elevation,NEW.has_permittee,NEW.GlobalID,NEW.CreationDate,NEW.Creator,NEW.EditDate,NEW.Editor,NEW.SHAPE
      #newFields="NEW.OBJECTID,NEW.range_unit,NEW.stocking_rate,NEW.elevation,NEW.has_permittee,NEW.GlobalID,NEW.CreationDate,NEW.Creator,NEW.EditDate,NEW.Editor,NEW.SHAPE"
      #allfields="range_unit,stocking_rate,elevation,has_permittee,GlobalID,CreationDate,Creator,EditDate,Editor,SHAPE"
@@ -1430,8 +1431,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         "<UseGeometry>false</UseGeometry><IncludeRelated>false</IncludeRelated>"
         "<QueryOption>esriRowsTypeFilter</QueryOption><IsAttachment>true</IsAttachment></GPSyncDataset>")
 
+        #'{55C5E7E4-834D-4D44-A12C-991E7F8B46"+str(format(id, '02'))+"}'
         sql3.append(('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
-        " select MAX(ObjectID)+1, '{55C5E7E4-834D-4D44-A12C-991E7F8B46"+str(format(id, '02'))+"}', '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+featureName+"__ATTACH', '"+featureName.upper()+"__ATTACH', 'MyReplica\\"+featureName+"__ATTACH', '', 1, NULL, NULL, NULL, NULL, NULL, "
+        " select MAX(ObjectID)+1, "+uuid+", '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+featureName+"__ATTACH', '"+featureName.upper()+"__ATTACH', 'MyReplica\\"+featureName+"__ATTACH', '', 1, NULL, NULL, NULL, NULL, NULL, "
         "'<GPSyncDataset xsi:type=''typens:GPSyncDataset'' xmlns:xsi=''http://www.w3.org/2001/XMLSchema-instance'' xmlns:xs=''http://www.w3.org/2001/XMLSchema'' xmlns:typens=''http://www.esri.com/schemas/ArcGIS/10.3''>"
         "<DatasetID>"+dataSetId+"</DatasetID>"
         "<DatasetName>"+featureName+"__ATTACH</DatasetName><DatasetType>"+lyrtype+"</DatasetType><LayerID>"+str(layerIds[featureName+"__ATTACH"])+"</LayerID><LayerName>"+featureName+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction>"
@@ -1449,8 +1451,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
         sql5.append(('INSERT INTO "GDB_ItemRelationships"("ObjectID", "UUID", "Type", "OriginID", "DestID", "Properties", "Attributes")'
            'VALUES(' 
-           '(select max(OBJECTID) + 1 from "GDB_ItemRelationships"),'
-           "(select '{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}' from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)),"
+           '(select max(OBJECTID) + 1 from "GDB_ItemRelationships"),'+ uuid+','
            '(select UUID from "GDB_ItemRelationshipTypes" where "Name"= \'DatasetOfSyncDataset\' limit 1),'
            '(select UUID from "GDB_Items" where Name="'+featureName+'__ATTACH" limit 1),'
            '(select UUID from "GDB_Items" where Name="main.'+featureName+'__ATTACH" limit 1),'
