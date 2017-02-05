@@ -756,6 +756,7 @@ class CreateNewProject(object):
            search_json['results'].append(result)
            #result = result + 1
 
+
            #only need to update the operationalLayers
            content_items_json=openJSON(templatePath + "/content.items.data.json")
            opLayers = content_items_json['operationalLayers']=getOperationalLayers(operationalLayers,serverName,serviceName,symbols)
@@ -830,7 +831,20 @@ class CreateNewProject(object):
            miny=str(dataFrame.extent.YMin)
            maxx=str(dataFrame.extent.XMax)
            maxy=str(dataFrame.extent.YMax)
-           createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,username,serviceName,serverName,minx,miny,maxx,maxy,relationshipList,layerIds)
+           serviceitems_json=openJSON(templatePath + "/GDB_ServiceItems.json")
+           serviceitems_json["name"]=title
+           serviceitems_json["serviceDescription"]=summary
+           serviceitems_json["description"]=description
+           serviceitems_json['initialExtent']['xmin']=dataFrame.extent.XMin
+           serviceitems_json['initialExtent']['ymin']=dataFrame.extent.YMin
+           serviceitems_json['initialExtent']['xmax']=dataFrame.extent.XMax
+           serviceitems_json['initialExtent']['ymax']=dataFrame.extent.YMax
+           serviceitems_json['fullExtent']['xmin']=dataFrame.extent.XMin
+           serviceitems_json['fullExtent']['ymin']=dataFrame.extent.YMin
+           serviceitems_json['fullExtent']['xmax']=dataFrame.extent.XMax
+           serviceitems_json['fullExtent']['ymax']=dataFrame.extent.YMax
+ 
+           createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,username,serviceName,serverName,minx,miny,maxx,maxy,relationshipList,layerIds,serviceitems_json)
 
            #create a JSON service file for each feature layer -- broken ---
            serviceRep=[]
@@ -1296,7 +1310,7 @@ def getLayers(opLayers):
 #{"name":"PK__HPL_Coll__F4B70D85F8506C58","fields":"OBJECTID","isAscending":true,"isUnique":true,"description":"clustered, unique, primary key"}
 
 #create replica sqlite datatabase for entire MXD including layer and tables.  This is used by the ESRI collector when using the offline features
-def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,username,serviceName,serverName,minx,miny,maxx,maxy,relationshipList,layerIds):
+def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,username,serviceName,serverName,minx,miny,maxx,maxy,relationshipList,layerIds,serviceItems):
   creationDate = time.strftime("%Y-%m-%dT%H:%M:%S")
   sql1=('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
     " select MAX(ObjectID)+1, '{7B6EB064-7BF6-42C8-A116-2E89CD24A000}', '{5B966567-FB87-4DDE-938B-B4B37423539D}', 'MyReplica', 'MYREPLICA', 'MyReplica', '', 1, NULL, NULL, NULL, "
@@ -1335,6 +1349,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   #   lyrs.append(lyr)
   #for lyr in arcpy.mapping.ListTableViews(mxd, "", dataFrame):
   #   lyrs.append(lyr)
+  serviceItems["layers"]=[]
+  
 
   id=0
   sql2=[]
@@ -1349,6 +1365,24 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          featureName=os.path.basename(desc.catalogPath)
          inFeaturesGDB=os.path.dirname(desc.catalogPath).replace("\\","/")
 
+     useGeometry="false"
+     lyrtype = "esriDTTable"
+     svcType = "Table"
+     if hasattr(desc,"featureClass"):
+         lyrtype = "esriDTFeatureClass"
+         useGeometry="true"
+         svcType = "Feature Layer"
+
+     layer={
+         "name":lyr.name,
+         "id":id+8,
+         "layerId":layerIds[lyr.name],
+         "tableName":featureName,
+         "type":svcType,
+         "xssTrustedFields":""
+
+     }
+     serviceItems["layers"].append(layer)
      uuid = "(select upper('{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}') from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v))"
      hasAttachments="false"
      hasAttachmentsStr=""
@@ -1356,11 +1390,6 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          hasAttachments="true"
          hasAttachmentsStr = "<HasAttachments>"+hasAttachments+"</HasAttachments>"
 
-     useGeometry="false"
-     lyrtype = "esriDTTable"
-     if hasattr(desc,"featureClass"):
-         lyrtype = "esriDTFeatureClass"
-         useGeometry="true"
 
      dataSetId='\'||(SELECT ObjectId FROM "GDB_Items" Where Name=\'main.'+featureName+"\')||\'"
      sql1=sql1+ ("<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+dataSetId+"</DatasetID><DatasetName>"+featureName+"</DatasetName><DatasetType>"+lyrtype+"</DatasetType>"
@@ -1483,6 +1512,11 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
   sql4='update "GDB_ServiceItems" set "ItemInfo"=replace("ItemInfo",|"capabilities":"Query"|,|"capabilities":"Create,Delete,Query,Update,Editing,Sync"|)'
   sql4=sql4.replace("|","'")
+  
+  serviceItemsStr = json.dumps(serviceItems)
+  sql5.append(('insert into "GDB_ServiceItems"("OBJECTID", "DatasetName", "ItemType", "ItemId", "ItemInfo", "AdvancedDrawingInfo")'
+     'values((select max(OBJECTID)+1 from "GDB_ServiceItems"),\''+serviceName+'\',0,-1,\''+serviceItemsStr+'\',NULL)'))
+
   #sql5='update "GDB_Items" set ObjectId=ROWID'
   sql1=sql1+("</GPSyncDatasets><AttachmentsSyncDirection>esriAttachmentsSyncDirectionBidirectional</AttachmentsSyncDirection></GPSyncReplica>'"
    ", NULL, NULL, NULL from GDB_Items")
