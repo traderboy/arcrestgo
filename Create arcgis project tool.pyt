@@ -2873,6 +2873,7 @@ def main():
     elif socket.gethostname()=='steve-laptop':
        mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd"
        host="gis.biz.tm"
+       user="shale"
        root=r"C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016"
        db=r"C:\docker\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
 
