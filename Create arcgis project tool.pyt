@@ -283,17 +283,26 @@ class CreateNewProject(object):
 
         servicesDestinationPath = serviceDestinationPath + "/services"
         if not os.path.exists(servicesDestinationPath):
-            os.makedirs(servicesDestinationPath)
+            try:
+                os.makedirs(servicesDestinationPath)
+            except Exception as e:
+                pass
         printMessage("Services path: " +servicesDestinationPath)
 
         dataDestinationPath = serviceDestinationPath + "/shapefiles"
         if not os.path.exists(dataDestinationPath):
-            os.makedirs(dataDestinationPath)
+            try:
+                os.makedirs(dataDestinationPath)
+            except Exception as e:
+                pass
         printMessage("Shapefile path: " +dataDestinationPath)
 
         replicaDestinationPath = serviceDestinationPath + "/replicas"
         if not os.path.exists(replicaDestinationPath):
-            os.makedirs(replicaDestinationPath)
+            try:
+                os.makedirs(replicaDestinationPath)
+            except Exception as e:
+                pass
         printMessage("Replica path: " +replicaDestinationPath)
 
         mapfileDestinationPath = serviceDestinationPath + "/mapfiles"
@@ -498,7 +507,7 @@ class CreateNewProject(object):
                    rootFGDB=os.path.dirname(desc.catalogPath).replace("\\","/")
                
                #layerIds[tbl.name]=id
-               layerIds[featureName]=layerIds[tbl.name]
+               layerIds[featureName]=layerIds[lyr.name]
 
                if arcpy.Exists(rootFGDB+"/"+featureName+"__ATTACH"):
                    layerIds[featureName+"__ATTACH"]=id
@@ -547,6 +556,22 @@ class CreateNewProject(object):
              relDesc = arcpy.Describe(rootFGDB+"/"+rc)
              if relDesc.isAttachmentRelationship:
                   continue
+             try:
+                originId=layerIds[relDesc.originClassNames[0]]
+             except:
+                printMessage("Skipping relation: " + relDesc.originClassNames[0])
+                continue
+
+             try:
+                destId=layerIds[relDesc.destinationClassNames[0]]
+             except:
+                printMessage("Skipping relation: " + relDesc.destinationClassNames[0])
+                continue
+
+             #if not layerIds.has_key(originId):
+             #    printMessage("Skipping relation: " + relDesc.destinationClassNames[0])
+             #    continue
+
              printMessage("Relationship Name: " + rc)
              printMessage("Origin Class Names")
              printMessage(relDesc.originClassNames)
@@ -567,8 +592,6 @@ class CreateNewProject(object):
 
              #originId=getDataIndex(allData,relDesc.originClassNames[0])
              #destId=getDataIndex(allData,relDesc.destinationClassNames[0])
-             originId=layerIds[relDesc.originClassNames[0]]
-             destId=layerIds[relDesc.destinationClassNames[0]]
              
 
              relatedTableId=0
@@ -941,9 +964,11 @@ class CreateNewProject(object):
 
                if arcpy.Exists(rootFGDB+"/"+featureName+"__ATTACH"):
                   feature_json['hasAttachments']=True
+                  feature_json['advancedQueryCapabilities']['supportsQueryAttachments']=True
+                  feature_json['attachmentProperties']=[{"name":"name","isEnabled":True},{"name":"size","isEnabled":True},{"name":"contentType","isEnabled":True},{"name":"keywords","isEnabled":True}]
                else:
                   feature_json['hasAttachments']=False
-
+               
                #getSymbol(lyr,symbols[featureName],lyr.name)
                #opLayers = content_items_json['operationalLayers']=getOperationalLayers(operationalLayers,serverName,serviceName)
                file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(layerIds[lyr.name])+".json",feature_json)
@@ -997,6 +1022,14 @@ class CreateNewProject(object):
                #printMessage(fdesc.json)
                dataName = os.path.basename(desc.dataElement.catalogPath)
                layerObj={"name":lyr.name,"data":dataName}
+               layerObj["id"]=layerIds[lyr.name]
+               if desc.relationshipClassNames:
+                  for j,rel in enumerate(desc.relationshipClassNames):
+                    relDesc = arcpy.Describe(desc.path +"/"+rel)
+                    for i in relDesc.originClassKeys:
+                        #if i[1]=="OriginPrimary":
+                        if i[1]=="OriginForeign":
+                            layerObj["joinField"]=i[0]
 
                #fields = copy.deepcopy(feature_json['fields'])
                feature_json = json.loads(fdesc.json)
@@ -1127,6 +1160,15 @@ class CreateNewProject(object):
                else:
                    feature_json['globalIdField'] = ""
                tableObj["type"]="table"
+               tableObj["id"]=layerIds[tbl.name]
+               if desc.relationshipClassNames:
+                  for j,rel in enumerate(desc.relationshipClassNames):
+                    relDesc = arcpy.Describe(desc.path +"/"+rel)
+                    for i in relDesc.originClassKeys:
+                        #if i[1]=="OriginPrimary":
+                        if i[1]=="OriginForeign":
+                            tableObj["joinField"]=i[0]
+               
                feature_json['indexes']=getIndexes(tbl)
                feature_json['templates'][0]['name']=serviceName
                attributes={}
@@ -1154,6 +1196,9 @@ class CreateNewProject(object):
 
                if arcpy.Exists(rootFGDB+"/"+featureName+"__ATTACH"):
                   feature_json['hasAttachments']=True
+                  feature_json['advancedQueryCapabilities']['supportsQueryAttachments']=True
+                  feature_json['attachmentProperties']=[{"name":"name","isEnabled":True},{"name":"size","isEnabled":True},{"name":"contentType","isEnabled":True},{"name":"keywords","isEnabled":True}]
+                  
                else:
                   feature_json['hasAttachments']=False
 
@@ -1350,7 +1395,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   #for lyr in arcpy.mapping.ListTableViews(mxd, "", dataFrame):
   #   lyrs.append(lyr)
   serviceItems["layers"]=[]
-  
+
 
   id=0
   sql2=[]
@@ -1368,10 +1413,13 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      useGeometry="false"
      lyrtype = "esriDTTable"
      svcType = "Table"
+     queryOption="esriRowsTypeNone"
+     
      if hasattr(desc,"featureClass"):
          lyrtype = "esriDTFeatureClass"
          useGeometry="true"
          svcType = "Feature Layer"
+         queryOption="esriRowsTypeFilter"
 
      layer={
          "name":lyr.name,
@@ -1382,21 +1430,31 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          "xssTrustedFields":""
 
      }
-     serviceItems["layers"].append(layer)
+      #"attachmentsTableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_GRAZING_INSPECTIONS__ATTACH",
+      #"attachmentsPrimaryKey": "GlobalID"
+
      uuid = "(select upper('{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}') from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v))"
      hasAttachments="false"
      hasAttachmentsStr=""
      if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
          hasAttachments="true"
          hasAttachmentsStr = "<HasAttachments>"+hasAttachments+"</HasAttachments>"
+         layer["attachmentsTableName"]=inFeaturesGDB+"/"+featureName+"__ATTACH"
+         dscfc = arcpy.Describe(inFeaturesGDB+"/"+featureName+"__ATTACH")
+
+         if dscfc.hasOID == True:
+             layer["attachmentsPrimaryKey"]=dscfc.OIDFieldName
+         else:
+             layer["attachmentsPrimaryKey"]= "GlobalID"
 
 
+     serviceItems["layers"].append(layer)
      dataSetId='\'||(SELECT ObjectId FROM "GDB_Items" Where Name=\'main.'+featureName+"\')||\'"
      sql1=sql1+ ("<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+dataSetId+"</DatasetID><DatasetName>"+featureName+"</DatasetName><DatasetType>"+lyrtype+"</DatasetType>"
         "<LayerID>"+str(layerIds[lyr.name])+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction><ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen>"
         "<ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen><ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>"+useGeometry+"</UseGeometry><IncludeRelated>true</IncludeRelated>"
-        "<QueryOption>esriRowsTypeFilter</QueryOption>"+hasAttachmentsStr+"</GPSyncDataset>")
+        "<QueryOption>"+queryOption+"</QueryOption>"+hasAttachmentsStr+"</GPSyncDataset>")
 
      sql2.append(('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
         " select MAX(ObjectID)+1, "+uuid+", '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+featureName+"', '"+featureName.upper()+"', 'MyReplica\\"+featureName+"', '', 1, NULL, NULL, NULL, NULL, NULL, "
@@ -1407,7 +1465,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         "<ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
         "<ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>"+useGeometry+"</UseGeometry><IncludeRelated>true</IncludeRelated>"
-        "<QueryOption>esriRowsTypeFilter</QueryOption>"+ hasAttachmentsStr+ "</GPSyncDataset>', NULL, NULL, NULL from GDB_Items"))
+        "<QueryOption>"+queryOption+"</QueryOption>"+ hasAttachmentsStr+ "</GPSyncDataset>', NULL, NULL, NULL from GDB_Items"))
 
      sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
          " values('"+featureName + "','gdb_from_date',7,0,NULL,'Archiving from date.',536870912,NULL)"))
@@ -1447,18 +1505,19 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      
      sql5.append(('CREATE TRIGGER '+featureName+'_evw_update INSTEAD OF UPDATE ON '+featureName+'_evw BEGIN UPDATE OR IGNORE '+featureName+' SET gdb_to_date = gdb_transaction_time () WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001);REPLACE INTO '+featureName+' (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) VALUES (NEW.OBJECTID,'+newFields+',(SELECT MAX (gdb_to_date) FROM '+featureName+' WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date < julianday (\'9999-12-31 23:59:59\')),julianday (\'9999-12-31 23:59:59\')); END;'))
 
-         
+
      printMessage("Loading " + lyr.name)
      if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
          
         lyrtype="esriDTTable"
+        queryOption="esriRowsTypeFilter"
         dataSetId='\'||(SELECT ObjectId FROM "GDB_Items" Where Name=\'main.'+featureName+"__ATTACH"+"\')||\'"
         printMessage("Found attachment table: " + featureName+"__ATTACH")
         sql1=sql1+ ("<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+dataSetId+"</DatasetID><DatasetName>"+featureName+"__ATTACH"+"</DatasetName><DatasetType>"+lyrtype+"</DatasetType>"
         "<LayerID>"+str(layerIds[featureName+"__ATTACH"])+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction><ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen>"
         "<ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen><ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>false</UseGeometry><IncludeRelated>false</IncludeRelated>"
-        "<QueryOption>esriRowsTypeFilter</QueryOption><IsAttachment>true</IsAttachment></GPSyncDataset>")
+        "<QueryOption>"+queryOption+"</QueryOption><IsAttachment>true</IsAttachment></GPSyncDataset>")
 
         #'{55C5E7E4-834D-4D44-A12C-991E7F8B46"+str(format(id, '02'))+"}'
         sql3.append(('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
@@ -1468,7 +1527,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         "<DatasetName>"+featureName+"__ATTACH</DatasetName><DatasetType>"+lyrtype+"</DatasetType><LayerID>"+str(layerIds[featureName+"__ATTACH"])+"</LayerID><LayerName>"+featureName+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction>"
         "<ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
         "<ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
-        "<UseGeometry>false</UseGeometry><IncludeRelated>false</IncludeRelated><QueryOption>esriRowsTypeFilter</QueryOption>"
+        "<UseGeometry>false</UseGeometry><IncludeRelated>false</IncludeRelated><QueryOption>"+queryOption+"</QueryOption>"
         "<IsAttachment>true</IsAttachment></GPSyncDataset>',"
         " NULL, NULL, NULL from GDB_Items"))
         sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
@@ -1478,6 +1537,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
             " values('"+featureName + "__ATTACH','gdb_archive_oid',2,0,NULL,'Archiving record unique id.',536870912,NULL)"))
 
+        sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
+            " values('"+featureName + "__ATTACH','REL_GLOBALID',12,38,NULL,NULL,0,NULL)"))
+
         sql5.append(('INSERT INTO "GDB_ItemRelationships"("ObjectID", "UUID", "Type", "OriginID", "DestID", "Properties", "Attributes")'
            'VALUES(' 
            '(select max(OBJECTID) + 1 from "GDB_ItemRelationships"),'+ uuid+','
@@ -1485,18 +1547,18 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
            '(select UUID from "GDB_Items" where Name="'+featureName+'__ATTACH" limit 1),'
            '(select UUID from "GDB_Items" where Name="main.'+featureName+'__ATTACH" limit 1),'
            '1,NULL)'))
-        
+
         sql5.append(('ALTER TABLE '+featureName+'__ATTACH ADD REL_GLOBALID uuidtext'))
-        
+
         allfields="ATTACHMENTID,GLOBALID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA"
         newFields="NEW.ATTACHMENTID,NEW.GLOBALID,NEW.REL_GLOBALID,NEW.CONTENT_TYPE,NEW.ATT_NAME,NEW.DATA_SIZE,NEW.DATA"
-     
+
         sql5.append(('CREATE VIEW '+featureName+'__ATTACH_evw AS SELECT '+allfields+' FROM '+featureName+'__ATTACH'))
 
         sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_delete INSTEAD OF DELETE ON '+featureName+'__ATTACH_evw BEGIN DELETE FROM '+featureName+'__ATTACH WHERE OBJECTID = OLD.OBJECTID AND gdb_from_date BETWEEN (gdb_transaction_time () - 0.000000001) AND (gdb_transaction_time () + 0.000000001); UPDATE OR REPLACE '+featureName+'__ATTACH SET gdb_to_date = gdb_transaction_time () WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001); END;'))
-     
+
         sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_insert INSTEAD OF INSERT ON '+featureName+'__ATTACH_evw BEGIN INSERT INTO '+featureName+'__ATTACH (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) VALUES (IFNULL (NEW.OBJECTID,Next_RowID (NULL,\''+featureName+'__ATTACH\')),'+newFields+',gdb_transaction_time (),julianday (\'9999-12-31 23:59:59\')); END;'))
-     
+
         sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_update INSTEAD OF UPDATE ON '+featureName+'__ATTACH_evw BEGIN UPDATE OR IGNORE '+featureName+'__ATTACH SET gdb_to_date = gdb_transaction_time () WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001);REPLACE INTO '+featureName+'__ATTACH (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) VALUES (NEW.OBJECTID,'+newFields+',(SELECT MAX (gdb_to_date) FROM '+featureName+'__ATTACH WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date < julianday (\'9999-12-31 23:59:59\')),julianday (\'9999-12-31 23:59:59\')); END;'))
      id = id + 1
 
@@ -2075,7 +2137,8 @@ def getFieldInfos(layer):
 
    #SmallInteger, Integer, Single, Double, String, Date, OID, Geometry, Blob
    # Iterate through the fields and set them to fieldinfo
-   invisFields = ["GlobalID","Shape_Length","Shape_Area","has_permittee","permittee_globalid"]
+   #"GlobalID",
+   invisFields = ["Shape_Length","Shape_Area","has_permittee","permittee_globalid"]
    for field in allfields:
         fieldInfos = None
         #printMessage("Field: " + field.name + ":  " + field.type)
@@ -2297,6 +2360,18 @@ def getFields(layer):
 #},
 
 #def getRelationships(lyr,lyrid,cnt,tables,relationshipObj):
+def getJoinField(lyr):
+   desc = arcpy.Describe(lyr)
+   if not desc.relationshipClassNames:
+      return ""
+   for j,rel in enumerate(desc.relationshipClassNames):
+     #printMessage("Relationship class name: " + rel)
+     relDesc = arcpy.Describe(desc.path +"/"+rel)
+     #originClassKeys=relDesc.originClassKeys
+     for i in relDesc.originClassKeys:
+         if i[1]=="OriginPrimary":
+             return i[0]
+    
 def getRelationshipsUnused(lyr,relationshipObj):
    relArr=[]
    desc = arcpy.Describe(lyr)
@@ -2747,9 +2822,9 @@ def saveSqliteToPG(tables,sqliteDb,pg):
 def saveToPg(lyr,pg):
    desc = arcpy.Describe(lyr)
    if hasattr(desc,"shapeType"):
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid  --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -overwrite"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -overwrite"
    else:
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -overwrite"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -overwrite"
    printMessage("Running " + cmd)
    try:
         os.system(cmd)
@@ -2759,9 +2834,9 @@ def saveToPg(lyr,pg):
 def saveToSqlite(lyr,sqliteDb):
    desc = arcpy.Describe(lyr)
    if hasattr(desc,"shapeType"):
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid  --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -append"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -append"
    else:
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid  --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -append"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -lco FID=OBJECTID -preserve_fid -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"SQLITE\" " + sqliteDb + "  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -append"
    printMessage("Running " + cmd)
    try:
         os.system(cmd)
@@ -2861,19 +2936,20 @@ def main():
     import socket
     print(socket.gethostname())
 
+    pg="user=postgres dbname=gis host=192.168.99.100"
+    user="shale"
     if socket.gethostname()=='steve-desktop':
        #host="gis.biz.tm"
        host="reais.x10host.com"
-       user="shale"
        root=r"D:\workspace\go\src\github.com\traderboy\arcrestgo"
        db=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
        mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"
-       pg="user=postgres dbname=gis host=192.168.99.100"
-
+       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016grazing.mxd"
+       
+       
     elif socket.gethostname()=='steve-laptop':
        mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd"
        host="gis.biz.tm"
-       user="shale"
        root=r"C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016"
        db=r"C:\docker\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
 

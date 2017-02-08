@@ -1109,6 +1109,7 @@ func StartGorillaMux() *mux.Router {
 			}
 		}).Methods("GET", "POST")
 	*/
+
 	/*
 	   Attachments
 	*/
@@ -1127,8 +1128,15 @@ func StartGorillaMux() *mux.Router {
 		files, _ := ioutil.ReadDir(AttachmentPath)
 		i := 0
 		for _, f := range files {
-			attachfile := map[string]interface{}{"id": i, "contentType": "image/jpeg", "name": f.Name()}
-			attachments = append(attachments, attachfile)
+			//tmpArr = strings.Split(f.Name(),"@")
+			name = f.Name()
+			idx := strings.Index(name, "@")
+			if idx != -1 {
+				fid, _ := strconv.Atoi(name[0:idx])
+				//name = name[idx+1:]
+				attachfile := map[string]interface{}{"id": fid, "contentType": "image/jpeg", "name": name[idx+1:]}
+				attachments = append(attachments, attachfile)
+			}
 			i++
 		}
 		response, _ := json.Marshal(map[string]interface{}{"attachmentInfos": attachments})
@@ -1159,9 +1167,28 @@ func StartGorillaMux() *mux.Router {
 		name := vars["name"]
 		id := vars["id"]
 		img := vars["img"]
+		//imgInt, _ := strconv.Atoi(img)
+		//img = strconv.Itoa(imgInt - 1)
+
 		row := vars["row"]
-		log.Println("/arcgis/rest/services/FeatureServer/attachments/img")
-		var attachment = config.AttachmentsPath + string(os.PathSeparator) + name + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator) + img + ".jpg"
+		//imgInt, _ := strconv.Atoi(img)
+		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/" + row + "/attachments/img")
+		//var attachment = config.AttachmentsPath + string(os.PathSeparator) + name + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator) + img + ".jpg"
+		var AttachmentPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
+		files, _ := ioutil.ReadDir(AttachmentPath)
+		//i := 0
+		for _, f := range files {
+			name := f.Name()
+			if name[0:len(img+"@")] == img+"@" {
+				http.ServeFile(w, r, AttachmentPath+string(os.PathSeparator)+f.Name())
+				log.Println(AttachmentPath + string(os.PathSeparator) + f.Name())
+				return
+			}
+		}
+		//{ "id": 2, "contentType": "application/pdf", "size": 270133,"name": "Sales Deed"  }
+		response, _ := json.Marshal(map[string]interface{}{"error": "File not found"})
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(response)
 
 		/*
 			files, _ := ioutil.ReadDir("./")
@@ -1169,13 +1196,15 @@ func StartGorillaMux() *mux.Router {
 				fmt.Println(f.Name())
 			}
 		*/
-		if _, err := os.Stat(attachment); err == nil {
-			http.ServeFile(w, r, attachment)
-		} else {
-			response, _ := json.Marshal(map[string]interface{}{"status": "Completed", "transportType": "esriTransportTypeUrl"})
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(response)
-		}
+		/*
+			if _, err := os.Stat(attachment); err == nil {
+				http.ServeFile(w, r, attachment)
+			} else {
+				response, _ := json.Marshal(map[string]interface{}{"status": "Completed", "transportType": "esriTransportTypeUrl"})
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			}
+		*/
 
 		/*
 				if(fs.existsSync(attachment))
@@ -1195,7 +1224,7 @@ func StartGorillaMux() *mux.Router {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		id := vars["id"]
-		idInt, _ := strconv.Atoi(id)
+		//idInt, _ := strconv.Atoi(id)
 		row := vars["row"]
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/" + row + "/addAttachment")
@@ -1221,19 +1250,24 @@ func StartGorillaMux() *mux.Router {
 			}
 
 			for key, value := range r.MultipartForm.Value {
-				fmt.Fprintf(w, "%s:%s ", key, value)
+				//fmt.Fprintf(w, "%s:%s ", key, value)
 				log.Printf("%s:%s", key, value)
 			}
-
+			files, _ := ioutil.ReadDir(uploadPath)
+			fid := len(files) + 1
 			for _, fileHeaders := range r.MultipartForm.File {
 				for _, fileHeader := range fileHeaders {
 					file, _ := fileHeader.Open()
-					path := fmt.Sprintf("%s%s%s", uploadPath, string(os.PathSeparator), fileHeader.Filename)
+					path := fmt.Sprintf("%s%s%v%s%s", uploadPath, string(os.PathSeparator), fid, "@", fileHeader.Filename)
 					log.Println(path)
 					buf, _ := ioutil.ReadAll(file)
 					ioutil.WriteFile(path, buf, os.ModePerm)
 				}
 			}
+			response, _ := json.Marshal(map[string]interface{}{"addAttachmentResult": map[string]interface{}{"objectId": fid, "globalId": nil, "success": true}})
+			//w.Header().Set("Content-Type", "application/json")
+			w.Write(response)
+
 			/*
 				r.ParseMultipartForm(32 << 20)
 				file, handler, err := r.FormFile("uploadfile")
@@ -1252,9 +1286,15 @@ func StartGorillaMux() *mux.Router {
 				io.Copy(f, file)
 			*/
 		}
-		response, _ := json.Marshal(map[string]interface{}{"addAttachmentResult": map[string]interface{}{"objectId": idInt, "globalId": nil, "success": true}})
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(response)
+		/*
+		   {
+		     "addAttachmentResult" : {
+		       "objectId" : 1,
+		       "globalId" : "c9163a7c-f72b-472b-b495-902fde08c0be",
+		       "success" : true
+		     }
+		   }
+		*/
 
 		/*
 			  var mkdirp = require("mkdirp')
@@ -1303,18 +1343,36 @@ func StartGorillaMux() *mux.Router {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		id := vars["id"]
+		idInt, _ := strconv.Atoi(id)
 		row := vars["row"]
+		var aid = r.FormValue("attachmentId")
+		//aidInt, _ := strconv.Atoi(aid)
+		//aid = strconv.Itoa(aidInt - 1)
 
+		var uploadPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/" + row + "/updateAttachment")
-		var aid = vars["attachmentIds"]
-		results := []string{aid}
+		const MAX_MEMORY = 10 * 1024 * 1024
+		if err := r.ParseMultipartForm(MAX_MEMORY); err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusForbidden)
+		}
 
+		for key, value := range r.MultipartForm.Value {
+			log.Printf("%s:%s", key, value)
+		}
+		for _, fileHeaders := range r.MultipartForm.File {
+			for _, fileHeader := range fileHeaders {
+				file, _ := fileHeader.Open()
+				path := fmt.Sprintf("%s%s%s%s%s", uploadPath, string(os.PathSeparator), aid, "@", fileHeader.Filename)
+				log.Println(path)
+				buf, _ := ioutil.ReadAll(file)
+				ioutil.WriteFile(path, buf, os.ModePerm)
+			}
+		}
 		//results[0] = gin.H{"objectId": id, "globalId": nil, "success": "true"}
-
-		response, _ := json.Marshal(map[string]interface{}{"deleteAttachmentResults": results})
+		response, _ := json.Marshal(map[string]interface{}{"updateAttachmentResult": map[string]interface{}{"objectId": idInt, "globalId": nil, "success": true}})
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
-
 	}).Methods("POST")
 
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/{row}/deleteAttachments", func(w http.ResponseWriter, r *http.Request) {
@@ -1322,12 +1380,33 @@ func StartGorillaMux() *mux.Router {
 		name := vars["name"]
 		id := vars["id"]
 		row := vars["row"]
+
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/" + row + "/deleteAttachments")
 		var aid = r.FormValue("attachmentIds")
+		aidInt, _ := strconv.Atoi(aid)
+		//aid = strconv.Itoa(aidInt - 1)
 
 		//results := []string{"objectId": id, "globalId": nil, "success": true}
 		//results := []string{aid}
-		response, _ := json.Marshal(map[string]interface{}{"deleteAttachmentResults": aid})
+		var AttachmentPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
+		files, _ := ioutil.ReadDir(AttachmentPath)
+		//i := 0
+		for _, f := range files {
+			name := f.Name()
+			if name[0:len(aid+"@")] == aid+"@" {
+				err := os.Remove(AttachmentPath + string(os.PathSeparator) + f.Name())
+				if err != nil {
+					response, _ := json.Marshal(map[string]interface{}{"deleteAttachmentResults": aidInt, "error": err.Error()})
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(response)
+					return
+				}
+				log.Println("Deleting:  " + AttachmentPath + string(os.PathSeparator) + f.Name())
+				break
+			}
+		}
+
+		response, _ := json.Marshal(map[string]interface{}{"deleteAttachmentResults": aidInt})
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 
@@ -1404,7 +1483,6 @@ func StartGorillaMux() *mux.Router {
 			} else {
 				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
 				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
-
 			}
 		}
 
@@ -1478,6 +1556,9 @@ func StartGorillaMux() *mux.Router {
 					//record.RelatedRecord = append(record.RelatedRecord, fieldObj.Features[k].Attributes)
 				}
 			}
+			//oJoinVal = strings.Replace(oJoinVal.(string), "{", "", -1)
+			//oJoinVal = strings.Replace(oJoinVal.(string), "}", "", -1)
+			//oJoinVal = strings.ToLower(oJoinVal.(string))
 
 			//strconv.Itoa(int(dID.(float64)))
 			jsonFile = fmt.Sprint(config.DataPath, string(os.PathSeparator), name, string(os.PathSeparator), "services", string(os.PathSeparator), "FeatureServer.", dID, ".query.json")
@@ -1511,6 +1592,7 @@ func StartGorillaMux() *mux.Router {
 				//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
 
 				if i.Attributes[dJoinKey] == oJoinVal {
+					//if strings.EqualFold(i.Attributes[dJoinKey],oJoinVal)
 					log.Printf("Found: %v", i.Attributes[dJoinKey])
 					var rec structs.RelatedRecord
 					//i.Attributes["OBJECTID"]
@@ -1627,11 +1709,15 @@ func StartGorillaMux() *mux.Router {
 		//var jsonFields=JSON.parse(file)
 		//log.Println("sqlite: " + replicaDb)
 		//var db = new sqlite3.Database(replicaDb)
+		joinField := config.Project.Services[name]["relationships"][relationshipId]["oJoinKey"].(string)
+		if joinField == "GlobalID" || joinField == "GlobalGUUD" {
+			joinField = "substr(" + joinField + ", 2, length(" + joinField + ")-2)"
+		}
 		var sqlstr = "select " + outFields + " from " + config.Schema +
 			config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string) +
 			" where " +
 			config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string) + " in (select " +
-			config.Project.Services[name]["relationships"][relationshipId]["oJoinKey"].(string) + " from " +
+			joinField + " from " +
 			config.Project.Services[name]["relationships"][relationshipId]["oTable"].(string) +
 			" where OBJECTID in(" + config.GetParam(1) + "))"
 
@@ -1740,10 +1826,16 @@ func StartGorillaMux() *mux.Router {
 		//idInt, _ := strconv.Atoi(id)
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/applyEdits")
 		var response []byte
+		var joinField = "GlobalID"
+		//log.Println(config.Project.Services[name]["layers"])
+		//log.Println(config.Project.Services[name]["layers"][id])
+		//log.Println(config.Project.Services[name]["layers"][id]["joinField"])
+		if len(config.Project.Services[name]["layers"][id]["joinField"].(string)) > 0 {
+			joinField = config.Project.Services[name]["layers"][id]["joinField"].(string)
+		}
 		if config.DbSource == config.FILE {
 
 			//get the fields json
-
 			jsonFile := config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json"
 			log.Println(jsonFile)
 			file, err1 := ioutil.ReadFile(jsonFile)
@@ -1798,7 +1890,6 @@ func StartGorillaMux() *mux.Router {
 				//response = Updates(name, id, tableName, r.FormValue("updates"))
 			} else if len(r.FormValue("adds")) > 0 {
 				//response = Adds(name, id, tableName, r.FormValue("adds"))
-
 				var adds []structs.Feature
 				decoder := json.NewDecoder(strings.NewReader(r.FormValue("adds"))) //r.Body
 				err := decoder.Decode(&adds)
@@ -1807,8 +1898,25 @@ func StartGorillaMux() *mux.Router {
 				}
 				objectid = len(fieldObj.Features) + 1
 				for _, i := range adds {
-					i.Attributes["objectId"] = objectid
+					//i.Attributes["objectId"] = objectid
+					i.Attributes["OBJECTID"] = objectid
+					//i.Attributes["globalId"]=strings.ToUpper(i.Attributes["globalId"])
+					if len(i.Attributes[joinField].(string)) > 0 {
+						//input := strings.ToUpper(i.Attributes[joinField].(string))
+						//tmpStr := input[1 : len(input)-1]
+						i.Attributes[joinField] = strings.ToUpper(i.Attributes[joinField].(string))
+						i.Attributes[joinField] = strings.Replace(i.Attributes[joinField].(string), "{", "", -1)
+						i.Attributes[joinField] = strings.Replace(i.Attributes[joinField].(string), "}", "", -1)
+						//strings.ToUpper(i.Attributes[joinField].(string)).Replace("{", "").Replace("{", "")
+					}
+
 					fieldObj.Features = append(fieldObj.Features, i)
+					//write json back to file
+					result := map[string]interface{}{}
+					result["objectId"] = objectid
+					result["success"] = true
+					result["globalId"] = nil
+					results = append(results, result)
 					objectid++
 				}
 
@@ -1821,12 +1929,7 @@ func StartGorillaMux() *mux.Router {
 				if err != nil {
 					log.Println(err1)
 				}
-				//write json back to file
-				result := map[string]interface{}{}
-				result["objectId"] = objectid
-				result["success"] = true
-				result["globalId"] = nil
-				results = append(results, result)
+
 				response, _ = json.Marshal(map[string]interface{}{"addResults": results, "updateResults": []string{}, "deleteResults": []string{}})
 			} else if len(r.FormValue("deletes")) > 0 {
 				//response = Deletes(name, id, tableName, r.FormValue("deletes"))
@@ -1867,7 +1970,7 @@ func StartGorillaMux() *mux.Router {
 			if len(r.FormValue("updates")) > 0 {
 				response = Updates(name, id, tableName, r.FormValue("updates"))
 			} else if len(r.FormValue("adds")) > 0 {
-				response = Adds(name, id, tableName, r.FormValue("adds"))
+				response = Adds(name, id, tableName, r.FormValue("adds"), joinField)
 			} else if len(r.FormValue("deletes")) > 0 {
 				response = Deletes(name, id, tableName, r.FormValue("deletes"))
 			}
@@ -2784,7 +2887,7 @@ func Deletes(name string, id string, tableName string, deletesTxt string) []byte
 	return response
 
 }
-func Adds(name string, id string, tableName string, addsTxt string) []byte {
+func Adds(name string, id string, tableName string, addsTxt string, joinField string) []byte {
 	var results []interface{}
 	var objectid int
 	log.Println(addsTxt)
@@ -2825,11 +2928,16 @@ func Adds(name string, id string, tableName string, addsTxt string) []byte {
 				cols += sep + key
 				p += sep + config.GetParam(c)
 				sep = ","
+				if key == joinField {
+					j = strings.ToUpper(j.(string))
+					j = strings.Replace(j.(string), "}", "", -1)
+					j = strings.Replace(j.(string), "{", "", -1)
+				}
 				vals = append(vals, j)
 				c++
 			}
 		}
-		cols += sep + "GlobalId"
+		cols += sep + joinField
 		p += sep + config.GetParam(c)
 		vals = append(vals, "")
 
@@ -2844,12 +2952,6 @@ func Adds(name string, id string, tableName string, addsTxt string) []byte {
 		if err != nil {
 			log.Println(err.Error())
 		}
-		result := map[string]interface{}{}
-		result["objectId"] = objectid
-		result["success"] = true
-		result["globalId"] = nil
-
-		results = append(results, result)
 
 		if config.DbSource == config.PGSQL {
 
@@ -2924,6 +3026,12 @@ func Adds(name string, id string, tableName string, addsTxt string) []byte {
 			}
 			tx.Commit()
 		}
+		result := map[string]interface{}{}
+		result["objectId"] = objectid
+		result["success"] = true
+		result["globalId"] = nil
+
+		results = append(results, result)
 		objectid++
 	}
 	response, _ := json.Marshal(map[string]interface{}{"addResults": results, "updateResults": []string{}, "deleteResults": []string{}})
