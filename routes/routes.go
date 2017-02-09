@@ -1642,7 +1642,14 @@ func StartGorillaMux() *mux.Router {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		id := vars["id"]
-		tableName := config.Project.Services[name]["layers"][id]["data"].(string)
+		var tableName string
+		_, err1 := strconv.Atoi(id)
+		if err1 != nil {
+			tableName = id
+
+		} else {
+			tableName = config.Project.Services[name]["layers"][id]["data"].(string)
+		}
 		dbPath := r.URL.Query().Get("db")
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/table/" + id)
