@@ -1411,6 +1411,352 @@ func StartGorillaMux() *mux.Router {
 		w.Write(response)
 
 	}).Methods("POST")
+	//http://reais.x10host.com/arcgis/rest/services/leasecompliance2016/FeatureServer/replicas/?f=json
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/db/{id}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		name := vars["name"]
+		id := vars["id"]
+		idInt, _ := strconv.Atoi(id)
+		fieldStr := r.URL.Query().Get("field")
+		if len(fieldStr) == 0 {
+			fieldStr = "\"ItemInfo\""
+		}
+		dbPath := r.URL.Query().Get("db")
+
+		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/db/" + id)
+
+		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
+		if len(dbPath) > 0 {
+			if config.DbSqliteDbName != dbPath {
+				if config.DbSqliteQuery != nil {
+					config.DbSqliteQuery.Close()
+				}
+				config.DbSqliteQuery = nil
+			}
+			config.DbSqliteDbName = dbPath
+			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+		} else {
+			if config.DbSqliteDbName != dbName {
+				if config.DbSqliteQuery != nil {
+					config.DbSqliteQuery.Close()
+				}
+				config.DbSqliteQuery = nil
+			}
+			config.DbSqliteDbName = dbName
+		}
+		//err := config.DbSqliteQuery.Ping()
+
+		var err error
+		//if err != nil {
+		if config.DbSqliteQuery == nil {
+			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
+			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		if r.Method == "PUT" {
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+				return
+			}
+			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
+			sql := "update \"GDB_ServiceItems\" set " + fieldStr + "=? where OBJECTID=?"
+			log.Println(sql)
+			//log.Println(body)
+			log.Println(id)
+			stmt, err := config.DbSqliteQuery.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
+			}
+			_, err = stmt.Exec(string(body), idInt)
+			//db.Close()
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
+				log.Println(err.Error())
+				return
+			}
+			stmt.Close()
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": "ok"})
+			w.Write(response)
+			return
+		}
+		//Db.Exec(initializeStr)
+		log.Print("Sqlite database: " + dbName)
+		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
+		sql := "SELECT " + fieldStr + " FROM \"GDB_ServiceItems\" where OBJECTID=?"
+		log.Printf("Query: "+sql+"%v", idInt)
+
+		stmt, err := config.DbSqliteQuery.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+			//w.Write([]byte(err.Error()))
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+
+			return
+		}
+		//rows := stmt.QueryRow(id)
+		var itemInfo []byte
+		err = stmt.QueryRow(idInt).Scan(&itemInfo)
+		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
+		if err != nil {
+			log.Println(err.Error())
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(itemInfo)
+		/*
+			for rows.Next() {
+				err = rows.Scan(&itemInfo)
+				w.Header().Set("Content-Type", "application/json")
+
+				w.Write(itemInfo)
+				//fmt.Println(string(itemInfo))
+			}
+			rows.Close() //good habit to close
+		*/
+		//db.Close()
+
+	}).Methods("GET", "POST", "PUT")
+	//http://reais.x10host.com/arcgis/rest/services/leasecompliance2016/FeatureServer/xml/31?f=json&db=C:\Users\steve\AppData\Local\Packages\Esri.CollectorforArcGIS_eytg3kh68c6a8\LocalState\hpluser5_qd3vos1n.1xf\df5aa0e91991468eb0efadf475bea54e\n2tel3ls.beb.geodatabase
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/xml/{id}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		name := vars["name"]
+		id := vars["id"]
+		idInt, _ := strconv.Atoi(id)
+		dbPath := r.URL.Query().Get("db")
+
+		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/xml/" + id)
+		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
+		if len(dbPath) > 0 {
+			if config.DbSqliteDbName != dbPath {
+				if config.DbSqliteQuery != nil {
+					config.DbSqliteQuery.Close()
+				}
+				config.DbSqliteQuery = nil
+			}
+			config.DbSqliteDbName = dbPath
+			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+		} else {
+			if config.DbSqliteDbName != dbName {
+				if config.DbSqliteQuery != nil {
+					config.DbSqliteQuery.Close()
+				}
+				config.DbSqliteQuery = nil
+			}
+			config.DbSqliteDbName = dbName
+		}
+
+		var err error
+		//if err != nil {
+		if config.DbSqliteQuery == nil {
+			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
+			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		if r.Method == "PUT" {
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
+				return
+			}
+			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
+			sql := "update \"GDB_Items\" set \"Definition\"=? where OBJECTID=?"
+			stmt, err := config.DbSqliteQuery.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
+				return
+			}
+			_, err = stmt.Exec(body, id)
+			if err != nil {
+				w.Write([]byte(err.Error()))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+
+				return
+			}
+			//db.Close()
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": "ok"})
+			w.Write(response)
+			return
+		}
+		//Db.Exec(initializeStr)
+		log.Print("Sqlite database: " + dbName)
+		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
+		sql := "SELECT \"Definition\" FROM \"GDB_Items\" where OBJECTID=?"
+		log.Printf("Query: "+sql+"%v", idInt)
+
+		stmt, err := config.DbSqliteQuery.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+
+		}
+		//rows := stmt.QueryRow(id)
+		var itemInfo []byte
+		err = stmt.QueryRow(idInt).Scan(&itemInfo)
+		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
+		if err != nil {
+			log.Println(err.Error())
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+
+			return
+		}
+		w.Header().Set("Content-Type", "application/xml")
+		w.Write(itemInfo)
+	}).Methods("GET", "POST", "PUT")
+
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/table/{id}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		name := vars["name"]
+		id := vars["id"]
+		tableName := config.Project.Services[name]["layers"][id]["data"].(string)
+		dbPath := r.URL.Query().Get("db")
+
+		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/table/" + id)
+		var dbName = "file:" + config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase" + "?PRAGMA journal_mode=WAL"
+		if len(dbPath) > 0 {
+			if config.DbSqliteDbName != dbPath {
+				if config.DbSqliteQuery != nil {
+					config.DbSqliteQuery.Close()
+				}
+				config.DbSqliteQuery = nil
+			}
+			config.DbSqliteDbName = dbPath
+			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+			/*
+				if config.DbSqliteQuery != nil {
+					config.DbSqliteQuery.Close()
+					config.DbSqliteQuery = nil
+					if dbPath == "close" {
+						return
+					}
+				}
+			*/
+		} else {
+			if config.DbSqliteDbName != dbName {
+				if config.DbSqliteQuery != nil {
+					config.DbSqliteQuery.Close()
+				}
+				config.DbSqliteQuery = nil
+			}
+			config.DbSqliteDbName = dbName
+		}
+
+		var err error
+		//if err != nil {
+		if config.DbSqliteQuery == nil {
+			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
+			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
+			if err != nil {
+				log.Fatal(err)
+				w.Write([]byte("Error: " + err.Error()))
+				return
+			}
+		}
+
+		//Db.Exec(initializeStr)
+		log.Print("Sqlite database: " + dbName)
+		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
+		sql := "SELECT * FROM \"" + tableName + "\""
+		log.Printf("Query: " + sql)
+
+		//var itemInfo *[]byte
+		//*interface{}
+		rows, err := config.DbSqliteQuery.Query(sql)
+		if err != nil {
+			log.Println(err.Error())
+			w.Write([]byte("Error: " + err.Error()))
+			return
+		}
+		// get the column names from the query
+		var columns []string
+		columns, err = rows.Columns()
+		colNum := len(columns)
+		t := "<html><style>table{width:100%;}table, th, td { border: 1px solid black;  border-collapse: collapse;}th, td { padding: 5px; text-align: left;}</style><body><table>"
+		for n := 0; n < colNum; n++ {
+			t = t + "<th>" + columns[n] + "</th>"
+		}
+		rawResult := make([][]byte, colNum)
+		for rows.Next() {
+			cols := make([]interface{}, colNum)
+			for i := 0; i < colNum; i++ {
+				cols[i] = &rawResult[i]
+			}
+			err = rows.Scan(cols...)
+			if err != nil {
+				log.Println(err.Error())
+				//w.Header().Set("Content-Type", "application/json")
+				//response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				//w.Write(response)
+				w.Write([]byte("Error: " + err.Error()))
+
+				return
+			}
+			t = t + "<tr>"
+			//for i := 0; i < colNum; i++ {
+			for i, raw := range rawResult {
+				//w.Write(cols[i])
+				if strings.ToLower(columns[i]) == "shape" {
+					t = t + "<td>Shape</td>"
+				} else {
+					t = t + fmt.Sprintf("<td>%v</td>", string(raw))
+				}
+				//w.Write([]byte(cols[i]))
+			}
+			t = t + "</tr>"
+			//s := fmt.Sprintf("a %s", "string")
+			//w.Write([]byte(s))
+			//for i := 0; i < colNum; i++ {
+			//cols[i] = VehicleCol(columns[i], &vh)
+			//w.Write(rows.Scan(cols...)
+			//}
+			//err = rows.Scan(&itemInfo)
+
+			//for num, i := range *itemInfo {
+			//	w.Write(i)
+			//}
+		}
+		t = t + "</table></body>"
+		w.Write([]byte(t))
+		//.Scan(&itemInfo)
+		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
+
+		//w.Header().Set("Content-Type", "application/xml")
+		//w.Write(itemInfo)
+	}).Methods("GET", "POST")
 
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/query", func(w http.ResponseWriter, r *http.Request) {
 		//if(req.query.outFields=='OBJECTID'){
@@ -1710,9 +2056,9 @@ func StartGorillaMux() *mux.Router {
 		//log.Println("sqlite: " + replicaDb)
 		//var db = new sqlite3.Database(replicaDb)
 		joinField := config.Project.Services[name]["relationships"][relationshipId]["oJoinKey"].(string)
-		if joinField == "GlobalID" || joinField == "GlobalGUUD" {
-			joinField = "substr(" + joinField + ", 2, length(" + joinField + ")-2)"
-		}
+		//if joinField == "GlobalID" || joinField == "GlobalGUUD" {
+		//	joinField = "substr(" + joinField + ", 2, length(" + joinField + ")-2)"
+		//}
 		var sqlstr = "select " + outFields + " from " + config.Schema +
 			config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string) +
 			" where " +
@@ -1731,11 +2077,13 @@ func StartGorillaMux() *mux.Router {
 
 		//outArr := []interface{}{}
 		//relationshipIdInt, _ := strconv.Atoi(relationshipId)
-		rows, err := stmt.Query(objectIds) //relationshipIdInt
+		objectidArr, _ := strconv.Atoi(objectIds)
+		rows, err := stmt.Query(objectidArr) //relationshipIdInt
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer rows.Close()
+
 		//var colLookup = map[string]interface{}{"objectid": "OBJECTID", "globalid": "GlobalID", "creationdate": "CreationDate", "creator": "Creator", "editdate": "EditDate", "editor": "Editor"}
 		var colLookup = map[string]string{"objectid": "OBJECTID", "globalguid": "GlobalGUID", "globalid": "GlobalID", "creationdate": "CreationDate", "creator": "Creator", "editdate": "EditDate", "editor": "Editor", "comments": "Comments"}
 		columns, _ := rows.Columns()
@@ -1746,22 +2094,24 @@ func StartGorillaMux() *mux.Router {
 		//works final_result := map[int]map[string]interface{}{}
 		final_result := make([]interface{}, 0)
 		result_id := 0
+		//log.Println("Query ran successfully")
 		for rows.Next() {
+			//log.Println("next row")
 			for i, _ := range columns {
 				valuePtrs[i] = &values[i]
+				//log.Println(i)
 			}
 			rows.Scan(valuePtrs...)
-
 			//tmp_struct := map[string]string{}
 			tmp_struct := map[string]interface{}{}
 
 			for i, col := range columns {
 				//var v interface{}
 				val := values[i]
+				//log.Printf("%v", val)
 				if colLookup[col] != "" {
 					col = colLookup[col]
 				}
-
 				switch t := val.(type) {
 				case int:
 					//fmt.Printf("Integer: %v=%v\n", col, t)
@@ -1792,11 +2142,16 @@ func StartGorillaMux() *mux.Router {
 					//fmt.Printf("Other:%v=%v\n", col, r)
 				}
 			}
+			err = rows.Err()
+			if err != nil {
+				log.Fatal(err)
+			}
+			//log.Println(tmp_struct)
 			record := map[string]interface{}{"attributes": tmp_struct}
 			final_result = append(final_result, record)
 			result_id++
 		}
-
+		//log.Println("Query end successfully")
 		var response []byte
 		if len(final_result) > 0 {
 			var result = map[string]interface{}{}
@@ -1964,15 +2319,16 @@ func StartGorillaMux() *mux.Router {
 
 		} else {
 			var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
 			log.Println("Table name: " + tableName)
 			//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 
 			if len(r.FormValue("updates")) > 0 {
-				response = Updates(name, id, tableName, r.FormValue("updates"))
+				response = Updates(name, id, tableName, r.FormValue("updates"), globalIdName)
 			} else if len(r.FormValue("adds")) > 0 {
-				response = Adds(name, id, tableName, r.FormValue("adds"), joinField)
+				response = Adds(name, id, tableName, r.FormValue("adds"), joinField, globalIdName)
 			} else if len(r.FormValue("deletes")) > 0 {
-				response = Deletes(name, id, tableName, r.FormValue("deletes"))
+				response = Deletes(name, id, tableName, r.FormValue("deletes"), globalIdName)
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -2056,367 +2412,200 @@ func StartGorillaMux() *mux.Router {
 			log.Println(string(b))
 			ioutil.WriteFile(jsonOutputFile, b, 0644)
 		*/
-
 		//now read posted JSON
 		//var updates = map[string]interface{}{}
-
-	}).Methods("GET", "POST")
-
-	//http://reais.x10host.com/arcgis/rest/services/leasecompliance2016/FeatureServer/replicas/?f=json
-	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/db/{id}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		name := vars["name"]
-		id := vars["id"]
-		idInt, _ := strconv.Atoi(id)
-		fieldStr := r.URL.Query().Get("field")
-		if len(fieldStr) == 0 {
-			fieldStr = "\"ItemInfo\""
-		}
-		dbPath := r.URL.Query().Get("db")
-
-		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/db/" + id)
-
-		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
-		if len(dbPath) > 0 {
-			if config.DbSqliteDbName != dbPath {
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
-				}
-				config.DbSqliteQuery = nil
-			}
-			config.DbSqliteDbName = dbPath
-			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
-		} else {
-			if config.DbSqliteDbName != dbName {
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
-				}
-				config.DbSqliteQuery = nil
-			}
-			config.DbSqliteDbName = dbName
-		}
-		//err := config.DbSqliteQuery.Ping()
-
-		var err error
-		//if err != nil {
-		if config.DbSqliteQuery == nil {
-			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
-			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-		if r.Method == "PUT" {
-			body, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				w.Header().Set("Content-Type", "application/json")
-				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-				w.Write(response)
-				return
-			}
-			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
-			sql := "update \"GDB_ServiceItems\" set " + fieldStr + "=? where OBJECTID=?"
-			log.Println(sql)
-			//log.Println(body)
-			log.Println(id)
-			stmt, err := config.DbSqliteQuery.Prepare(sql)
-			if err != nil {
-				log.Println(err.Error())
-				w.Header().Set("Content-Type", "application/json")
-				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-				w.Write(response)
-
-			}
-			_, err = stmt.Exec(string(body), idInt)
-			//db.Close()
-			if err != nil {
-				w.Header().Set("Content-Type", "application/json")
-				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-				w.Write(response)
-
-				log.Println(err.Error())
-				return
-			}
-			stmt.Close()
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": "ok"})
-			w.Write(response)
-			return
-		}
-		//Db.Exec(initializeStr)
-		log.Print("Sqlite database: " + dbName)
-		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT " + fieldStr + " FROM \"GDB_ServiceItems\" where OBJECTID=?"
-		log.Printf("Query: "+sql+"%v", idInt)
-
-		stmt, err := config.DbSqliteQuery.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-			//w.Write([]byte(err.Error()))
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-			w.Write(response)
-
-			return
-		}
-		//rows := stmt.QueryRow(id)
-		var itemInfo []byte
-		err = stmt.QueryRow(idInt).Scan(&itemInfo)
-		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
-		if err != nil {
-			log.Println(err.Error())
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-			w.Write(response)
-
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(itemInfo)
-		/*
-			for rows.Next() {
-				err = rows.Scan(&itemInfo)
-				w.Header().Set("Content-Type", "application/json")
-
-				w.Write(itemInfo)
-				//fmt.Println(string(itemInfo))
-			}
-			rows.Close() //good habit to close
-		*/
-		//db.Close()
-
-	}).Methods("GET", "POST", "PUT")
-	//http://reais.x10host.com/arcgis/rest/services/leasecompliance2016/FeatureServer/xml/31?f=json&db=C:\Users\steve\AppData\Local\Packages\Esri.CollectorforArcGIS_eytg3kh68c6a8\LocalState\hpluser5_qd3vos1n.1xf\df5aa0e91991468eb0efadf475bea54e\n2tel3ls.beb.geodatabase
-	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/xml/{id}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		name := vars["name"]
-		id := vars["id"]
-		idInt, _ := strconv.Atoi(id)
-		dbPath := r.URL.Query().Get("db")
-
-		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/xml/" + id)
-		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
-		if len(dbPath) > 0 {
-			if config.DbSqliteDbName != dbPath {
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
-				}
-				config.DbSqliteQuery = nil
-			}
-			config.DbSqliteDbName = dbPath
-			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
-		} else {
-			if config.DbSqliteDbName != dbName {
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
-				}
-				config.DbSqliteQuery = nil
-			}
-			config.DbSqliteDbName = dbName
-		}
-
-		var err error
-		//if err != nil {
-		if config.DbSqliteQuery == nil {
-			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
-			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-		if r.Method == "PUT" {
-			body, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				w.Header().Set("Content-Type", "application/json")
-				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-				w.Write(response)
-
-				return
-			}
-			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
-			sql := "update \"GDB_Items\" set \"Definition\"=? where OBJECTID=?"
-			stmt, err := config.DbSqliteQuery.Prepare(sql)
-			if err != nil {
-				log.Println(err.Error())
-				w.Header().Set("Content-Type", "application/json")
-				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-				w.Write(response)
-
-				return
-			}
-			_, err = stmt.Exec(body, id)
-			if err != nil {
-				w.Write([]byte(err.Error()))
-				w.Header().Set("Content-Type", "application/json")
-				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-				w.Write(response)
-
-				return
-			}
-			//db.Close()
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": "ok"})
-			w.Write(response)
-			return
-		}
-		//Db.Exec(initializeStr)
-		log.Print("Sqlite database: " + dbName)
-		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT \"Definition\" FROM \"GDB_Items\" where OBJECTID=?"
-		log.Printf("Query: "+sql+"%v", idInt)
-
-		stmt, err := config.DbSqliteQuery.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-			w.Write(response)
-
-		}
-		//rows := stmt.QueryRow(id)
-		var itemInfo []byte
-		err = stmt.QueryRow(idInt).Scan(&itemInfo)
-		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
-		if err != nil {
-			log.Println(err.Error())
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-			w.Write(response)
-
-			return
-		}
-		w.Header().Set("Content-Type", "application/xml")
-		w.Write(itemInfo)
-	}).Methods("GET", "POST", "PUT")
-
-	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/table/{id}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		name := vars["name"]
-		id := vars["id"]
-		dbPath := r.URL.Query().Get("db")
-
-		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/table/" + id)
-		var dbName = "file:" + config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase" + "?PRAGMA journal_mode=WAL"
-		if len(dbPath) > 0 {
-			if config.DbSqliteDbName != dbPath {
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
-				}
-				config.DbSqliteQuery = nil
-			}
-			config.DbSqliteDbName = dbPath
-			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
-			/*
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
-					config.DbSqliteQuery = nil
-					if dbPath == "close" {
-						return
-					}
-				}
-			*/
-		} else {
-			if config.DbSqliteDbName != dbName {
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
-				}
-				config.DbSqliteQuery = nil
-			}
-			config.DbSqliteDbName = dbName
-		}
-
-		var err error
-		//if err != nil {
-		if config.DbSqliteQuery == nil {
-			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
-			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
-			if err != nil {
-				log.Fatal(err)
-				w.Write([]byte("Error: " + err.Error()))
-				return
-			}
-		}
-
-		//Db.Exec(initializeStr)
-		log.Print("Sqlite database: " + dbName)
-		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT * FROM \"" + id + "\""
-		log.Printf("Query: "+sql+"%v", id)
-
-		//var itemInfo *[]byte
-		//*interface{}
-		rows, err := config.DbSqliteQuery.Query(sql)
-		if err != nil {
-			log.Println(err.Error())
-			w.Write([]byte("Error: " + err.Error()))
-			return
-		}
-		// get the column names from the query
-		var columns []string
-		columns, err = rows.Columns()
-		colNum := len(columns)
-		t := "<html><style>table{width:100%;}table, th, td { border: 1px solid black;  border-collapse: collapse;}th, td { padding: 5px; text-align: left;}</style><body><table>"
-		for n := 0; n < colNum; n++ {
-			t = t + "<th>" + columns[n] + "</th>"
-		}
-		rawResult := make([][]byte, colNum)
-		for rows.Next() {
-			cols := make([]interface{}, colNum)
-			for i := 0; i < colNum; i++ {
-				cols[i] = &rawResult[i]
-			}
-			err = rows.Scan(cols...)
-			if err != nil {
-				log.Println(err.Error())
-				//w.Header().Set("Content-Type", "application/json")
-				//response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-				//w.Write(response)
-				w.Write([]byte("Error: " + err.Error()))
-
-				return
-			}
-			t = t + "<tr>"
-			//for i := 0; i < colNum; i++ {
-			for i, raw := range rawResult {
-				//w.Write(cols[i])
-				if strings.ToLower(columns[i]) == "shape" {
-					t = t + "<td>Shape</td>"
-				} else {
-					t = t + fmt.Sprintf("<td>%v</td>", string(raw))
-				}
-				//w.Write([]byte(cols[i]))
-			}
-			t = t + "</tr>"
-			//s := fmt.Sprintf("a %s", "string")
-			//w.Write([]byte(s))
-			//for i := 0; i < colNum; i++ {
-			//cols[i] = VehicleCol(columns[i], &vh)
-			//w.Write(rows.Scan(cols...)
-			//}
-			//err = rows.Scan(&itemInfo)
-
-			//for num, i := range *itemInfo {
-			//	w.Write(i)
-			//}
-		}
-		t = t + "</table></body>"
-		w.Write([]byte(t))
-		//.Scan(&itemInfo)
-		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
-
-		//w.Header().Set("Content-Type", "application/xml")
-		//w.Write(itemInfo)
 	}).Methods("GET", "POST")
 	//put this last - serve static content
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir(".")))
-
 	return r
-
 }
 
-func Updates(name string, id string, tableName string, updateTxt string) []byte {
-	//log.Println(updateTxt)
+func Adds(name string, id string, tableName string, addsTxt string, joinField string, globalIdName string) []byte {
+	var results []interface{}
+	var objectid int
+	log.Println(addsTxt)
+	var adds []structs.Feature
+	decoder := json.NewDecoder(strings.NewReader(addsTxt)) //r.Body
+	err := decoder.Decode(&adds)
+	if err != nil {
+		panic(err)
+	}
+	cols := ""
+	p := ""
 
+	c := 1
+
+	sql := "select max(OBJECTID)+1 from " + tableName
+	log.Println(sql)
+	rows, err := config.DbQuery.Query(sql)
+	//defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(&objectid)
+		if err != nil {
+			//log.Fatal(err)
+			objectid = 1
+		}
+	}
+	rows.Close()
+
+	var globalId string
+	for _, i := range adds {
+		var vals []interface{}
+		sep := ""
+
+		for key, j := range i.Attributes {
+			if key == "OBJECTID" {
+				i.Attributes["OBJECTID"] = objectid
+				cols += sep + key
+				p += sep + config.GetParam(c)
+				sep = ","
+				vals = append(vals, objectid)
+				c++
+			} else {
+				cols += sep + key
+				p += sep + config.GetParam(c)
+				sep = ","
+				if key == joinField {
+					j = strings.ToUpper(j.(string))
+					globalId = j.(string)
+					//j = strings.Replace(j.(string), "}", "", -1)
+					//j = strings.Replace(j.(string), "{", "", -1)
+				}
+				switch j.(type) {
+				case float64:
+					tmpFlt := j.(float64)
+					if tmpFlt == float64(int(tmpFlt)) {
+						vals = append(vals, int(tmpFlt))
+					} else {
+						vals = append(vals, j)
+					}
+				default:
+					vals = append(vals, j)
+				}
+				c++
+			}
+		}
+		if len(globalIdName) > 0 {
+			cols += sep + globalIdName
+			p += sep + config.GetParam(c)
+			vals = append(vals, globalId)
+		}
+		//vals = append(vals, "")
+
+		//cols += sep + joinField
+		//p += sep + config.GetParam(c)
+		//vals = append(vals, "")
+
+		log.Println("insert into " + tableName + "(" + cols + ") values(" + p + ")")
+		log.Print(vals)
+
+		sql := "insert into " + tableName + "(" + cols + ") values(" + p + ")"
+		/*
+			stmt, err := config.DbQuery.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		*/
+		res, err := config.DbQuery.Exec(sql, vals...)
+		if err != nil {
+			log.Println(err.Error())
+		} else {
+			objectid, err := res.LastInsertId()
+			if err != nil {
+				println("Error:", err.Error())
+			} else {
+				println("LastInsertId:", objectid)
+			}
+		}
+		//stmt.Close()
+
+		if config.DbSource == config.PGSQL {
+			//addsTxt = addsTxt[15 : len(addsTxt)-2]
+			sql = "update services set json=jsonb_set(json,'{features}',$1::jsonb,true) where type='query' and layerId=$2"
+			log.Println(sql)
+			stmt, err := config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			//log.Println(i)
+			//log.Println(id)
+			var jsonstr []byte
+			jsonstr, err = json.Marshal(i)
+			if err != nil {
+				log.Println(err)
+			}
+
+			_, err = stmt.Exec(jsonstr, id)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			stmt.Close()
+		} else if config.DbSource == config.SQLITE3 {
+			sql := "select json from services where type='query' and layerId=?"
+			stmt, err := config.Db.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			rows, err := config.Db.Query(sql, id, objectid)
+
+			var row []byte
+			for rows.Next() {
+				err := rows.Scan(&row)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+			rows.Close()
+			stmt.Close()
+
+			var fieldObj structs.FeatureTable
+			err = json.Unmarshal(row, &fieldObj)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(row))
+				log.Println(err.Error())
+			}
+			var jsonstr []byte
+			jsonstr, err = json.Marshal(fieldObj)
+			if err != nil {
+				log.Println(err)
+			}
+			fieldObj.Features = append(fieldObj.Features, i)
+			tx, err := config.Db.Begin()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			sql = "update services set json=? where type='query' and layerId=?"
+
+			stmt, err = tx.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+			idInt, _ := strconv.Atoi(id)
+
+			_, err = tx.Stmt(stmt).Exec(string(jsonstr), idInt)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			tx.Commit()
+			stmt.Close()
+		}
+		result := map[string]interface{}{}
+		result["objectId"] = objectid
+		result["success"] = true
+		result["globalId"] = nil
+
+		results = append(results, result)
+		objectid++
+	}
+	response, _ := json.Marshal(map[string]interface{}{"addResults": results, "updateResults": []string{}, "deleteResults": []string{}})
+	return response
+}
+
+func Updates(name string, id string, tableName string, updateTxt string, globalIdName string) []byte {
+	//log.Println(updateTxt)
 	var updates structs.Record
 	decoder := json.NewDecoder(strings.NewReader(updateTxt)) //r.Body
 
@@ -2480,6 +2669,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 		if err != nil {
 			log.Println(err.Error())
 		}
+		stmt.Close()
 		result["success"] = true
 		result["globalId"] = nil
 		results = append(results, result)
@@ -2504,7 +2694,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			log.Print("Objectid: ")
 			log.Println(objectid)
 			rows, err := config.Db.Query(sql, id, objectid)
-			defer rows.Close()
+
 			var rowId int
 			for rows.Next() {
 				err := rows.Scan(&rowId)
@@ -2512,6 +2702,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 					log.Fatal(err)
 				}
 			}
+			rows.Close()
 			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
 			stmt, err = config.Db.Prepare(sql)
 			if err != nil {
@@ -2523,6 +2714,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 			if err != nil {
 				log.Println(err.Error())
 			}
+			stmt.Close()
 
 		} else if config.DbSource == config.SQLITE3 {
 			sql = "select json from services where type='query' and layerId=?"
@@ -2531,7 +2723,6 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 				log.Println(err.Error())
 			}
 			rows, err := config.Db.Query(sql, id, objectid)
-			defer rows.Close()
 
 			var row []byte
 			for rows.Next() {
@@ -2586,6 +2777,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 				log.Println(err.Error())
 			}
 			tx.Commit()
+			stmt.Close()
 			//sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
 		}
 	}
@@ -2769,7 +2961,7 @@ func Updates(name string, id string, tableName string, updateTxt string) []byte 
 	//update json file with updates
 }
 
-func Deletes(name string, id string, tableName string, deletesTxt string) []byte {
+func Deletes(name string, id string, tableName string, deletesTxt string, globalIdName string) []byte {
 	//deletesTxt should be a objectId
 	var objectid, _ = strconv.Atoi(deletesTxt)
 	var results []interface{}
@@ -2790,6 +2982,7 @@ func Deletes(name string, id string, tableName string, deletesTxt string) []byte
 	if err != nil {
 		log.Println(err.Error())
 	}
+	stmt.Close()
 
 	if config.DbSource == config.PGSQL {
 		sql := "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
@@ -2799,7 +2992,7 @@ func Deletes(name string, id string, tableName string, deletesTxt string) []byte
 		log.Printf("Objectid: %v", objectid)
 
 		rows, err := config.Db.Query(sql, id, objectid)
-		defer rows.Close()
+
 		var rowId int
 		for rows.Next() {
 			err := rows.Scan(&rowId)
@@ -2807,6 +3000,7 @@ func Deletes(name string, id string, tableName string, deletesTxt string) []byte
 				log.Fatal(err)
 			}
 		}
+		rows.Close()
 		//sql = "update services set json=json->'features' - " + strconv.Itoa(rowId) + " where type='query' and layerId=$1"
 		sql = "update services set json=json #- '{features," + strconv.Itoa(rowId) + "}' where type='query' and layerId=$1"
 		log.Println(sql)
@@ -2819,6 +3013,7 @@ func Deletes(name string, id string, tableName string, deletesTxt string) []byte
 		if err != nil {
 			log.Println(err.Error())
 		}
+		stmt.Close()
 
 	} else if config.DbSource == config.SQLITE3 {
 		sql := "select json from services where type='query' and layerId=?"
@@ -2827,7 +3022,6 @@ func Deletes(name string, id string, tableName string, deletesTxt string) []byte
 			log.Println(err.Error())
 		}
 		rows, err := config.Db.Query(sql, id, objectid)
-		defer rows.Close()
 
 		var row []byte
 		for rows.Next() {
@@ -2881,159 +3075,10 @@ func Deletes(name string, id string, tableName string, deletesTxt string) []byte
 			log.Println(err.Error())
 		}
 		tx.Commit()
+		stmt.Close()
 		//sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
 	}
 	response, _ := json.Marshal(map[string]interface{}{"addResults": []string{}, "updateResults": []string{}, "deleteResults": results})
 	return response
 
-}
-func Adds(name string, id string, tableName string, addsTxt string, joinField string) []byte {
-	var results []interface{}
-	var objectid int
-	log.Println(addsTxt)
-	var adds []structs.Feature
-	decoder := json.NewDecoder(strings.NewReader(addsTxt)) //r.Body
-	err := decoder.Decode(&adds)
-	if err != nil {
-		panic(err)
-	}
-	cols := ""
-	p := ""
-	sep := ""
-	c := 1
-
-	sql := "select max(OBJECTID)+1 from " + tableName
-	log.Println(sql)
-	rows, err := config.Db.Query(sql)
-	defer rows.Close()
-
-	for rows.Next() {
-		err := rows.Scan(&objectid)
-		if err != nil {
-			//log.Fatal(err)
-			objectid = 1
-		}
-	}
-	for _, i := range adds {
-		var vals []interface{}
-
-		for key, j := range i.Attributes {
-			if key == "OBJECTID" {
-				cols += sep + key
-				p += sep + config.GetParam(c)
-				sep = ","
-				vals = append(vals, objectid)
-				c++
-			} else {
-				cols += sep + key
-				p += sep + config.GetParam(c)
-				sep = ","
-				if key == joinField {
-					j = strings.ToUpper(j.(string))
-					j = strings.Replace(j.(string), "}", "", -1)
-					j = strings.Replace(j.(string), "{", "", -1)
-				}
-				vals = append(vals, j)
-				c++
-			}
-		}
-		cols += sep + joinField
-		p += sep + config.GetParam(c)
-		vals = append(vals, "")
-
-		log.Println("insert into " + tableName + "(" + cols + ") values( " + p + ")")
-		log.Print(vals)
-		sql := "insert into " + tableName + "(" + cols + ") values( " + p + ")"
-		stmt, err := config.Db.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		_, err = stmt.Exec(vals...)
-		if err != nil {
-			log.Println(err.Error())
-		}
-
-		if config.DbSource == config.PGSQL {
-
-			//addsTxt = addsTxt[15 : len(addsTxt)-2]
-
-			sql = "update services set json=jsonb_set(json,'{features}',$1::jsonb,true) where type='query' and layerId=$2"
-			log.Println(sql)
-			stmt, err = config.Db.Prepare(sql)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			log.Println(i)
-			log.Println(id)
-			var jsonstr []byte
-			jsonstr, err = json.Marshal(i)
-			if err != nil {
-				log.Println(err)
-			}
-
-			_, err = stmt.Exec(jsonstr, id)
-			if err != nil {
-				log.Println(err.Error())
-			}
-		} else if config.DbSource == config.SQLITE3 {
-			sql := "select json from services where type='query' and layerId=?"
-			stmt, err := config.Db.Prepare(sql)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			rows, err := config.Db.Query(sql, id, objectid)
-			defer rows.Close()
-
-			var row []byte
-			for rows.Next() {
-				err := rows.Scan(&row)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-			rows.Close()
-			stmt.Close()
-
-			var fieldObj structs.FeatureTable
-			err = json.Unmarshal(row, &fieldObj)
-			if err != nil {
-				log.Println("Error unmarshalling fields into features object: " + string(row))
-				log.Println(err.Error())
-			}
-			var jsonstr []byte
-			jsonstr, err = json.Marshal(fieldObj)
-			if err != nil {
-				log.Println(err)
-			}
-			fieldObj.Features = append(fieldObj.Features, i)
-			tx, err := config.Db.Begin()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			sql = "update services set json=? where type='query' and layerId=?"
-
-			stmt, err = tx.Prepare(sql)
-			if err != nil {
-				log.Println(err.Error())
-			}
-
-			idInt, _ := strconv.Atoi(id)
-
-			_, err = tx.Stmt(stmt).Exec(string(jsonstr), idInt)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			tx.Commit()
-		}
-		result := map[string]interface{}{}
-		result["objectId"] = objectid
-		result["success"] = true
-		result["globalId"] = nil
-
-		results = append(results, result)
-		objectid++
-	}
-	response, _ := json.Marshal(map[string]interface{}{"addResults": results, "updateResults": []string{}, "deleteResults": []string{}})
-	return response
 }

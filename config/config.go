@@ -84,17 +84,18 @@ func Initialize() {
 
 	if len(os.Args) > 1 {
 		for i := 1; i < len(os.Args); i++ {
+			//log.Println(os.Args[i][0] == 45)
 			if os.Args[i] == "-sqlite" {
 				DbSource = SQLITE3
-				if len(os.Args) > i {
+				if len(os.Args) > i && os.Args[i+1][0] != 45 {
 					DbName = os.Args[i+1]
 				} else {
 					DbName = pwd + string(os.PathSeparator) + "arcrest.sqlite"
 				}
 				Schema = ""
-			} else if os.Args[i] == "-pgsql" && len(os.Args) > i {
+			} else if os.Args[i] == "-pgsql" {
 				DbSource = PGSQL
-				if len(os.Args) > i {
+				if len(os.Args) > i && os.Args[i+1][0] != 45 {
 					DbName = os.Args[i+1]
 				} else {
 					DbName = "user=postgres dbname=gis host=192.168.99.100"
@@ -157,6 +158,9 @@ func Initialize() {
 		log.Println(Db.Ping)
 		LoadConfiguration()
 	} else if DbSource == SQLITE3 {
+		//use 2 different sqlite files:
+		//1st: contains configuration information and JSON data
+		//2nd: contains actual data
 		/*
 					initializeStr := `PRAGMA automatic_index = ON;
 			        PRAGMA cache_size = 32768;
@@ -178,25 +182,109 @@ func Initialize() {
 		//log.Println(initializeStr)
 
 		//Db, err = sql.Open("sqlite3", "file:"+DbName+"?PRAGMA journal_mode=WAL")
-		Db, err = sql.Open("sqlite3", DbName)
 
+		Db, err = sql.Open("sqlite3", DbName+"?cache=shared&mode=wrc")
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = Db.Ping()
+		if err != nil {
+			log.Fatalf("Error on opening database connection: %s", err.Error())
+		}
+
 		//Db.Exec(initializeStr)
-		log.Print("Sqlite database: " + DbName)
+		log.Println("Sqlite config database: " + DbName)
 		//defer Db.Close()
 		//Db.SetMaxOpenConns(1)
 
 		LoadConfiguration()
 		//get RootName
 		DbQueryName := RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase"
-		log.Println("DbQueryName: " + DbQueryName)
+
 		//DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+"?PRAGMA journal_mode=WAL")
-		DbQuery, err = sql.Open("sqlite3", DbQueryName)
+		DbQuery, err = sql.Open("sqlite3", DbQueryName+"?cache=shared&mode=wrc")
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = DbQuery.Ping()
+		if err != nil {
+			log.Fatalf("Error on opening database connection: %s", err.Error())
+		}
+		log.Println("Sqlite replica database: " + DbQueryName)
+		//testQuery()
+		//os.Exit(0)
+
+		/*
+			sql := "select * from grazing_inspections where GlobalGUID in (select substr(GlobalID, 2, length(GlobalID)-2) from grazing_permittees where OBJECTID in(?))"
+			stmt, err := Db.Prepare(sql)
+			if err != nil {
+				log.Fatal(err)
+			}
+			rows, err := stmt.Query(16) //relationshipIdInt
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer rows.Close()
+			columns, _ := rows.Columns()
+			count := len(columns)
+			values := make([]interface{}, count)
+			valuePtrs := make([]interface{}, count)
+			//for i, _ := range columns {
+			//	log.Println(columns[i])
+			//}
+
+			for rows.Next() {
+				for i, _ := range columns {
+					valuePtrs[i] = &values[i]
+					log.Println(i)
+				}
+				rows.Scan(valuePtrs...)
+				for i, col := range columns {
+					log.Println(i)
+					log.Println(col)
+				}
+			}
+			err = rows.Err()
+			if err != nil {
+				log.Fatal(err)
+			}
+			rows.Close()
+
+			sql = "select * from grazing_inspections where GlobalGUID in (select substr(GlobalID, 2, length(GlobalID)-2) from grazing_permittees where OBJECTID in(16))"
+			sql = "select substr(GlobalID, 2, length(GlobalID)-2) as GlobalGUID from grazing_permittees where OBJECTID in(16)"
+			sql = "select OBJECTID,cows,yearling_heifers,steer_calves,yearling_steers,bulls,mares,geldings,studs,fillies,colts,ewes,lambs,rams,wethers,kids,billies,nannies,Comments,GlobalGUID,created_user,created_date,last_edited_user,last_edited_date,reviewer_name,reviewer_date,reviewer_title,GlobalID from grazing_inspections"
+			sql = "select * from grazing_permittees"
+			sql = "select OBJECTID from grazing_inspections"
+
+			log.Println(sql)
+			rows, err = Db.Query(sql) //relationshipIdInt
+			columns, _ = rows.Columns()
+			count = len(columns)
+			values = make([]interface{}, count)
+			valuePtrs = make([]interface{}, count)
+
+			for rows.Next() {
+				for i := range columns {
+					valuePtrs[i] = &values[i]
+					log.Println(i)
+				}
+				rows.Scan(valuePtrs...)
+				for i, col := range columns {
+					log.Println(i)
+					log.Println(col)
+					//val := values[i]
+					//log.Printf("%v", val.([]uint8))
+				}
+			}
+			err = rows.Err()
+			if err != nil {
+				log.Fatal(err)
+			}
+			rows.Close()
+
+			os.Exit(1)
+		*/
+
 		//defer DbQuery.Close()
 		//DbQuery.SetMaxOpenConns(1)
 		//log.Print("Sqlite database: " + DbQueryName)
@@ -647,4 +735,19 @@ func in_array(v interface{}, in interface{}) (ok bool, i int) {
 		}
 	}
 	return
+}
+func testQuery() {
+
+	sql := "insert into grazing_inspections(yearling_heifers,studs,lambs,wethers,kids,reviewer_name,reviewer_date,reviewer_title,cows,steer_calves,mares,fillies,nannies,Comments,OBJECTID,colts,ewes,rams,billies,yearling_steers,bulls,geldings,GlobalGUID,GlobalID) values( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	vals := []interface{}{nil, nil, nil, nil, nil, nil, nil, nil, 13, nil, nil, nil, nil, nil, 20, nil, nil, nil, nil, nil, nil, nil, "{6FC17403-5889-4A23-AC77-3B060E4C6DC4}", "{6FC17403-5889-4A23-AC77-3B060E4C6DC4}"}
+	stmt, err := DbQuery.Prepare(sql)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	_, err = stmt.Exec(vals...)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	stmt.Close()
+
 }
