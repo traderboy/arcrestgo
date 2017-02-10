@@ -43,3 +43,6 @@ spatialite_gui*
 go
 *.mxd
 temp.mxd
+test.json
+server.exe
+vk*.json

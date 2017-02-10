@@ -1481,6 +1481,14 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          '(select UUID from "GDB_Items" where Name="'+featureName+'" limit 1),'
          '(select UUID from "GDB_Items" where Name="main.'+featureName+'" limit 1),'
          '1,NULL)'))
+
+     sql5.append(('INSERT INTO "GDB_ItemRelationships"("ObjectID", "UUID", "Type", "OriginID", "DestID", "Properties", "Attributes") VALUES('
+         '(select max(OBJECTID) + 1 from "GDB_ItemRelationships"),'+ uuid+','
+         '(select UUID from "GDB_ItemRelationshipTypes" where "Name"=\'DatasetOfSyncDataset\' limit 1),'
+         '(select UUID from "GDB_Items" where Name="MyReplica" limit 1),'
+         '(select UUID from "GDB_Items" where Name="'+featureName+'" limit 1),'
+         '1,NULL)'))
+         
      #"(select '{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}' from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)),"
      #NEW.range_unit,NEW.stocking_rate,NEW.elevation,NEW.has_permittee,NEW.GlobalID,NEW.CreationDate,NEW.Creator,NEW.EditDate,NEW.Editor,NEW.SHAPE
      #newFields="NEW.OBJECTID,NEW.range_unit,NEW.stocking_rate,NEW.elevation,NEW.has_permittee,NEW.GlobalID,NEW.CreationDate,NEW.Creator,NEW.EditDate,NEW.Editor,NEW.SHAPE"
@@ -1546,6 +1554,12 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
            '(select UUID from "GDB_ItemRelationshipTypes" where "Name"= \'DatasetOfSyncDataset\' limit 1),'
            '(select UUID from "GDB_Items" where Name="'+featureName+'__ATTACH" limit 1),'
            '(select UUID from "GDB_Items" where Name="main.'+featureName+'__ATTACH" limit 1),'
+           '1,NULL)'))
+        sql5.append(('INSERT INTO "GDB_ItemRelationships"("ObjectID", "UUID", "Type", "OriginID", "DestID", "Properties", "Attributes") VALUES('
+           '(select max(OBJECTID) + 1 from "GDB_ItemRelationships"),'+ uuid+','           
+           '(select UUID from "GDB_ItemRelationshipTypes" where "Name"=\'DatasetOfSyncDataset\' limit 1),'
+           '(select UUID from "GDB_Items" where Name="MyReplica" limit 1),'
+           '(select UUID from "GDB_Items" where Name="'+featureName+'__ATTACH" limit 1),'
            '1,NULL)'))
 
         sql5.append(('ALTER TABLE '+featureName+'__ATTACH ADD REL_GLOBALID uuidtext'))

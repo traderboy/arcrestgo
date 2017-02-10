@@ -87,7 +87,7 @@ func Initialize() {
 			//log.Println(os.Args[i][0] == 45)
 			if os.Args[i] == "-sqlite" {
 				DbSource = SQLITE3
-				if len(os.Args) > i && os.Args[i+1][0] != 45 {
+				if len(os.Args) > i+1 && os.Args[i+1][0] != 45 { //&& len(os.Args[i+1]) > 0 && os.Args[i+1][0] != 45
 					DbName = os.Args[i+1]
 				} else {
 					DbName = pwd + string(os.PathSeparator) + "arcrest.sqlite"
@@ -95,22 +95,27 @@ func Initialize() {
 				Schema = ""
 			} else if os.Args[i] == "-pgsql" {
 				DbSource = PGSQL
-				if len(os.Args) > i && os.Args[i+1][0] != 45 {
+				if len(os.Args) > i+1 && os.Args[i+1][0] != 45 { // && len(os.Args[i+1]) > 0 && os.Args[i+1][0] != 45
 					DbName = os.Args[i+1]
 				} else {
 					DbName = "user=postgres dbname=gis host=192.168.99.100"
 				}
 				Schema = "postgres."
-			} else if os.Args[i] == "-root" && len(os.Args) > i {
-				RootPath, _ = filepath.Abs(os.Args[i+1])
+			} else if os.Args[i] == "-root" {
+				if len(os.Args) > i+1 && os.Args[i+1][0] != 45 {
+					RootPath, _ = filepath.Abs(os.Args[i+1])
+				} else {
+					fmt.Println("No root path entered")
+					os.Exit(1)
+				}
 				//RootName = filepath.Base(os.Args[i+1])
-			} else if os.Args[i] == "-p" && len(os.Args) > i {
+			} else if os.Args[i] == "-p" && len(os.Args) > i+1 {
 				HTTPPort = ":" + os.Args[i+1]
-			} else if os.Args[i] == "-https" && len(os.Args) > i {
+			} else if os.Args[i] == "-https" && len(os.Args) > i && len(os.Args[i+1]) > 0 {
 				HTTPSPort = ":" + os.Args[i+1]
-			} else if os.Args[i] == "-pem" && len(os.Args) > i {
+			} else if os.Args[i] == "-pem" && len(os.Args) > i && len(os.Args[i+1]) > 0 {
 				Pem = os.Args[i+1]
-			} else if os.Args[i] == "-cert" && len(os.Args) > i {
+			} else if os.Args[i] == "-cert" && len(os.Args) > i && len(os.Args[i+1]) > 0 {
 				Cert = os.Args[i+1]
 			} else if os.Args[i] == "-file" {
 				DbSource = FILE
