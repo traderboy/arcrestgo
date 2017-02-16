@@ -1356,6 +1356,39 @@ def getLayers(opLayers):
 
 #create replica sqlite datatabase for entire MXD including layer and tables.  This is used by the ESRI collector when using the offline features
 def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,username,serviceName,serverName,minx,miny,maxx,maxy,relationshipList,layerIds,serviceItems):
+
+  arcpy.CreateRuntimeContent_management(mxd.filePath,
+              replicaDestinationPath + os.sep + serviceName,
+              serviceName,"#","#",
+              "NETWORK_DATA;FEATURE_AND_TABULAR_DATA","NON_OPTIMIZE_SIZE","ONLINE","PNG","1","#")
+  filenames = next(os.walk(replicaDestinationPath + "/"+serviceName+"/data/"))[2]
+  printMessage("Rename " + replicaDestinationPath + "/"+serviceName+"/data/"+filenames[0]+" to "+ replicaDestinationPath+"/"+serviceName+".geodatabase")
+  #if offline geodatabase exists, must delete first
+  newFullReplicaDB=replicaDestinationPath+"/"+serviceName+".geodatabase"
+  try:
+     if os.path.exists(newFullReplicaDB):
+        os.rmdir(newFullReplicaDB)
+  except:
+     printMessage("Unable to remove old replica geodatabase")
+
+  os.rename(replicaDestinationPath + "/"+serviceName+"/data/"+filenames[0], newFullReplicaDB)
+  try:
+     os.rmdir(replicaDestinationPath + "/"+serviceName+"/data/")
+     os.rmdir(replicaDestinationPath + "/"+serviceName)
+  except:
+     printMessage("Unable to remove replica folders")
+
+  #get the creation sql string for each layer including __ATTACH tables
+  conn = sqlite3.connect(newFullReplicaDB)
+  c = conn.cursor()
+    #conn = sqlite3.connect("c:/massappraisal/colville/"+inFeaturesName+".sqlite")
+  #c = conn.cursor()
+  #c.execute("INSERT INTO catalog(name,type,json) VALUES(?,?,?)", (name,dtype,json))
+  #c.close()
+  #conn.commit()
+  #map(tuple, array.tolist())
+  
+
   creationDate = time.strftime("%Y-%m-%dT%H:%M:%S")
   sql1=('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
     " select MAX(ObjectID)+1, '{7B6EB064-7BF6-42C8-A116-2E89CD24A000}', '{5B966567-FB87-4DDE-938B-B4B37423539D}', 'MyReplica', 'MYREPLICA', 'MyReplica', '', 1, NULL, NULL, NULL, "
@@ -1398,6 +1431,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
 
   id=0
+  idx=1
   sql2=[]
   sql3=[]
   sql5=[]
@@ -1414,6 +1448,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      lyrtype = "esriDTTable"
      svcType = "Table"
      queryOption="esriRowsTypeNone"
+     oidName = desc.OIDFieldName
      
      if hasattr(desc,"featureClass"):
          lyrtype = "esriDTFeatureClass"
@@ -1430,6 +1465,24 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          "xssTrustedFields":""
 
      }
+     sqlCreation = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
+     c.execute(sqlCreation, (featureName,))
+     sql = c.fetchone()[0]
+     printMessage(sql )
+     sql5.append(("alter table " + featureName + " rename to " + featureName + "_org"))
+     #remove trailing close paren
+     sql = sql[:-1]
+     sql = sql.replace("primary key ","")
+     sql = sql.replace(" not null","")
+     #sql = sql.replace("OBJECTID integer","OBJECTID int32 not null")
+     #sql = sql.replace("GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38) not null","GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38)")
+     sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (gdb_transaction_time ()), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59'))) "
+     
+     #sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0))"
+     #sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) not null default (gdb_transaction_time ()), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) not null default (julianday ('9999-12-31 23:59:59')))"
+     sql5.append(sql)
+     
+
       #"attachmentsTableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_GRAZING_INSPECTIONS__ATTACH",
       #"attachmentsPrimaryKey": "GlobalID"
 
@@ -1442,10 +1495,10 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          layer["attachmentsTableName"]=inFeaturesGDB+"/"+featureName+"__ATTACH"
          dscfc = arcpy.Describe(inFeaturesGDB+"/"+featureName+"__ATTACH")
 
-         if dscfc.hasOID == True:
-             layer["attachmentsPrimaryKey"]=dscfc.OIDFieldName
-         else:
-             layer["attachmentsPrimaryKey"]= "GlobalID"
+         #if dscfc.hasOID == True:
+         #    layer["attachmentsPrimaryKey"]=dscfc.OIDFieldName
+         #else:
+         layer["attachmentsPrimaryKey"]= "GlobalID"
 
 
      serviceItems["layers"].append(layer)
@@ -1474,6 +1527,11 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
          " values('"+featureName + "','gdb_archive_oid',2,0,NULL,'Archiving record unique id.',536870912,NULL)"))
      
+     #sql5.append(('ALTER TABLE ' + featureName + ' add gdb_archive_oid integer')) # not null'))
+     #sql5.append(('ALTER TABLE ' + featureName + ' add gdb_from_date realdate check(typeof(gdb_from_date) = \'real\' and gdb_from_date >= 0.0)')) # not null default (julianday())'))
+     #sql5.append(('ALTER TABLE ' + featureName + ' add gdb_to_date realdate check(typeof(gdb_to_date) = \'real\' and gdb_to_date >= 0.0)')) # not null default (julianday (\'9999-12-31 23:59:59\'))'))
+
+
      sql5.append(('INSERT INTO "GDB_ItemRelationships"("ObjectID", "UUID", "Type", "OriginID", "DestID", "Properties", "Attributes")'
          'VALUES(' 
          '(select max(OBJECTID) + 1 from "GDB_ItemRelationships"),'+ uuid+','
@@ -1488,7 +1546,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          '(select UUID from "GDB_Items" where Name="MyReplica" limit 1),'
          '(select UUID from "GDB_Items" where Name="'+featureName+'" limit 1),'
          '1,NULL)'))
-         
+
      #"(select '{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}' from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)),"
      #NEW.range_unit,NEW.stocking_rate,NEW.elevation,NEW.has_permittee,NEW.GlobalID,NEW.CreationDate,NEW.Creator,NEW.EditDate,NEW.Editor,NEW.SHAPE
      #newFields="NEW.OBJECTID,NEW.range_unit,NEW.stocking_rate,NEW.elevation,NEW.has_permittee,NEW.GlobalID,NEW.CreationDate,NEW.Creator,NEW.EditDate,NEW.Editor,NEW.SHAPE"
@@ -1507,16 +1565,60 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      
      sql5.append(('CREATE VIEW '+featureName+'_evw AS SELECT OBJECTID,'+allfields+' FROM '+featureName))
      
-     sql5.append(('CREATE TRIGGER '+featureName+'_evw_delete INSTEAD OF DELETE ON '+featureName+'_evw BEGIN DELETE FROM '+featureName+' WHERE OBJECTID = OLD.OBJECTID AND gdb_from_date BETWEEN (gdb_transaction_time () - 0.000000001) AND (gdb_transaction_time () + 0.000000001); UPDATE OR REPLACE '+featureName+' SET gdb_to_date = gdb_transaction_time () WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001); END;'))
+     sql5.append(('CREATE TRIGGER '+featureName+'_evw_delete INSTEAD OF DELETE ON '+featureName+'_evw BEGIN '
+     'DELETE FROM '+featureName+' WHERE OBJECTID = OLD.OBJECTID AND gdb_from_date BETWEEN (gdb_transaction_time () - 0.000000001) AND (gdb_transaction_time () + 0.000000001); '
+     'UPDATE OR REPLACE '+featureName+' SET gdb_to_date = gdb_transaction_time () '
+     'WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001); END;'))
 
-     sql5.append(('CREATE TRIGGER '+featureName+'_evw_insert INSTEAD OF INSERT ON '+featureName+'_evw BEGIN INSERT INTO '+featureName+' (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) VALUES (IFNULL (NEW.OBJECTID,Next_RowID (NULL,\''+featureName+'\')),'+newFields+',gdb_transaction_time (),julianday (\'9999-12-31 23:59:59\')); END;'))
+     sql5.append(('CREATE TRIGGER '+featureName+'_evw_insert INSTEAD OF INSERT ON '+featureName+'_evw BEGIN '
+     'INSERT INTO '+featureName+' (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) '
+     'VALUES (IFNULL (NEW.OBJECTID,Next_RowID (NULL,\''+featureName+'\')),'+newFields+',gdb_transaction_time (),julianday (\'9999-12-31 23:59:59\')); END;'))
      
-     sql5.append(('CREATE TRIGGER '+featureName+'_evw_update INSTEAD OF UPDATE ON '+featureName+'_evw BEGIN UPDATE OR IGNORE '+featureName+' SET gdb_to_date = gdb_transaction_time () WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001);REPLACE INTO '+featureName+' (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) VALUES (NEW.OBJECTID,'+newFields+',(SELECT MAX (gdb_to_date) FROM '+featureName+' WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date < julianday (\'9999-12-31 23:59:59\')),julianday (\'9999-12-31 23:59:59\')); END;'))
+     sql5.append(('CREATE TRIGGER '+featureName+'_evw_update INSTEAD OF UPDATE ON '+featureName+'_evw BEGIN '
+     'UPDATE OR IGNORE '+featureName+' SET gdb_to_date = gdb_transaction_time () '
+     'WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001);'
+     'REPLACE INTO '+featureName+' (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) '
+     'VALUES (NEW.OBJECTID,'+newFields+',(SELECT MAX (gdb_to_date) FROM '+featureName+' '
+     'WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date < julianday (\'9999-12-31 23:59:59\')),julianday (\'9999-12-31 23:59:59\')); END;'))
 
+     sql5.append(("insert into " + featureName + "(OBJECTID,"+allfields+") select OBJECTID,"+allfields+" from "+featureName + "_org"))
+     sql5.append(("drop table "+featureName + "_org"))
+     
+     sql5.append(("CREATE INDEX gdb_ct4_"+str(idx)+" ON "+featureName+" (objectid,gdb_from_date) "))
+     sql5.append(("CREATE INDEX gdb_ct1_"+str(idx)+" ON "+featureName+" (gdb_from_date,gdb_to_date) "))
+     sql5.append(("CREATE INDEX r"+str(idx)+"_gdb_xpk ON "+featureName+" (objectid,gdb_to_date) "))
+     sql5.append(("CREATE INDEX UUID"+str(idx)+" ON "+featureName+" (GlobalID) "))
+     sql5.append(("CREATE INDEX GDB_"+str(idx)+"_GlobalGUI ON "+featureName+" (GlobalGUID) "))
+
+     #need to add triggers for editing spatial layers
+     if svcType!="Table":
+         sql5.append(('CREATE TRIGGER "st_delete_trigger_'+featureName+'_SHAPE" AFTER DELETE ON '+featureName+' FOR EACH ROW BEGIN '
+         'DELETE FROM "st_spindex__'+featureName+'_SHAPE" WHERE pkid = OLD._ROWID_; END'))
+         sql5.append(('CREATE TRIGGER "st_insert_trigger_'+featureName+'_SHAPE" AFTER INSERT ON '+featureName+' FOR EACH ROW BEGIN '
+         'SELECT InsertIndexEntry ("st_spindex__'+featureName+'_SHAPE",NEW.SHAPE,NEW._ROWID_,2); END'))
+         sql5.append(('CREATE TRIGGER "st_update1_trigger_'+featureName+'_SHAPE" AFTER UPDATE OF SHAPE ON '+featureName+' WHEN OLD._ROWID_ != NEW._ROWID_ BEGIN '
+         'DELETE FROM "st_spindex__'+featureName+'_SHAPE" WHERE pkid = OLD._ROWID_; SELECT UpdateIndexEntry ("st_spindex__'+featureName+'_SHAPE",NEW.SHAPE,NEW._ROWID_,2); END'))
+         sql5.append(('CREATE TRIGGER "st_update_trigger_'+featureName+'_SHAPE" AFTER UPDATE OF SHAPE ON '+featureName+' WHEN OLD._ROWID_ = NEW._ROWID_ BEGIN '
+         'SELECT UpdateIndexEntry ("st_spindex__'+featureName+'_SHAPE",NEW.SHAPE,NEW._ROWID_,2); END'))
 
      printMessage("Loading " + lyr.name)
+     #now process any attachment tables
      if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
+        excludes=["OBJECTID","Shape_Length","Shape_Area"]
+        pre=""
+        newFields=""
+        allfields=""
+        newallfields=""
+        desc = arcpy.Describe(inFeaturesGDB+"/"+featureName+"__ATTACH")
+        for field in desc.fields:
+           if field.name not in excludes:
+              newFields = newFields +pre+ "NEW."+field.name
+              allfields = allfields +pre+ field.name
+              newallfields = newallfields + pre + field.name
+              pre=","
          
+        oidName = desc.OIDFieldName
+        idx=idx+1
         lyrtype="esriDTTable"
         queryOption="esriRowsTypeFilter"
         dataSetId='\'||(SELECT ObjectId FROM "GDB_Items" Where Name=\'main.'+featureName+"__ATTACH"+"\')||\'"
@@ -1545,8 +1647,19 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
             " values('"+featureName + "__ATTACH','gdb_archive_oid',2,0,NULL,'Archiving record unique id.',536870912,NULL)"))
 
-        sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
-            " values('"+featureName + "__ATTACH','REL_GLOBALID',12,38,NULL,NULL,0,NULL)"))
+        #sql5.append(('ALTER TABLE ' + featureName + '__ATTACH add gdb_archive_oid integer')) # not null'))
+        #sql5.append(('ALTER TABLE ' + featureName + '__ATTACH add gdb_from_date realdate check(typeof(gdb_from_date) = \'real\' and gdb_from_date >= 0.0)')) #not null default (julianday())'))
+        #sql5.append(('ALTER TABLE ' + featureName + '__ATTACH add gdb_to_date realdate check(typeof(gdb_to_date) = \'real\' and gdb_to_date >= 0.0)')) # not null default (julianday (\'9999-12-31 23:59:59\'))'))
+
+        #sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
+        #    " values('"+featureName + "__ATTACH','REL_GLOBALID',12,38,NULL,NULL,0,NULL)"))
+
+        sql5.append(("UPDATE GDB_ColumnRegistry set column_name='REL_GLOBALID' where column_name='"+featureName+"_GlobalID' and table_name='"+featureName+"__ATTACH'"))
+        sql5.append(("UPDATE GDB_ColumnRegistry set column_name='GLOBALID' where column_name='GlobalID' and table_name='"+featureName+"__ATTACH'"))
+        
+        #sql5.append(("UPDATE GDB_ColumnRegistry set column_name='GLOBALID' where column_name='GlobalID'"))
+        #("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
+        #   " values('"+featureName + "__ATTACH','REL_GLOBALID',12,38,NULL,NULL,0,NULL)"))
 
         sql5.append(('INSERT INTO "GDB_ItemRelationships"("ObjectID", "UUID", "Type", "OriginID", "DestID", "Properties", "Attributes")'
            'VALUES(' 
@@ -1562,20 +1675,68 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
            '(select UUID from "GDB_Items" where Name="'+featureName+'__ATTACH" limit 1),'
            '1,NULL)'))
 
-        sql5.append(('ALTER TABLE '+featureName+'__ATTACH ADD REL_GLOBALID uuidtext'))
+        #allfields="ATTACHMENTID,GLOBALID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA"
+        #newFields="NEW.ATTACHMENTID,NEW.GLOBALID,NEW.REL_GLOBALID,NEW.CONTENT_TYPE,NEW.ATT_NAME,NEW.DATA_SIZE,NEW.DATA"
 
-        allfields="ATTACHMENTID,GLOBALID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA"
-        newFields="NEW.ATTACHMENTID,NEW.GLOBALID,NEW.REL_GLOBALID,NEW.CONTENT_TYPE,NEW.ATT_NAME,NEW.DATA_SIZE,NEW.DATA"
+        sqlCreation = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
+        c.execute(sqlCreation, (featureName+"__ATTACH",))
+        sql = c.fetchone()[0]
+        printMessage(sql )
+        sql5.append(("alter table " + featureName + "__ATTACH rename to " + featureName + "__ATTACH_org"))
+        #remove trailing close paren
+        sql = sql[:-1]
+        sql = sql.replace("primary key ","")
+        sql = sql.replace(" not null","")
+        #sql = sql.replace("REL_OBJECTID int32 check((typeof(REL_OBJECTID) = 'integer' or typeof(REL_OBJECTID) = 'null') and REL_OBJECTID >= -2147483648 and REL_OBJECTID <= 2147483647),","")
+        
+        sql = sql.replace(featureName+"_GlobalID","REL_GLOBALID")
+        sql = sql.replace("GlobalID","GLOBALID")
+        newallfields = newallfields.replace(featureName+"_GlobalID","REL_GLOBALID")
+        newallfields = newallfields.replace("GlobalID","GLOBALID")
+        #newallfields = newallfields.replace("REL_OBJECTID,","")
 
-        sql5.append(('CREATE VIEW '+featureName+'__ATTACH_evw AS SELECT '+allfields+' FROM '+featureName+'__ATTACH'))
 
-        sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_delete INSTEAD OF DELETE ON '+featureName+'__ATTACH_evw BEGIN DELETE FROM '+featureName+'__ATTACH WHERE OBJECTID = OLD.OBJECTID AND gdb_from_date BETWEEN (gdb_transaction_time () - 0.000000001) AND (gdb_transaction_time () + 0.000000001); UPDATE OR REPLACE '+featureName+'__ATTACH SET gdb_to_date = gdb_transaction_time () WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001); END;'))
+        #oidName = desc.OIDFieldName
+        #sql = sql.replace("GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38) not null","GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38)")
+        sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (gdb_transaction_time ()),gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59'))) "
 
-        sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_insert INSTEAD OF INSERT ON '+featureName+'__ATTACH_evw BEGIN INSERT INTO '+featureName+'__ATTACH (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) VALUES (IFNULL (NEW.OBJECTID,Next_RowID (NULL,\''+featureName+'__ATTACH\')),'+newFields+',gdb_transaction_time (),julianday (\'9999-12-31 23:59:59\')); END;'))
+        #sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) not null default (gdb_transaction_time ()), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) not null default         (julianday ('9999-12-31 23:59:59')))"
+        sql5.append(sql)
+        
+        sql5.append(("insert into " + featureName + "__ATTACH("+newallfields+") select "+allfields+" from "+featureName + "__ATTACH_org"))
+        newFields = newFields.replace(featureName+"_GlobalID","REL_GLOBALID")
+        sql5.append(("drop table "+featureName + "__ATTACH_org")) 
 
-        sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_update INSTEAD OF UPDATE ON '+featureName+'__ATTACH_evw BEGIN UPDATE OR IGNORE '+featureName+'__ATTACH SET gdb_to_date = gdb_transaction_time () WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001);REPLACE INTO '+featureName+'__ATTACH (OBJECTID,'+allfields+',gdb_from_date,gdb_to_date) VALUES (NEW.OBJECTID,'+newFields+',(SELECT MAX (gdb_to_date) FROM '+featureName+'__ATTACH WHERE OBJECTID = OLD.OBJECTID AND gdb_to_date < julianday (\'9999-12-31 23:59:59\')),julianday (\'9999-12-31 23:59:59\')); END;'))
+        #sql5.append(('ALTER TABLE '+featureName+'__ATTACH ADD REL_GLOBALID uuidtext'))
+        sql5.append(("CREATE INDEX gdb_ct4_"+str(idx)+" ON "+featureName+"__ATTACH (ATTACHMENTID,gdb_from_date) "))
+        sql5.append(("CREATE INDEX gdb_ct1_"+str(idx)+" ON "+featureName+"__ATTACH (gdb_from_date,gdb_to_date) "))
+        sql5.append(("CREATE INDEX r"+str(idx)+"_gdb_xpk ON "+featureName+"__ATTACH (ATTACHMENTID,gdb_to_date) "))
+        #sql5.append(("CREATE INDEX GDB_"+str(idx)+"_GlobalGUID ON "+featureName+"__ATTACH (GlobalGUID) "))
+        sql5.append(("CREATE INDEX UUID"+str(idx)+" ON "+featureName+"__ATTACH (REL_GLOBALID) "))
+
+        sql5.append(('CREATE VIEW '+featureName+'__ATTACH_evw AS SELECT '+newallfields+' FROM '+featureName+'__ATTACH'))
+
+        sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_delete INSTEAD OF DELETE ON '+featureName+'__ATTACH_evw BEGIN '
+        'DELETE FROM '+featureName+'__ATTACH '
+        'WHERE ATTACHMENTID = OLD.ATTACHMENTID AND gdb_from_date BETWEEN (gdb_transaction_time () - 0.000000001) AND (gdb_transaction_time () + 0.000000001); '
+        'UPDATE OR REPLACE '+featureName+'__ATTACH SET gdb_to_date = gdb_transaction_time () '
+        'WHERE ATTACHMENTID = OLD.ATTACHMENTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001); END;'))
+
+        sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_insert INSTEAD OF INSERT ON '+featureName+'__ATTACH_evw BEGIN '
+        'INSERT INTO '+featureName+'__ATTACH ('+newallfields+',gdb_from_date,gdb_to_date) '
+        'VALUES (IFNULL (NEW.ATTACHMENTID,Next_RowID (NULL,\''+featureName+'__ATTACH\')),'+newFields+',gdb_transaction_time (),julianday (\'9999-12-31 23:59:59\')); END;'))
+
+        sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_update INSTEAD OF UPDATE ON '+featureName+'__ATTACH_evw BEGIN '
+        'UPDATE OR IGNORE '+featureName+'__ATTACH SET gdb_to_date = gdb_transaction_time () '
+        'WHERE ATTACHMENT = OLD.ATTACHMENTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001);'
+        'REPLACE INTO '+featureName+'__ATTACH ('+newallfields+',gdb_from_date,gdb_to_date) '
+        'VALUES (NEW.ATTACHMENTID,'+newFields+',(SELECT MAX (gdb_to_date) FROM '+featureName+'__ATTACH '
+        'WHERE ATTACHMENTID = OLD.ATTACHMENTID AND gdb_to_date < julianday (\'9999-12-31 23:59:59\')),julianday (\'9999-12-31 23:59:59\')); END;'))
+
      id = id + 1
+     idx=idx+1
 
+  conn.close()
   #sql3=('INSERT INTO GDB_Items("ObjectID", "UUID", "Type", "Name", "PhysicalName", "Path", "Url", "Properties", "Defaults", "DatasetSubtype1", "DatasetSubtype2", "DatasetInfo1", "DatasetInfo2", "Definition", "Documentation", "ItemInfo", "Shape")'
   #" select MAX(ObjectID)+1, '{55C5E7E4-834D-4D44-A12C-991E7F8B4645}', '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+layerName+"__ATTACH', '"+layerName.upper()+"__ATTACH', 'MyReplica_"+str(id)+"\\"+layerName+"__ATTACH', '', 1, NULL, NULL, NULL, NULL, NULL, "
   #"'<GPSyncDataset xsi:type=''typens:GPSyncDataset'' xmlns:xsi=''http://www.w3.org/2001/XMLSchema-instance'' xmlns:xs=''http://www.w3.org/2001/XMLSchema'' xmlns:typens=''http://www.esri.com/schemas/ArcGIS/10.3''>"
@@ -1598,27 +1759,6 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
    ", NULL, NULL, NULL from GDB_Items")
   #serviceRep=[sql1,sql2,sql4]
   #NON_OPTIMIZE_SIZE"
-  arcpy.CreateRuntimeContent_management(mxd.filePath,
-              replicaDestinationPath + os.sep + serviceName,
-              serviceName,"#","#",
-              "NETWORK_DATA;FEATURE_AND_TABULAR_DATA","NON_OPTIMIZE_SIZE","ONLINE","PNG","1","#")
-  filenames = next(os.walk(replicaDestinationPath + "/"+serviceName+"/data/"))[2]
-  printMessage("Rename " + replicaDestinationPath + "/"+serviceName+"/data/"+filenames[0]+" to "+ replicaDestinationPath+"/"+serviceName+".geodatabase")
-  #if offline geodatabase exists, must delete first
-  newFullReplicaDB=replicaDestinationPath+"/"+serviceName+".geodatabase"
-  try:
-     if os.path.exists(newFullReplicaDB):
-        os.rmdir(newFullReplicaDB)
-  except:
-     printMessage("Unable to remove old replica geodatabase")
-
-  os.rename(replicaDestinationPath + "/"+serviceName+"/data/"+filenames[0], newFullReplicaDB)
-  try:
-     os.rmdir(replicaDestinationPath + "/"+serviceName+"/data/")
-     os.rmdir(replicaDestinationPath + "/"+serviceName)
-  except:
-     printMessage("Unable to remove replica folders")
-
   name=replicaDestinationPath + "/"+serviceName+".sql"
   with open(name,'w') as f:
        f.write("SELECT load_extension( 'stgeometry_sqlite.dll', 'SDE_SQL_funcs_init');\n")
