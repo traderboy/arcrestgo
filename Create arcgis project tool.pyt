@@ -1427,6 +1427,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   #   lyrs.append(lyr)
   #for lyr in arcpy.mapping.ListTableViews(mxd, "", dataFrame):
   #   lyrs.append(lyr)
+  #<RelationshipClassNames xsi:type="typens:Names"/>
+  #<ChangeTracked>false</ChangeTracked>
+
   serviceItems["layers"]=[]
 
 
@@ -1474,14 +1477,14 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      sql = sql[:-1]
      sql = sql.replace("primary key ","")
      sql = sql.replace(" not null","")
+     #sql = sql.replace("OBJECTID integer","OBJECTID int32 check(typeof(OBJECTID) = 'integer' and OBJECTID >= -2147483648 and OBJECTID <= 2147483647)")
      #sql = sql.replace("OBJECTID integer","OBJECTID int32 not null")
      #sql = sql.replace("GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38) not null","GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38)")
      sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (gdb_transaction_time ()), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59'))) "
-     
+
      #sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0))"
      #sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) not null default (gdb_transaction_time ()), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) not null default (julianday ('9999-12-31 23:59:59')))"
      sql5.append(sql)
-     
 
       #"attachmentsTableName": "sh_db_14860.user_23246.LEASECOMPLIANCE2016_GRAZING_INSPECTIONS__ATTACH",
       #"attachmentsPrimaryKey": "GlobalID"
@@ -1493,6 +1496,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          hasAttachments="true"
          hasAttachmentsStr = "<HasAttachments>"+hasAttachments+"</HasAttachments>"
          layer["attachmentsTableName"]=inFeaturesGDB+"/"+featureName+"__ATTACH"
+         layer["attachmentsTableName"]=featureName+"__ATTACH"
          dscfc = arcpy.Describe(inFeaturesGDB+"/"+featureName+"__ATTACH")
 
          #if dscfc.hasOID == True:
@@ -1504,7 +1508,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      serviceItems["layers"].append(layer)
      dataSetId='\'||(SELECT ObjectId FROM "GDB_Items" Where Name=\'main.'+featureName+"\')||\'"
      sql1=sql1+ ("<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+dataSetId+"</DatasetID><DatasetName>"+featureName+"</DatasetName><DatasetType>"+lyrtype+"</DatasetType>"
-        "<LayerID>"+str(layerIds[lyr.name])+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction><ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen>"
+        "<LayerID>"+str(layerIds[lyr.name])+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction><ReplicaServerGen xsi:type=''xs:long''>53052</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen>"
         "<ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen><ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>"+useGeometry+"</UseGeometry><IncludeRelated>true</IncludeRelated>"
         "<QueryOption>"+queryOption+"</QueryOption>"+hasAttachmentsStr+"</GPSyncDataset>")
@@ -1515,7 +1519,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         "<DatasetID>"+dataSetId+"</DatasetID>"
         "<DatasetName>"+lyr.name+"</DatasetName>"
         "<DatasetType>"+lyrtype+"</DatasetType><LayerID>"+str(layerIds[lyr.name])+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction>"
-        "<ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
+        "<ReplicaServerGen xsi:type=''xs:long''>53052</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
         "<ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>"+useGeometry+"</UseGeometry><IncludeRelated>true</IncludeRelated>"
         "<QueryOption>"+queryOption+"</QueryOption>"+ hasAttachmentsStr+ "</GPSyncDataset>', NULL, NULL, NULL from GDB_Items"))
@@ -1546,6 +1550,15 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          '(select UUID from "GDB_Items" where Name="MyReplica" limit 1),'
          '(select UUID from "GDB_Items" where Name="'+featureName+'" limit 1),'
          '1,NULL)'))
+        
+
+     desc = arcpy.Describe(lyr)
+     rels=""
+     if desc.relationshipClassNames:
+         for name in desc.relationshipClassNames:
+            rels = rels + "<Name>main."+name+"</Name>" 
+         sql5.append(('UPDATE "GDB_Items" set "Definition"=replace("Definition","<RelationshipClassNames xsi:type=\'typens:Names\'></RelationshipClassNames>",\'<RelationshipClassNames xsi:type="typens:Names">'+rels+'</RelationshipClassNames>\') where "Name"="main.' +featureName+'"'  ) )
+
 
      #"(select '{' || substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12)||'}' from (select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v)),"
      #NEW.range_unit,NEW.stocking_rate,NEW.elevation,NEW.has_permittee,NEW.GlobalID,NEW.CreationDate,NEW.Creator,NEW.EditDate,NEW.Editor,NEW.SHAPE
@@ -1563,7 +1576,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
             pre=","
             #if field.name==depVar + '_calculated':
      
-     sql5.append(('CREATE VIEW '+featureName+'_evw AS SELECT OBJECTID,'+allfields+' FROM '+featureName))
+     sql5.append(('CREATE VIEW '+featureName+'_evw AS SELECT OBJECTID,'+allfields+' FROM '+featureName + " WHERE gdb_to_date BETWEEN (julianday ('9999-12-31 23:59:59') - 0.000000001) AND (julianday ('9999-12-31 23:59:59') + 0.000000001)"))
+      #WHERE gdb_to_date BETWEEN (julianday ('9999-12-31 23:59:59') - 0.000000001) AND (julianday ('9999-12-31 23:59:59') + 0.000000001)
      
      sql5.append(('CREATE TRIGGER '+featureName+'_evw_delete INSTEAD OF DELETE ON '+featureName+'_evw BEGIN '
      'DELETE FROM '+featureName+' WHERE OBJECTID = OLD.OBJECTID AND gdb_from_date BETWEEN (gdb_transaction_time () - 0.000000001) AND (gdb_transaction_time () + 0.000000001); '
@@ -1600,6 +1614,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          'DELETE FROM "st_spindex__'+featureName+'_SHAPE" WHERE pkid = OLD._ROWID_; SELECT UpdateIndexEntry ("st_spindex__'+featureName+'_SHAPE",NEW.SHAPE,NEW._ROWID_,2); END'))
          sql5.append(('CREATE TRIGGER "st_update_trigger_'+featureName+'_SHAPE" AFTER UPDATE OF SHAPE ON '+featureName+' WHEN OLD._ROWID_ = NEW._ROWID_ BEGIN '
          'SELECT UpdateIndexEntry ("st_spindex__'+featureName+'_SHAPE",NEW.SHAPE,NEW._ROWID_,2); END'))
+         sql5.append(('UPDATE "GDB_TableRegistry" set object_flags=278535 where table_name=\''+featureName+"'"))
+     else:
+         sql5.append(('UPDATE "GDB_TableRegistry" set object_flags=262147 where table_name=\''+featureName+"'"))
 
      printMessage("Loading " + lyr.name)
      #now process any attachment tables
@@ -1624,7 +1641,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         dataSetId='\'||(SELECT ObjectId FROM "GDB_Items" Where Name=\'main.'+featureName+"__ATTACH"+"\')||\'"
         printMessage("Found attachment table: " + featureName+"__ATTACH")
         sql1=sql1+ ("<GPSyncDataset xsi:type=''typens:GPSyncDataset''><DatasetID>"+dataSetId+"</DatasetID><DatasetName>"+featureName+"__ATTACH"+"</DatasetName><DatasetType>"+lyrtype+"</DatasetType>"
-        "<LayerID>"+str(layerIds[featureName+"__ATTACH"])+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction><ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen>"
+        "<LayerID>"+str(layerIds[featureName+"__ATTACH"])+"</LayerID><LayerName>"+lyr.name+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction><ReplicaServerGen xsi:type=''xs:long''>53052</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen>"
         "<ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen><ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>false</UseGeometry><IncludeRelated>false</IncludeRelated>"
         "<QueryOption>"+queryOption+"</QueryOption><IsAttachment>true</IsAttachment></GPSyncDataset>")
@@ -1634,8 +1651,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         " select MAX(ObjectID)+1, "+uuid+", '{D86502F9-9758-45C6-9D23-6DD1A0107B47}', '"+featureName+"__ATTACH', '"+featureName.upper()+"__ATTACH', 'MyReplica\\"+featureName+"__ATTACH', '', 1, NULL, NULL, NULL, NULL, NULL, "
         "'<GPSyncDataset xsi:type=''typens:GPSyncDataset'' xmlns:xsi=''http://www.w3.org/2001/XMLSchema-instance'' xmlns:xs=''http://www.w3.org/2001/XMLSchema'' xmlns:typens=''http://www.esri.com/schemas/ArcGIS/10.3''>"
         "<DatasetID>"+dataSetId+"</DatasetID>"
-        "<DatasetName>"+featureName+"__ATTACH</DatasetName><DatasetType>"+lyrtype+"</DatasetType><LayerID>"+str(layerIds[featureName+"__ATTACH"])+"</LayerID><LayerName>"+featureName+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction>"
-        "<ReplicaServerGen xsi:type=''xs:long''>2590</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
+        "<DatasetName>"+featureName+"__ATTACH</DatasetName><DatasetType>"+lyrtype+"</DatasetType><LayerID>"+str(layerIds[featureName])+"</LayerID><LayerName>"+featureName+"</LayerName><Direction>esriSyncDirectionBidirectional</Direction>"
+        "<ReplicaServerGen xsi:type=''xs:long''>53052</ReplicaServerGen><ReplicaClientDownloadGen xsi:type=''xs:long''>1000</ReplicaClientDownloadGen><ReplicaClientUploadGen xsi:type=''xs:long''>1000</ReplicaClientUploadGen>"
         "<ReplicaClientAcknowledgeUploadGen xsi:type=''xs:long''>1000</ReplicaClientAcknowledgeUploadGen>"
         "<UseGeometry>false</UseGeometry><IncludeRelated>false</IncludeRelated><QueryOption>"+queryOption+"</QueryOption>"
         "<IsAttachment>true</IsAttachment></GPSyncDataset>',"
@@ -1674,6 +1691,20 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
            '(select UUID from "GDB_Items" where Name="MyReplica" limit 1),'
            '(select UUID from "GDB_Items" where Name="'+featureName+'__ATTACH" limit 1),'
            '1,NULL)'))
+        
+        #set table flag
+        sql5.append(('UPDATE "GDB_TableRegistry" set object_flags=262147 where table_name="'+featureName+'__ATTACH"'))
+        #replace old GlobalId 
+        #sql5.append(('UPDATE "GDB_Items" set "Definition"=replace("Definition",\'<ObjectKeyName>'+ featureName +'_GlobalID</ObjectKeyName>\',\'<ObjectKeyName>GlobalID</ObjectKeyName>\') where "Name"=\'main.'+featureName+'__ATTACHREL\''))
+        sql5.append(('UPDATE "GDB_Items" set "Definition"=replace("Definition",\'<ObjectKeyName>'+ featureName +'_GlobalID</ObjectKeyName>\',\'<ObjectKeyName>REL_GLOBALID</ObjectKeyName>\') where "Name"=\'main.'+featureName+'__ATTACHREL\''))
+
+        rels=""
+        if desc.relationshipClassNames:
+            for name in desc.relationshipClassNames:
+              rels = rels + "<Name>main."+name+"</Name>" 
+            sql5.append(('UPDATE "GDB_Items" set "Definition"=replace("Definition","<RelationshipClassNames xsi:type=\'typens:Names\'></RelationshipClassNames>",\'<RelationshipClassNames xsi:type="typens:Names">'+rels+'</RelationshipClassNames>\') where "Name"="main.' +featureName+'__ATTACH"'  ) )
+
+        sql5.append(('UPDATE "GDB_Items" set "Definition"=replace("Definition","<Name>REL_OBJECTID</Name><ModelName>REL_OBJECTID</ModelName><FieldType>esriFieldTypeInteger</FieldType><IsNullable>true</IsNullable>","<Name>REL_GLOBALID</Name><ModelName>REL_GLOBALID</ModelName><FieldType>esriFieldTypeGUID</FieldType><IsNullable>false</IsNullable>") where "Name"="main.' +featureName+'__ATTACH"'  ))
 
         #allfields="ATTACHMENTID,GLOBALID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA"
         #newFields="NEW.ATTACHMENTID,NEW.GLOBALID,NEW.REL_GLOBALID,NEW.CONTENT_TYPE,NEW.ATT_NAME,NEW.DATA_SIZE,NEW.DATA"
@@ -1693,6 +1724,10 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         sql = sql.replace("GlobalID","GLOBALID")
         newallfields = newallfields.replace(featureName+"_GlobalID","REL_GLOBALID")
         newallfields = newallfields.replace("GlobalID","GLOBALID")
+        newallfields = newallfields.replace("REL_OBJECTID,","")
+        allfields=allfields.replace("REL_OBJECTID,","")
+        sql = sql.replace("ATTACHMENTID integer","ATTACHMENTID int32 check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null")
+
         #newallfields = newallfields.replace("REL_OBJECTID,","")
 
 
@@ -1714,7 +1749,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         #sql5.append(("CREATE INDEX GDB_"+str(idx)+"_GlobalGUID ON "+featureName+"__ATTACH (GlobalGUID) "))
         sql5.append(("CREATE INDEX UUID"+str(idx)+" ON "+featureName+"__ATTACH (REL_GLOBALID) "))
 
-        sql5.append(('CREATE VIEW '+featureName+'__ATTACH_evw AS SELECT '+newallfields+' FROM '+featureName+'__ATTACH'))
+        sql5.append(('CREATE VIEW '+featureName+'__ATTACH_evw AS SELECT '+newallfields+' FROM '+featureName+"__ATTACH WHERE gdb_to_date BETWEEN (julianday ('9999-12-31 23:59:59') - 0.000000001) AND (julianday ('9999-12-31 23:59:59') + 0.000000001)"))
 
         sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_delete INSTEAD OF DELETE ON '+featureName+'__ATTACH_evw BEGIN '
         'DELETE FROM '+featureName+'__ATTACH '
@@ -1747,12 +1782,16 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   #"<IsAttachment>true</IsAttachment></GPSyncDataset>',"
   #" NULL, NULL, NULL from GDB_Items")
 
-  sql4='update "GDB_ServiceItems" set "ItemInfo"=replace("ItemInfo",|"capabilities":"Query"|,|"capabilities":"Create,Delete,Query,Update,Editing,Sync"|)'
+  sql4='update "GDB_ServiceItems" set "ItemInfo"=replace("ItemInfo",|"capabilities":"Query"|,|"capabilities":"Create,Delete,Query,Update,Editing,Sync"|);'
   sql4=sql4.replace("|","'")
+  
   
   serviceItemsStr = json.dumps(serviceItems)
   sql5.append(('insert into "GDB_ServiceItems"("OBJECTID", "DatasetName", "ItemType", "ItemId", "ItemInfo", "AdvancedDrawingInfo")'
      'values((select max(OBJECTID)+1 from "GDB_ServiceItems"),\''+serviceName+'\',0,-1,\''+serviceItemsStr+'\',NULL)'))
+
+  sql5.append(('update "GDB_Items" set Definition=replace(Definition,\'<ChangeTracked>false</ChangeTracked>\',\'<ChangeTracked>true</ChangeTracked>\') where "Name" !=\'main.'+featureName+'__ATTACHREL\''))
+
 
   #sql5='update "GDB_Items" set ObjectId=ROWID'
   sql1=sql1+("</GPSyncDatasets><AttachmentsSyncDirection>esriAttachmentsSyncDirectionBidirectional</AttachmentsSyncDirection></GPSyncReplica>'"
@@ -1771,15 +1810,17 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
        for i in sql2:
           f.write(i)
           f.write(";\n")
+
        for i in sql3:
           f.write(i)
           f.write(";\n")
-       f.write(sql4)
+
        f.write(";\n")
        for i in sql5:
           f.write(i)
           f.write(";\n")
 
+       f.write(sql4)
        f.close()
   #printMessage("Running \"" + toolkitPath+"/spatialite/spatialite.exe\" \"" + newFullReplicaDB + "\"  < " + name)
   printMessage("Running \"" + toolkitPath+"/spatialite/spatialite.exe\" \"" + newFullReplicaDB + "\"  < \"" + name + "\"")
