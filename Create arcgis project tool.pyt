@@ -1565,6 +1565,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      #newFields="NEW.OBJECTID,NEW.range_unit,NEW.stocking_rate,NEW.elevation,NEW.has_permittee,NEW.GlobalID,NEW.CreationDate,NEW.Creator,NEW.EditDate,NEW.Editor,NEW.SHAPE"
      #allfields="range_unit,stocking_rate,elevation,has_permittee,GlobalID,CreationDate,Creator,EditDate,Editor,SHAPE"
      #range_unit,stocking_rate,elevation,has_permittee,GlobalID,CreationDate,Creator,EditDate,Editor,SHAPE
+     fields=[]
      pre=""
      newFields=""
      allfields=""
@@ -1574,6 +1575,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
             newFields = newFields +pre+ "NEW."+field.name
             allfields = allfields +pre+ field.name
             pre=","
+            fields.append(field.name)
             #if field.name==depVar + '_calculated':
      
      sql5.append(('CREATE VIEW '+featureName+'_evw AS SELECT OBJECTID,'+allfields+' FROM '+featureName + " WHERE gdb_to_date BETWEEN (julianday ('9999-12-31 23:59:59') - 0.000000001) AND (julianday ('9999-12-31 23:59:59') + 0.000000001)"))
@@ -1602,7 +1604,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      sql5.append(("CREATE INDEX gdb_ct1_"+str(idx)+" ON "+featureName+" (gdb_from_date,gdb_to_date) "))
      sql5.append(("CREATE INDEX r"+str(idx)+"_gdb_xpk ON "+featureName+" (objectid,gdb_to_date) "))
      sql5.append(("CREATE INDEX UUID"+str(idx)+" ON "+featureName+" (GlobalID) "))
-     sql5.append(("CREATE INDEX GDB_"+str(idx)+"_GlobalGUI ON "+featureName+" (GlobalGUID) "))
+     if "GlobalGUID" in fields:
+         sql5.append(("CREATE INDEX GDB_"+str(idx)+"_GlobalGUI ON "+featureName+" (GlobalGUID) "))
 
      #need to add triggers for editing spatial layers
      if svcType!="Table":
@@ -1626,8 +1629,16 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         newFields=""
         allfields=""
         newallfields=""
+        globalField = featureName+"_GlobalID"
+
+        # elif field.type == 'Guid':
+        #   fieldInfos['type']='esriFieldTypeGUID'
+        #elif field.type == 'GlobalID':
+
         desc = arcpy.Describe(inFeaturesGDB+"/"+featureName+"__ATTACH")
         for field in desc.fields:
+           if field.type == 'Guid':
+               globalField = field.name
            if field.name not in excludes:
               newFields = newFields +pre+ "NEW."+field.name
               allfields = allfields +pre+ field.name
@@ -1671,7 +1682,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         #sql5.append(('INSERT INTO GDB_ColumnRegistry("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
         #    " values('"+featureName + "__ATTACH','REL_GLOBALID',12,38,NULL,NULL,0,NULL)"))
 
-        sql5.append(("UPDATE GDB_ColumnRegistry set column_name='REL_GLOBALID' where column_name='"+featureName+"_GlobalID' and table_name='"+featureName+"__ATTACH'"))
+        sql5.append(("UPDATE GDB_ColumnRegistry set column_name='REL_GLOBALID' where column_name='"+globalField+"' and table_name='"+featureName+"__ATTACH'"))
         sql5.append(("UPDATE GDB_ColumnRegistry set column_name='GLOBALID' where column_name='GlobalID' and table_name='"+featureName+"__ATTACH'"))
         
         #sql5.append(("UPDATE GDB_ColumnRegistry set column_name='GLOBALID' where column_name='GlobalID'"))
@@ -1696,7 +1707,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         sql5.append(('UPDATE "GDB_TableRegistry" set object_flags=262147 where table_name="'+featureName+'__ATTACH"'))
         #replace old GlobalId 
         #sql5.append(('UPDATE "GDB_Items" set "Definition"=replace("Definition",\'<ObjectKeyName>'+ featureName +'_GlobalID</ObjectKeyName>\',\'<ObjectKeyName>GlobalID</ObjectKeyName>\') where "Name"=\'main.'+featureName+'__ATTACHREL\''))
-        sql5.append(('UPDATE "GDB_Items" set "Definition"=replace("Definition",\'<ObjectKeyName>'+ featureName +'_GlobalID</ObjectKeyName>\',\'<ObjectKeyName>REL_GLOBALID</ObjectKeyName>\') where "Name"=\'main.'+featureName+'__ATTACHREL\''))
+        sql5.append(('UPDATE "GDB_Items" set "Definition"=replace("Definition",\'<ObjectKeyName>'+ globalField +'</ObjectKeyName>\',\'<ObjectKeyName>REL_GLOBALID</ObjectKeyName>\') where "Name"=\'main.'+featureName+'__ATTACHREL\''))
 
         rels=""
         if desc.relationshipClassNames:
@@ -1720,9 +1731,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         sql = sql.replace(" not null","")
         #sql = sql.replace("REL_OBJECTID int32 check((typeof(REL_OBJECTID) = 'integer' or typeof(REL_OBJECTID) = 'null') and REL_OBJECTID >= -2147483648 and REL_OBJECTID <= 2147483647),","")
         
-        sql = sql.replace(featureName+"_GlobalID","REL_GLOBALID")
+        sql = sql.replace(globalField,"REL_GLOBALID")
         sql = sql.replace("GlobalID","GLOBALID")
-        newallfields = newallfields.replace(featureName+"_GlobalID","REL_GLOBALID")
+        newallfields = newallfields.replace(globalField,"REL_GLOBALID")
         newallfields = newallfields.replace("GlobalID","GLOBALID")
         newallfields = newallfields.replace("REL_OBJECTID,","")
         allfields=allfields.replace("REL_OBJECTID,","")
@@ -1739,7 +1750,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         sql5.append(sql)
         
         sql5.append(("insert into " + featureName + "__ATTACH("+newallfields+") select "+allfields+" from "+featureName + "__ATTACH_org"))
-        newFields = newFields.replace(featureName+"_GlobalID","REL_GLOBALID")
+        newFields = newFields.replace(globalField,"REL_GLOBALID")
         sql5.append(("drop table "+featureName + "__ATTACH_org")) 
 
         #sql5.append(('ALTER TABLE '+featureName+'__ATTACH ADD REL_GLOBALID uuidtext'))
