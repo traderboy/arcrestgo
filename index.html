@@ -3,10 +3,29 @@
 
 <head>
     <title>ArcService JSON Editor</title>
-
     <link href="dist/jsoneditor.css" rel="stylesheet" type="text/css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="dist/jsoneditor.js"></script>
+    <link rel="stylesheet" href="dist/font-awesome-4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="dist/bootstrap-3.3.7-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="dist/bootstrap-3.3.7-dist/css/bootstrap-theme.min.css">
+    <script src="dist/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <!--
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+-->
+    <!-- Optional theme -->
+    <!--
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+-->
+    <!-- Latest compiled and minified JavaScript -->
+    <!--
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+-->
+    <!--
     <script src="dist/vkbeautify.0.99.00.beta.js"></script>
+    -->
     <script>
         function showSpinner() {
             document.getElementById("spinner").style.display = 'block'
@@ -33,7 +52,6 @@
                     hideSpinner()
                 }
             )
-
         }
         function xml_to_string(xml_node) {
             if (xml_node.xml)
@@ -146,11 +164,15 @@
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/db/" + (data.layers[i].id + 1) + "?f=json", "text": data.layers[i].name + " Db (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.layers[i].id, "text": data.layers[i].name + " Table (" + data.layers[i].id + ")" })
             }
             for (var i = 0; i < data.tables.length; i++) {
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "?f=json", "text": data.tables[i].name + " (" + data.tables[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.tables[i].name + " ObjectID (" + data.tables[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "/query?f=json", "text": data.tables[i].name + " Query (" + data.tables[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/db/" + (data.tables[i].id + 1) + "?f=json", "text": data.tables[i].name + " Db (" + data.tables[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.tables[i].id + "?f=json", "text": data.tables[i].name + " Table (" + data.tables[i].id + ")" })
 
             }
             var il = langArray.length;
@@ -165,7 +187,7 @@
         }
 
         function updateURL(sel) {
-            if (sel.value==""){
+            if (sel.value == "") {
                 editor.set({});
                 return
             }
@@ -206,22 +228,39 @@
                 return
             }
             showSpinner()
-            document.getElementById("jsoneditor").style.display = "block"
-            document.getElementById("xmleditor").style.display = "none"
-
-            loadJSON(url,
-                function (data) {
-                    console.log(data);
-                    editor.set(data);
-                    hideSpinner()
-                },
-                function (xhr) {
-                    console.error(xhr);
-                    document.getElementById('urlLbl').innerHTML = "<b style='color:red'>URL not found</b>"
-                    editor.set({});
-                    hideSpinner()
-                }
-            );
+            document.getElementById("jsoneditor").style.display = "none"
+            //document.getElementById("xmleditor").style.display = "none"
+            document.getElementById("tableeditor").style.display = "none"
+            if (url.indexOf("/table/") != -1) {
+                loadXML(url,
+                    function (data) {
+                        document.getElementById("tableeditor").style.display = "block"
+                        document.getElementById("tableeditor").innerHTML = data;
+                        document.getElementById("resetJSON").style.visibility = "visible";
+                        hideSpinner()
+                    },
+                    function (xhr) {
+                        document.getElementById('urlLbl').innerHTML = "<b style='color:red'>URL not found</b>"
+                        hideSpinner()
+                    }
+                );
+            } else {
+                loadJSON(url,
+                    function (data) {
+                        console.log(data);
+                        document.getElementById("jsoneditor").style.display = "block"
+                        document.getElementById("resetJSON").style.visibility = "hidden";
+                        editor.set(data);
+                        hideSpinner()
+                    },
+                    function (xhr) {
+                        console.error(xhr);
+                        document.getElementById('urlLbl').innerHTML = "<b style='color:red'>URL not found</b>"
+                        editor.set({});
+                        hideSpinner()
+                    }
+                );
+            }
         }
 
         function loadJSON(path, success, error) {
@@ -273,7 +312,7 @@
             //xhr.send(encodeURI(txt));
             xhr.send(txt);
 
-        }  
+        }
         function loadXML(path, success, error) {
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function () {
@@ -292,103 +331,342 @@
             };
             xhr.open("GET", path, true);
             xhr.send();
-        }         
+        }
     </script>
 
-<style type="text/css">
-    #jsoneditor {
-      width: 100%;
-      height: 1200px;
-    }
-    form{display:inline}
-    #xmleditor{
-      display:none;
-      width: 100%;
-      height: 1200px;
-    }
-  </style>
+    <style type="text/css">
+        #jsoneditor {
+            width: 100%;
+            height: 1200px;
+        }
+        
+        #tableeditor {
+            width: 100%;
+            height: 1200px;
+            display: none;
+            overflow: scroll;
+        }
+        /*
+        form {
+            display: inline
+        }
+        */
+        
+        #xmleditor {
+            display: none;
+            width: 100%;
+            height: 1200px;
+        }
+        
+        table.a {
+            width: 100%;
+        }
+        
+        table.a,
+        th.a,
+        td.a {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        
+        th.a,
+        td.a {
+            padding: 5px;
+            text-align: left;
+        }
+        
+        .btn-pad {
+            padding: 10px;
+            text-align: left;
+            display: inline-table;
+            margin-left: 10px;
+        }
+        
+        #spinner {
+            left: 40%;
+            top: 40%;
+            position: absolute;
+            display: none
+        }
+        
+        #urlLbl {
+            margin-right:20px;
+        }
+    </style>
 </head>
 
 <body onload="populateDropdown()">
 
-<div>
-    <form id='loader' name='loader'>
-        <input type='submit' id="setJSON" value='URL'></input>
-        <input id='url' type='text' style='width:30%'>
-</form>
-
-<form id='urlfrm'>
-    <select id="urls" onchange="updateURL(this)">
-</select>
-</form>
-
-<form id='svcform'>
-    <span style='width:100%;margin-left:50px'>
-<input id='serviceUrl' type='text' style='width:350px'>
-<input type='submit' id="getSvc" value='Load service'></input>
-</span>
-</form>
-<img src="dist/img/spinner.gif" id='spinner' style='left:40%;top:40%;position:absolute;display:none'>
-
-<form id='frm' style='float:right'>
-<input type='submit' style='float:right' id="getJSON" value='Save JSON'></input>
-<input type='hidden' id='updatestr' name='update' value=''>
-<input type='hidden' id='urlstr' name='url' value=''>
-</form>
-
-<span id="urlLbl"></span>
-</div>
+    <form class="form-inline" id='loader' name='loader' style="margin-left:2px">
+        <!--<input id='url' type='text' style="width:90%">-->
+        <input class="form-control" type="text" value="" id="url" style="width:90%">
+        <button type='submit' class="btn btn-default" id="setJSON" value='URL'>Load</button>
+        <button type='button' class="btn btn-default" id="resetJSON" style="visibility:hidden">Return</button>
+    </form>
 
 
-<div id="axmleditor"></div>
-<div id="xmleditor">
-</div>
-<div id="jsoneditor"></div>
+    <!--
+    <iframe id="xmleditor"></iframe>
 
-<script>
-                                // create the editor
-                                var container = document.getElementById('jsoneditor');
-                                var options = {};
-                                var editor = new JSONEditor(container, options);
+    <div id="axmleditor"></div>
+    <div id="aaxmleditor">
+        <textarea id="textarea" style="width:100%;height:100%"></textarea>
+    </div>
+-->
+    <div id="jsoneditor"></div>
+    <div id="tableeditor"></div>
 
-                                // set json
-                                document.getElementById('loader').onsubmit = function () {
-                                    loadURL()
-                                    return false
-                                };
+    <img src="dist/img/spinner.gif" id='spinner'>
 
-                                // get json
-                                document.getElementById('frm').onsubmit = function () {
-                                    var json = editor.get();
-                                    //var input_el = document.getElementById("updatestr")
-                                    //input_el.value = JSON.stringify(json)
-                                    var url = document.getElementById("url").value
-                                    //var url_el = document.getElementById("urlstr")
-                                    //url_el.value = url
-                                    showSpinner()
-                                    putJSON(url, JSON.stringify(json),
-                                        function (data) {
-                                            document.getElementById('urlLbl').innerHTML = "<b style='color:green'>Success</b>"
-                                            hideSpinner()
-                                        },
-                                        function (xhr) {
-                                            console.error(xhr);
-                                            document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Error saving JSON</b>"
-                                            hideSpinner()
-                                        }
-                                    )
+    <div class="modal fade" id="loadservice" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Load a service</h4>
+                </div>
+                <div class="modal-body">
+                    <form id='svcform'>
+                        <span style='width:100%;'>
+            <input id='serviceUrl' type='text' style='width:100%'>
+            
+            </span>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="getSvc" class="btn btn-primary">Load service</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--
+    <div class="modal fade" id="savejson" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Save changes to JSON</h4>
+                </div>
+                <div class="modal-body">
 
-                                    return false
+                    <form id='frm' style='float:right'>
+                        <button type="submit" id="getJSON" class="btn btn-primary">Save JSON</button>
+                        <input type='hidden' id='updatestr' name='update' value=''>
+                        <input type='hidden' id='urlstr' name='url' value=''>
+                    </form>
 
 
-                                    //alert(JSON.stringify(json, null, 2));
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+-->
+    <div class="modal fade" id="importtext" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Format JSON or XML text</h4>
+                </div>
+                <form id='jsonfrm' method="POST" action="/xml">
+                    <div class="modal-body">
 
-                                };
-                                document.getElementById('svcform').onsubmit = function () {
-                                    loadServices()
-                                    return false
-                                }
-</script>
+                        <textarea style="width:100%;height:300px" id="jsontxt"></textarea>
+                        <br> Paste JSON or XML text in box and click button to load into frame above.
+                        <input class="form-check-input" id="jsontype" type="radio" name="type" value="JSON" checked="true">JSON
+                        <input class="form-check-input" type="radio" name="type" value="XML">XML
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-default" style='margin-left:200px' id="parseJSON">Load</button>
+                        <button type="reset" class="btn btn-default" id="resetJSON">Clear</button>
+
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        function loadButtons() {
+            var tbl = document.getElementsByClassName("jsoneditor-search");
+            if (tbl.length == 0) return;
+            var tr = tbl[0].getElementsByTagName("tr");
+            if (tr.length == 0) return;
+            var icon = tr[0].insertCell(0);
+            //icon.innerHTML = '<a id="saveChangesID" class="btn btn-default btn-pad" title="Save changes to JSON" href="path/to/settings" aria-label="Save changes"> <i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></a>';
+            //icon.innerHTML = '<button id="saveChangesID" class="btn btn-default btn-pad" title="Save changes to JSON" href="path/to/settings" aria-label="Save changes"> <i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></button>';
+            //data-toggle="modal" data-target="#savejson" 
+            icon.innerHTML = '<a id="savejsonbtn" class="btn btn-pad" aria-label="Left Align"><i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></a>'
+            document.getElementById("savejsonbtn").onclick = function () {
+                saveJSON();
+            }
+
+            icon = tr[0].insertCell(0);
+            //icon.innerHTML = '<a id="importTextID" class="btn btn-default btn-pad" title="View JSON or XML text" href="path/to/settings" aria-label="Import JSON/XML text"> <i class="fa fa-clipboard fa-2x" aria-hidden="true"></i></a>';
+            icon.innerHTML = '<a class="btn btn-pad" data-toggle="modal" data-target="#importtext" aria-label="Left Align"><i class="fa fa-clipboard fa-2x" aria-hidden="true"></i></a>'
+
+            icon = tr[0].insertCell(0);
+            //icon.innerHTML = '<a id="setDatabaseID" class="btn btn-default btn-pad" title="Set database" href="path/to/settings" aria-label="Set database"> <i class="fa fa-database fa-2x" aria-hidden="true"></i></a>';
+            icon.innerHTML = '<a class="btn btn-pad" data-toggle="modal" data-target="#loadservice" aria-label="Left Align"><i class="fa fa-database fa-2x" aria-hidden="true"></i></a>'
+
+            icon = tr[0].insertCell(0);
+            //icon.innerHTML = '<a id="setServiceID" data-toggle="modal" data-target="#myModal" class="btn btn-default btn-pad" title="Set link to service" href="#" aria-label="Set link to service"> <i class="fa fa-link fa-2x" aria-hidden="true"></i></a>';
+            icon.innerHTML = '<a class="btn btn-pad" data-toggle="modal" data-target="#loadservice" aria-label="Left Align"><i class="fa fa-link fa-2x" aria-hidden="true"></i></a>'
+
+            icon = tr[0].insertCell(0);
+            icon.innerHTML = '<form class="form-inline" style="padding-right:30px;" id="urlfrm"> <span style="color:white">Source</span> <select class="form-control" style="height:30px" id="urls" onchange="updateURL(this)"></select></form>';
+
+            icon = tr[0].insertCell(0);
+            icon.innerHTML = '<div id="urlLbl"></div>'
+
+            document.getElementById("resetJSON").onclick = function () {
+                document.getElementById("jsoneditor").style.display = "block"
+                document.getElementById("tableeditor").style.display = "none"
+                this.style.visibility = "hidden";
+                var select = document.getElementById("urls")
+                select.selectedIndex = 0;
+            }
+
+            /*
+            <div class="alert alert-success">
+              <strong>Success!</strong> Indicates a successful or positive action.
+            </div>
+            
+            <div class="alert alert-info">
+              <strong>Info!</strong> Indicates a neutral informative change or action.
+            </div>
+            
+            <div class="alert alert-warning">
+              <strong>Warning!</strong> Indicates a warning that might need attention.
+            </div>
+            
+            <div class="alert alert-danger">
+              <strong>Danger!</strong> Indicates a dangerous or potentially negative action.
+            </div>
+            */
+            //<span style="width:50px"></span>
+            /*
+            tbl = document.getElementsByClassName("jsoneditor-outer");
+            if (tbl.length == 0) return;
+            icon = tbl[0].insertCell(0);
+            icon.innerHTML='<div id="tableeditor"></div>';
+            */
+        }
+
+        function saveJSON() {
+            var select = document.getElementById("urls")
+            if (select.selectedIndex < 1)
+                return;
+
+            var json = editor.get();
+            //var input_el = document.getElementById("updatestr")
+            //input_el.value = JSON.stringify(json)
+            var url = document.getElementById("url").value
+            //var url_el = document.getElementById("urlstr")
+            //url_el.value = url
+            showSpinner()
+            putJSON(url, JSON.stringify(json),
+                function (data) {
+                    document.getElementById('urlLbl').innerHTML = "<b style='color:green'>Success</b>"
+                    hideSpinner()
+                },
+                function (xhr) {
+                    console.error(xhr);
+                    document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Error saving JSON</b>"
+                    hideSpinner()
+                }
+            )
+        }
+
+        // create the editor
+        var container = document.getElementById('jsoneditor');
+        var options = {};
+        var editor = new JSONEditor(container, options);
+        loadButtons();
+        //window.addEventListener('load', function() {
+
+        //})        
+
+        // set json
+        document.getElementById('loader').onsubmit = function () {
+            loadURL();
+            return false;
+        };
+
+        // get json
+        /*
+        document.getElementById('frm').onsubmit = function () {
+            var json = editor.get();
+            //var input_el = document.getElementById("updatestr")
+            //input_el.value = JSON.stringify(json)
+            var url = document.getElementById("url").value
+            //var url_el = document.getElementById("urlstr")
+            //url_el.value = url
+            showSpinner()
+            putJSON(url, JSON.stringify(json),
+                function (data) {
+                    document.getElementById('urlLbl').innerHTML = "<b style='color:green'>Success</b>"
+                    hideSpinner()
+                },
+                function (xhr) {
+                    console.error(xhr);
+                    document.getElementById('urlLbl').innerHTML = "<b style='color:red'>Error saving JSON</b>"
+                    hideSpinner()
+                }
+            )
+
+            return false
+
+
+            //alert(JSON.stringify(json, null, 2));
+
+        };
+        */
+        document.getElementById('svcform').onsubmit = function () {
+            loadServices()
+            return false
+        }
+        document.getElementById('jsonfrm').onsubmit = function () {
+            var str = document.getElementById('jsontxt').value;
+            var select = document.getElementById("urls")
+            select.selectedIndex = 0;
+
+            if (document.querySelector('input[name="type"]:checked').value == "XML") { //document.getElementById("jsontype").value == true) {
+                //document.getElementById("xmleditor").style.display = "block";
+                //document.getElementById("xmleditor").src="/xml?xml="+escape(str);
+                //document.getElementById("xmleditor").src='data:text/xml,' + encodeURI(str); //'<x m="l"/>');
+                var url = "/xml?xml=" + encodeURI(str);
+                var win = window.open(url, '_blank');
+                win.focus();
+
+
+
+                //str = vkbeautify.xml(str, 4);
+                //str =  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                //document.getElementById("xmleditor").innerHTML = "<xmp>"+str+"</xmp>";
+                //document.getElementById("xmleditor").innerHTML ="<pre lang=\"xml\">"+ str + "</pre>";
+                //document.getElementById("textarea").value="<pre lang=\"xml\">"+ str + "</pre>";
+                //document.getElementById("textarea").value=vkbeautify.xml(str, 4);
+
+
+            }
+            else {
+                //document.getElementById("jsoneditor").style.display = "none"
+                //document.getElementById("xmleditor").style.display = "none"
+                document.getElementById("tableeditor").style.display = "none"
+
+                document.getElementById("jsoneditor").style.display = "block"
+                editor.set(JSON.parse(str));
+            }
+            return false
+        }
+    </script>
 </body>
 
 </html>

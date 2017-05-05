@@ -118,6 +118,13 @@ func StartGorillaMux() *mux.Router {
 		w.Write([]byte("Welcome"))
 	}).Methods("GET")
 
+	r.HandleFunc("/xml", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		//w.Header().Set("Content-Type", "text/xml")
+		body := "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + r.URL.Query().Get("xml")
+		w.Write([]byte(body))
+	}).Methods("GET", "POST")
+
 	/*
 	   Root responses
 	*/
@@ -746,6 +753,7 @@ func StartGorillaMux() *mux.Router {
 		w.Write(response)
 
 	}).Methods("POST")
+
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/jobs", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
@@ -761,6 +769,32 @@ func StartGorillaMux() *mux.Router {
 
 	r.HandleFunc("/arcgis/rest/services", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("/arcgis/rest/services (" + r.Method + ")")
+		if r.Method == "PUT" {
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				w.Write([]byte("Error"))
+				return
+			}
+
+			ret := config.SetArcCatalog(body, "FeatureServer", "")
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": ret})
+			w.Write(response)
+			return
+		}
+
+		response := config.GetArcCatalog("FeatureServer", "")
+		if len(response) > 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(response)
+		} else {
+			log.Println("Sending: " + config.DataPath + "FeatureServer.json")
+			http.ServeFile(w, r, config.DataPath+"FeatureServer.json")
+		}
+	}).Methods("GET", "PUT")
+
+	r.HandleFunc("/arcgis/rest/services/", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("/arcgis/rest/services/ (" + r.Method + ")")
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
@@ -834,24 +868,53 @@ func StartGorillaMux() *mux.Router {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Metadata stuff"))
 	}).Methods("GET")
+	/*
+		r.HandleFunc("/arcgis/rest/services//{name}", func(w http.ResponseWriter, r *http.Request) {
+			vars := mux.Vars(r)
+			name := vars["name"]
 
-	r.HandleFunc("/arcgis/rest/services//{name}", func(w http.ResponseWriter, r *http.Request) {
+			log.Println("/arcgis/rest/services/" + name)
+
+			response := config.GetArcService(name, name, -1, "")
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + name + ".json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+name+".json")
+			}
+		}).Methods("GET")
+	*/
+
+	r.HandleFunc("/arcgis/rest/services/{name}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
 
-		log.Println("/arcgis/rest/services/" + name)
+		log.Println("/arcgis/rest/services/" + name + " (" + r.Method + ")")
+		if r.Method == "PUT" {
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				w.Write([]byte("Error"))
+				return
+			}
+			ret := config.SetArcService(body, name, "", -1, "")
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": ret})
+			w.Write(response)
+			return
+		}
 
-		response := config.GetArcService(name, name, -1, "")
+		response := config.GetArcService(name, "FeatureServer", -1, "")
 		if len(response) > 0 {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(response)
 		} else {
-			log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + name + ".json")
-			http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+name+".json")
+			log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "FeatureServer.json")
+			http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"FeatureServer.json")
 		}
-	}).Methods("GET")
+	}).Methods("GET", "PUT")
 
-	r.HandleFunc("/arcgis/rest/services/{name}", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/arcgis/rest/services//{name}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
 
@@ -1233,6 +1296,49 @@ func StartGorillaMux() *mux.Router {
 		var uploadPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
 		os.MkdirAll(uploadPath, 0755)
 
+		var objectid int
+		var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+		var tableName = parentTableName + "__ATTACH_evw"
+		var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
+		log.Println("Table name: " + tableName)
+
+		sql := "select ifnull(max(ATTACHMENTID)+1,1) from " + tableName
+		log.Println(sql)
+		stmt, err := config.DbQuery.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+			//w.Write([]byte(err.Error()))
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+			return
+		}
+
+		//rows, err := config.DbQuery.Query(sql)
+		err = stmt.QueryRow().Scan(&objectid)
+		var globalid string
+		//get the parent globalid
+		sql = "select " + globalIdName + " from " + parentTableName + " where OBJECTID=?"
+		stmt, err = config.DbQuery.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+			//w.Write([]byte(err.Error()))
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+			return
+		}
+
+		//rows, err := config.DbQuery.Query(sql)
+		err = stmt.QueryRow(row).Scan(&globalid)
+		stmt.Close()
+		/*
+			cols += sep + key
+			p += sep + config.GetParam(c)
+			sep = ","
+			vals = append(vals, objectid)
+		*/
+
 		//w.Write([]byte(uploadPath))
 		if r.Method == "GET" {
 			crutime := time.Now().Unix()
@@ -1253,39 +1359,106 @@ func StartGorillaMux() *mux.Router {
 				//fmt.Fprintf(w, "%s:%s ", key, value)
 				log.Printf("%s:%s", key, value)
 			}
-			files, _ := ioutil.ReadDir(uploadPath)
-			fid := len(files) + 1
+			//files, _ := ioutil.ReadDir(uploadPath)
+			//fid := len(files) + 1
+			var buf []byte
+			var fileName string
 			for _, fileHeaders := range r.MultipartForm.File {
 				for _, fileHeader := range fileHeaders {
 					file, _ := fileHeader.Open()
-					path := fmt.Sprintf("%s%s%v%s%s", uploadPath, string(os.PathSeparator), fid, "@", fileHeader.Filename)
+					fileName = fileHeader.Filename
+					path := fmt.Sprintf("%s%s%v%s%s", uploadPath, string(os.PathSeparator), objectid, "@", fileHeader.Filename)
 					log.Println(path)
-					buf, _ := ioutil.ReadAll(file)
+					buf, _ = ioutil.ReadAll(file)
 					ioutil.WriteFile(path, buf, os.ModePerm)
 				}
 			}
-			response, _ := json.Marshal(map[string]interface{}{"addAttachmentResult": map[string]interface{}{"objectId": fid, "globalId": nil, "success": true}})
-			//w.Header().Set("Content-Type", "application/json")
-			w.Write(response)
+			cols := "ATTACHMENTID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA"
+			sep := ""
+			p := ""
+			for i := 0; i < 6; i++ {
+				p = p + sep + config.GetParam(i)
+				sep = ","
+			}
+			var vals []interface{}
+			vals = append(vals, objectid)
+			//vals = append(vals, config.UUID)
+			vals = append(vals, globalid)
+
+			vals = append(vals, http.DetectContentType(buf[:512]))
+			vals = append(vals, fileName)
+			vals = append(vals, len(buf))
+
+			vals = append(vals, buf)
+
+			//blob, err := ioutil.ReadAll(file)
+			//c := 1
+
+			//defer rows.Close()
+			/*
+				for rows.Next() {
+					err := rows.Scan(&objectid)
+					if err != nil {
+						//log.Fatal(err)
+						objectid = 1
+					}
+				}
+				rows.Close()
+			*/
+			/*
+				if len(globalIdName) > 0 {
+					cols += sep + globalIdName
+					p += sep + config.GetParam(c)
+					vals = append(vals, globalId)
+				}
+			*/
+			//1	{1085FDD1-89A3-4DEC-8171-787DA675FA84}	{89F39A8E-A4BD-4FB4-AE40-4A70F7AF6134}	image/jpeg	fark_EBoAgJdmC_knRWz-3t9Nx-2Tz8Y.jpg	21053	BLOB sz=21053 JPEG image
+			//log.Println("insert into " + tableName + "(" + cols + ") values(" + p + ")")
+			//log.Print(vals)
+
+			sql = "insert into " + tableName + "(" + cols + ") values(" + p + ")"
+			log.Printf("insert into %v(%v) values(%v,'%v','%v','%v',%v)", tableName, cols, vals[0], vals[1], vals[2], vals[3], vals[4])
 
 			/*
-				r.ParseMultipartForm(32 << 20)
-				file, handler, err := r.FormFile("uploadfile")
+				stmt, err := config.DbQuery.Prepare(sql)
 				if err != nil {
-					fmt.Println(err)
-					return
+					log.Println(err.Error())
 				}
-				defer file.Close()
-				fmt.Fprintf(w, "%v", handler.Header)
-				f, err := os.OpenFile(uploadPath+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-				defer f.Close()
-				io.Copy(f, file)
 			*/
+			res, err := config.DbQuery.Exec(sql, vals...)
+			if err != nil {
+				log.Println(err.Error())
+			} else {
+				objectid, err := res.LastInsertId()
+				if err != nil {
+					println("Error:", err.Error())
+				} else {
+					println("LastInsertId:", objectid)
+				}
+			}
+
+			response, _ := json.Marshal(map[string]interface{}{"addAttachmentResult": map[string]interface{}{"objectId": objectid, "globalId": globalid, "success": true}})
+			//w.Header().Set("Content-Type", "application/json")
+			w.Write(response)
 		}
+		/*
+			r.ParseMultipartForm(32 << 20)
+			file, handler, err := r.FormFile("uploadfile")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer file.Close()
+			fmt.Fprintf(w, "%v", handler.Header)
+			f, err := os.OpenFile(uploadPath+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer f.Close()
+			io.Copy(f, file)
+		*/
+
 		/*
 		   {
 		     "addAttachmentResult" : {
@@ -1360,15 +1533,26 @@ func StartGorillaMux() *mux.Router {
 		for key, value := range r.MultipartForm.Value {
 			log.Printf("%s:%s", key, value)
 		}
+		var buf []byte
 		for _, fileHeaders := range r.MultipartForm.File {
 			for _, fileHeader := range fileHeaders {
 				file, _ := fileHeader.Open()
 				path := fmt.Sprintf("%s%s%s%s%s", uploadPath, string(os.PathSeparator), aid, "@", fileHeader.Filename)
 				log.Println(path)
-				buf, _ := ioutil.ReadAll(file)
+				buf, _ = ioutil.ReadAll(file)
 				ioutil.WriteFile(path, buf, os.ModePerm)
 			}
 		}
+		/*
+			var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var tableName = parentTableName + "__ATTACH_evw"
+			var vals []interface{}
+			vals = append(vals, row)
+
+			sql := "update " + tableName + " where OBJECTID=" + config.GetParam(0)
+			log.Printf("delele from %v where OBJECTID=%v", tableName, row)
+		*/
+
 		//results[0] = gin.H{"objectId": id, "globalId": nil, "success": "true"}
 		response, _ := json.Marshal(map[string]interface{}{"updateAttachmentResult": map[string]interface{}{"objectId": idInt, "globalId": nil, "success": true}})
 		w.Header().Set("Content-Type", "application/json")
@@ -1386,6 +1570,18 @@ func StartGorillaMux() *mux.Router {
 		aidInt, _ := strconv.Atoi(aid)
 		//aid = strconv.Itoa(aidInt - 1)
 
+		var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+		var tableName = parentTableName + "__ATTACH_evw"
+		var vals []interface{}
+		vals = append(vals, row)
+
+		sql := "delete from " + tableName + " where OBJECTID=" + config.GetParam(0)
+		log.Printf("delele from %v where OBJECTID=%v", tableName, row)
+
+		_, err := config.DbQuery.Exec(sql, vals...)
+		if err != nil {
+			log.Println(err.Error())
+		}
 		//results := []string{"objectId": id, "globalId": nil, "success": true}
 		//results := []string{aid}
 		var AttachmentPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
@@ -1712,9 +1908,10 @@ func StartGorillaMux() *mux.Router {
 		var columns []string
 		columns, err = rows.Columns()
 		colNum := len(columns)
-		t := "<html><style>table{width:100%;}table, th, td { border: 1px solid black;  border-collapse: collapse;}th, td { padding: 5px; text-align: left;}</style><body><table>"
+		//<style>table{width:100%;}table, th, td { border: 1px solid black;  border-collapse: collapse;}th, td { padding: 5px; text-align: left;}</style>
+		t := "<html><body><table class='a'>"
 		for n := 0; n < colNum; n++ {
-			t = t + "<th>" + columns[n] + "</th>"
+			t = t + "<th class='a'>" + columns[n] + "</th>"
 		}
 		rawResult := make([][]byte, colNum)
 		for rows.Next() {
@@ -1732,14 +1929,14 @@ func StartGorillaMux() *mux.Router {
 
 				return
 			}
-			t = t + "<tr>"
+			t = t + "<tr class='a'>"
 			//for i := 0; i < colNum; i++ {
 			for i, raw := range rawResult {
 				//w.Write(cols[i])
 				if strings.ToLower(columns[i]) == "shape" {
-					t = t + "<td>Shape</td>"
+					t = t + "<td class='a'>Shape</td>"
 				} else {
-					t = t + fmt.Sprintf("<td>%v</td>", string(raw))
+					t = t + fmt.Sprintf("<td class='a'>%v</td>", string(raw))
 				}
 				//w.Write([]byte(cols[i]))
 			}
@@ -2050,7 +2247,6 @@ func StartGorillaMux() *mux.Router {
 			if err != nil {
 				log.Println(err)
 			}
-
 		}
 
 		//_, err = w.Write(fields)
@@ -2325,7 +2521,7 @@ func StartGorillaMux() *mux.Router {
 			}
 
 		} else {
-			var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string) + "_evw"
 			var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
 			log.Println("Table name: " + tableName)
 			//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
@@ -2978,8 +3174,9 @@ func Deletes(name string, id string, tableName string, deletesTxt string, global
 	result["globalId"] = nil
 	results = append(results, result)
 	//delete from table
-	log.Println("delete from " + tableName + " where OBJECTID=" + config.GetParam(0))
-	var sql = "delete from " + tableName + " where OBJECTID=" + config.GetParam(0)
+	log.Println("delete from " + tableName + " where OBJECTID in (" + config.GetParam(0) + ")")
+	log.Println("delete objectids:  " + deletesTxt + "/" + strconv.Itoa(objectid))
+	var sql = "delete from " + tableName + " where OBJECTID in (" + config.GetParam(0) + ")"
 	stmt, err := config.DbQuery.Prepare(sql)
 	if err != nil {
 		log.Println(err.Error())

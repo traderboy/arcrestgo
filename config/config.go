@@ -14,7 +14,7 @@ import (
 	"strconv"
 
 	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
+	sqlite3 "github.com/mattn/go-sqlite3"
 
 	structs "github.com/traderboy/arcrestgo/structs"
 )
@@ -46,6 +46,7 @@ var HTTPPort = ":80"
 var HTTPSPort = ":443"
 var Pem = "ssl/reais.x10host.com.key.pem"
 var Cert = "ssl/2_reais.x10host.com.crt"
+var UUID = "(select '{'||upper(substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12))||'}' from ( select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v))"
 
 //"github.com/gin-gonic/gin"
 //Db is the SQLITE databa se object
@@ -187,6 +188,12 @@ func Initialize() {
 		//log.Println(initializeStr)
 
 		//Db, err = sql.Open("sqlite3", "file:"+DbName+"?PRAGMA journal_mode=WAL")
+		sql.Register("sqlite3_with_extensions",
+			&sqlite3.SQLiteDriver{
+				Extensions: []string{
+					"stgeometry_sqlite",
+				},
+			})
 
 		Db, err = sql.Open("sqlite3", DbName+"?cache=shared&mode=wrc")
 		if err != nil {
@@ -196,6 +203,39 @@ func Initialize() {
 		if err != nil {
 			log.Fatalf("Error on opening database connection: %s", err.Error())
 		}
+
+		//&sqlite3.SQLiteConn.LoadExtension("stgeometry_sqlite", "sqlite3_stgeometrysqlite_init")
+
+		//sqlite3.LoadExtension("stgeometry_sqlite", "sqlite3_stgeometrysqlite_init")
+
+		/*
+		   conn := &SQLiteConn{db: Db, loc: loc, txlock: txlock}
+		   conn.LoadExtensions()
+		   	if len(d.Extensions) > 0 {
+		   		if err := conn.loadExtensions(d.Extensions); err != nil {
+		   			conn.Close()
+		   			return nil, err
+		   		}
+		   	}
+		*/
+
+		//_, err = DbQuery.Exec("SELECT load_extension('stgeometry_sqlite')")
+		//_, err = DbQuery.("stgeometry_sqlite","sqlite3_stgeometrysqlite_init")
+		//sqlite3conn := []*sqlite3.SQLiteConn{}
+		//c *sqlite3.SQLiteConn
+		/*
+		   sql.Register("sqlite3_with_extensions", &sqlite3.SQLiteDriver{
+		   		ConnectHook: func(conn *sqlite3.SQLiteConn) error {
+		   			return conn.CreateModule("github", &githubModule{})
+		   		},
+		   	})
+		*/
+
+		//_, err = Db.Exec("SELECT load_extension('stgeometry_sqlite','SDE_SQL_funcs_init')")
+		//SELECT load_extension('stgeometry_sqlite.dll','SDE_SQL_funcs_init');
+		//if err != nil {
+		//	log.Fatalf("Error on loading extension stgeometry_sqlite: %s", err.Error())
+		//}
 
 		//Db.Exec(initializeStr)
 		log.Println("Sqlite config database: " + DbName)
@@ -216,6 +256,7 @@ func Initialize() {
 			log.Fatalf("Error on opening database connection: %s", err.Error())
 		}
 		log.Println("Sqlite replica database: " + DbQueryName)
+
 		//testQuery()
 		//os.Exit(0)
 
