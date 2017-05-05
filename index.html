@@ -440,6 +440,32 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="loaddatabase" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Load a service</h4>
+                </div>
+                <div class="modal-body">
+                    <form id='dbform'>
+<div class="form-group">
+    <label for="exampleInputFile">File input</label>
+    <input type="file" class="form-control-file" id="exampleInputFile" aria-describedby="fileHelp">
+    <small id="fileHelp" class="form-text text-muted">This is some placeholder block-level help text for the above input. It's a bit lighter and easily wraps to a new line.</small>
+  </div>
+
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="getSvc" class="btn btn-primary">Load service</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!--
     <div class="modal fade" id="savejson" role="dialog">
         <div class="modal-dialog modal-lg">
@@ -502,22 +528,22 @@
             //icon.innerHTML = '<a id="saveChangesID" class="btn btn-default btn-pad" title="Save changes to JSON" href="path/to/settings" aria-label="Save changes"> <i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></a>';
             //icon.innerHTML = '<button id="saveChangesID" class="btn btn-default btn-pad" title="Save changes to JSON" href="path/to/settings" aria-label="Save changes"> <i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></button>';
             //data-toggle="modal" data-target="#savejson" 
-            icon.innerHTML = '<a id="savejsonbtn" class="btn btn-pad" aria-label="Left Align"><i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></a>'
+            icon.innerHTML = '<a title="Save changes to JSON" style="margin-right:50px" id="savejsonbtn" class="btn btn-pad" aria-label="Left Align"><i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></a>'
             document.getElementById("savejsonbtn").onclick = function () {
                 saveJSON();
             }
 
             icon = tr[0].insertCell(0);
             //icon.innerHTML = '<a id="importTextID" class="btn btn-default btn-pad" title="View JSON or XML text" href="path/to/settings" aria-label="Import JSON/XML text"> <i class="fa fa-clipboard fa-2x" aria-hidden="true"></i></a>';
-            icon.innerHTML = '<a class="btn btn-pad" data-toggle="modal" data-target="#importtext" aria-label="Left Align"><i class="fa fa-clipboard fa-2x" aria-hidden="true"></i></a>'
+            icon.innerHTML = '<a title="Import JSON or XML text" class="btn btn-pad" data-toggle="modal" data-target="#importtext" aria-label="Left Align"><i class="fa fa-clipboard fa-2x" aria-hidden="true"></i></a>'
 
             icon = tr[0].insertCell(0);
             //icon.innerHTML = '<a id="setDatabaseID" class="btn btn-default btn-pad" title="Set database" href="path/to/settings" aria-label="Set database"> <i class="fa fa-database fa-2x" aria-hidden="true"></i></a>';
-            icon.innerHTML = '<a class="btn btn-pad" data-toggle="modal" data-target="#loadservice" aria-label="Left Align"><i class="fa fa-database fa-2x" aria-hidden="true"></i></a>'
+            icon.innerHTML = '<a title="Load data from alternative database" class="btn btn-pad" data-toggle="modal" data-target="#loaddatabase" aria-label="Left Align"><i class="fa fa-database fa-2x" aria-hidden="true"></i></a>'
 
             icon = tr[0].insertCell(0);
             //icon.innerHTML = '<a id="setServiceID" data-toggle="modal" data-target="#myModal" class="btn btn-default btn-pad" title="Set link to service" href="#" aria-label="Set link to service"> <i class="fa fa-link fa-2x" aria-hidden="true"></i></a>';
-            icon.innerHTML = '<a class="btn btn-pad" data-toggle="modal" data-target="#loadservice" aria-label="Left Align"><i class="fa fa-link fa-2x" aria-hidden="true"></i></a>'
+            icon.innerHTML = '<a title="Connect to new service" class="btn btn-pad" data-toggle="modal" data-target="#loadservice" aria-label="Left Align"><i class="fa fa-link fa-2x" aria-hidden="true"></i></a>'
 
             icon = tr[0].insertCell(0);
             icon.innerHTML = '<form class="form-inline" style="padding-right:30px;" id="urlfrm"> <span style="color:white">Source</span> <select class="form-control" style="height:30px" id="urls" onchange="updateURL(this)"></select></form>';
