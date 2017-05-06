@@ -173,7 +173,7 @@
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/db/" + (data.layers[i].id + 1) + "?f=json", "text": data.layers[i].name + " Db (" + data.layers[i].id + ")" })
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/xml/" + (data.layers[i].id ) + "?f=json", "text": data.layers[i].name + " XML (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/xml/" + (data.layers[i].id) + "?f=json", "text": data.layers[i].name + " XML (" + data.layers[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.layers[i].id, "text": data.layers[i].name + " Table (" + data.layers[i].id + ")" })
             }
             for (var i = 0; i < data.tables.length; i++) {
@@ -181,7 +181,7 @@
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.tables[i].name + " ObjectID (" + data.tables[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "/query?f=json", "text": data.tables[i].name + " Query (" + data.tables[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/db/" + (data.tables[i].id + 1) + "?f=json", "text": data.tables[i].name + " Db (" + data.tables[i].id + ")" })
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/xml/" + (data.tables[i].id ) + "?f=json", "text": data.tables[i].name + " XML (" + data.tables[i].id + ")" })
+                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/xml/" + (data.tables[i].id) + "?f=json", "text": data.tables[i].name + " XML (" + data.tables[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.tables[i].id + "?f=json", "text": data.tables[i].name + " Table (" + data.tables[i].id + ")" })
 
             }
@@ -278,7 +278,7 @@
         }
         function updateURL(sel) {
             if (sel.value == "") {
-                document.getElementById("url").value="";
+                document.getElementById("url").value = "";
                 editor.set({});
                 return
             }
@@ -352,7 +352,7 @@
                                 "GPSyncDataset": {
                                     collapsed: function (jsElement) { return false; }
                                 },
-                                
+
                             }
                         }
                         document.getElementById("resetJSON").style.visibility = "visible";
@@ -717,6 +717,7 @@
                 this.style.visibility = "hidden";
                 var select = document.getElementById("urls")
                 select.selectedIndex = 0;
+                editor.set({});
                 //document.getElementById("url").value="";
             }
 
@@ -748,11 +749,11 @@
 
         function saveJSON() {
             var select = document.getElementById("urls")
-            if (select.selectedIndex < 1){
+            if (select.selectedIndex < 1) {
                 //document.getElementById("url").value="";
                 return;
             }
-                
+
 
             var json = editor.get();
             //var input_el = document.getElementById("updatestr")
@@ -843,9 +844,9 @@
             var str = document.getElementById('jsontxt').value;
             var select = document.getElementById("urls")
             select.selectedIndex = 0;
-
+            document.getElementById("url").value = "";
             $("[data-dismiss=modal]").trigger({ type: "click" });
-            document.getElementById("url").value="";
+
             var isXML = false;
             //var isXML = document.querySelector('input[name="type"]:checked').value == "XML"
             if (str.charAt(0) == '<') isXML = true;
