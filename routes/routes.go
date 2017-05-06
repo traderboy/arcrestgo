@@ -58,6 +58,10 @@ func StartGorillaMux() *mux.Router {
 	r.HandleFunc("/offline", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("/offline (" + r.Method + ")")
 		//vars := mux.Vars(r)
+		//name := vars["name"]
+		//dbPath := r.URL.Query().Get("db")
+
+		//vars := mux.Vars(r)
 		/*
 			var id int
 			idstr := r.URL.Query().Get("id")
