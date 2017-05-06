@@ -460,7 +460,7 @@ func LoadConfigurationFromFile() {
 }
 
 //GetArcService queries the database for service layer entries
-func GetArcService(catalog string, service string, layerid int, dtype string) []byte {
+func GetArcService(catalog string, service string, layerid int, dtype string, dbPath string) []byte {
 	if DbSource == FILE {
 		if len(service) > 0 {
 			service += "."
@@ -501,7 +501,7 @@ func GetArcService(catalog string, service string, layerid int, dtype string) []
 }
 
 //GetArcCatalog queries the database for top level catalog entries
-func GetArcCatalog(service string, dtype string) []byte {
+func GetArcCatalog(service string, dtype string, dbPath string) []byte {
 	if DbSource == FILE {
 		if len(service) > 0 {
 			service += "."
@@ -538,7 +538,7 @@ func GetArcCatalog(service string, dtype string) []byte {
 	return json
 }
 
-func SetArcService(json []byte, catalog string, service string, layerid int, dtype string) bool {
+func SetArcService(json []byte, catalog string, service string, layerid int, dtype string, dbPath string) bool {
 	if DbSource == FILE {
 		if len(service) > 0 {
 			service += "."
@@ -581,7 +581,7 @@ func SetArcService(json []byte, catalog string, service string, layerid int, dty
 }
 
 //GetArcCatalog queries the database for top level catalog entries
-func SetArcCatalog(json []byte, service string, dtype string) bool {
+func SetArcCatalog(json []byte, service string, dtype string, dbPath string) bool {
 	if DbSource == FILE {
 		if len(service) > 0 {
 			service += "."
