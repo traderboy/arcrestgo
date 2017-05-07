@@ -12,8 +12,8 @@
     "go.formatOnSave": true,
     "go.formatTool": "goreturns",
     "go.formatFlags": [],
-    "go.goroot": "D:/go",
-    "go.gopath": "D:/workspace/go/",
+    "go.goroot": "c:/go",
+    "go.gopath": "C:/docker",
     "go.gocodeAutoBuild": false,
     "python.linting.pylintEnabled": false
 }

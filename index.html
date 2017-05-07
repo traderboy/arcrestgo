@@ -230,6 +230,8 @@
             for (i = select.options.length - 1; i >= 0; i--) {
                 select.remove(i);
             }
+            //GDB_ServiceItems: has JSON field: "ItemInfo"
+            //GDB_Items:  has XML field:  Definition
             var langArray = [
                 { "value": "", "text": "" }
                 //{ "value": url + "/config", "text": "Configuration" },
@@ -255,7 +257,7 @@
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/db/" + (data.layers[i].id + 1) + "?f=json", "text": data.layers[i].name + " Db (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/offline/arcgis/rest/services/" + service + "/FeatureServer/db/" + (data.layers[i].id + 1) + "?f=json", "text": data.layers[i].name + " Db (" + data.layers[i].id + ")" })
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.layers[i].id, "text": data.layers[i].name + " Table (" + data.layers[i].id + ")" })
             }
             for (var i = 0; i < data.tables.length; i++) {
@@ -322,7 +324,7 @@
             }
 
             showSpinner()
-            document.getElementById("jsoneditor").style.display = "none"
+            document.getElementsByClassName("jsoneditor-tree")[0].style.display = "none"
             document.getElementById("xmleditor").style.display = "none"
             //document.getElementById("xmleditor").style.display = "none"
             document.getElementById("tableeditor").style.display = "none"
@@ -390,7 +392,7 @@
                 loadJSON(url,
                     function (data) {
                         //console.log(data);
-                        document.getElementById("jsoneditor").style.display = "block"
+                        document.getElementsByClassName("jsoneditor-tree")[0].style.display = "block"
                         document.getElementById("resetJSON").style.visibility = "hidden";
                         editor.set(data);
                         hideSpinner()
@@ -562,9 +564,10 @@
     </div>
 -->
     <div id="jsoneditor"></div>
+    <!--
     <div id="tableeditor"></div>
     <div id="xmleditor"></div>
-
+    -->
 
     <img src="dist/img/spinner.gif" id='spinner'>
 
@@ -712,7 +715,7 @@
             //icon.innerHTML = '<div id="urlLbl"></div>'
 
             document.getElementById("resetJSON").onclick = function () {
-                document.getElementById("jsoneditor").style.display = "block"
+                document.getElementsByClassName("jsoneditor-tree")[0].style.display = "block"
                 document.getElementById("tableeditor").style.display = "none"
                 this.style.visibility = "hidden";
                 var select = document.getElementById("urls")
@@ -720,6 +723,11 @@
                 editor.set({});
                 //document.getElementById("url").value="";
             }
+            var ed = document.getElementsByClassName("jsoneditor-outer")
+            if(ed.length==0)return;
+            ed[0].appendChild( $('<div id="tableeditor"></div>')[0])
+            ed[0].appendChild( $('<div id="xmleditor"></div>')[0]);
+ 
 
             /*
             <div class="alert alert-success">
@@ -862,7 +870,7 @@
                 document.getElementById("xmleditor").style.display = "block"
                 document.getElementById("tableeditor").style.display = "none"
 
-                document.getElementById("jsoneditor").style.display = "none"
+                document.getElementsByClassName("jsoneditor-tree")[0].style.display = "none"
                 var docSpec = {
                     elements: {
                         /*
@@ -896,7 +904,7 @@
                 document.getElementById("xmleditor").style.display = "none"
                 document.getElementById("tableeditor").style.display = "none"
 
-                document.getElementById("jsoneditor").style.display = "block"
+                document.getElementsByClassName("jsoneditor-tree")[0].style.display = "block"
                 try {
                     var obj = JSON.parse(str);
                     editor.set(obj);

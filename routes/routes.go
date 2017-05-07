@@ -1936,9 +1936,9 @@ func StartGorillaMux() *mux.Router {
 		columns, err = rows.Columns()
 		colNum := len(columns)
 		//<style>table{width:100%;}table, th, td { border: 1px solid black;  border-collapse: collapse;}th, td { padding: 5px; text-align: left;}</style>
-		t := "<html><body><table class='a'>"
+		t := "<table class='table-bordered table-striped'>"
 		for n := 0; n < colNum; n++ {
-			t = t + "<th class='a'>" + columns[n] + "</th>"
+			t = t + "<th>" + columns[n] + "</th>"
 		}
 		rawResult := make([][]byte, colNum)
 		for rows.Next() {
@@ -1956,14 +1956,14 @@ func StartGorillaMux() *mux.Router {
 
 				return
 			}
-			t = t + "<tr class='a'>"
+			t = t + "<tr>"
 			//for i := 0; i < colNum; i++ {
 			for i, raw := range rawResult {
 				//w.Write(cols[i])
 				if strings.ToLower(columns[i]) == "shape" {
-					t = t + "<td class='a'>Shape</td>"
+					t = t + "<td>Shape</td>"
 				} else {
-					t = t + fmt.Sprintf("<td class='a'>%v</td>", string(raw))
+					t = t + fmt.Sprintf("<td>%v</td>", string(raw))
 				}
 				//w.Write([]byte(cols[i]))
 			}
@@ -1980,7 +1980,7 @@ func StartGorillaMux() *mux.Router {
 			//	w.Write(i)
 			//}
 		}
-		t = t + "</table></body>"
+		t = t + "</table>"
 		w.Write([]byte(t))
 		//.Scan(&itemInfo)
 		//rows, err := Db.Query(sql) //.Scan(&datasetName, &itemId, &itemInfo, &advDrawingInfo)
