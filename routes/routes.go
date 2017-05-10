@@ -179,7 +179,11 @@ func StartGorillaMux() *mux.Router {
 
 				return
 			}
-			_, err = stmt.Exec(body, value)
+			log.Println("Updating table: " + value)
+			log.Println(sql)
+			//log.Println(strings.Replace(string(body), "'", "''", -1))
+
+			_, err = stmt.Exec(strings.Replace(string(body), "'", "''", -1), value)
 			if err != nil {
 				w.Write([]byte(err.Error()))
 				w.Header().Set("Content-Type", "application/json")

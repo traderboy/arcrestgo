@@ -198,7 +198,7 @@
 
         function loadDatabase(db) {
             db = escape(db)
-            var url = location.href + (location.href.substring(location.href.length - 1) == '/' ? "" : "/") +"offline"
+            var url = location.href + (location.href.substring(location.href.length - 1) == '/' ? "" : "/") + "offline"
             //var urlsplit = db.split("\\")
             //var service = urlsplit[urlsplit.length - 1]
             //for (var i = 0; i < urlsplit.length; i++) {
@@ -208,15 +208,15 @@
             // }
 
             //var serviceUrl = urlsplit[0] + "//" + urlsplit[2]
-            var service=""
-            console.log(url+ "?db=" + db)
-            loadJSON(url+ "?db=" + db,
+            var service = ""
+            console.log(url + "?db=" + db)
+            loadJSON(url + "?db=" + db,
                 function (data) {
                     //console.log(data);
                     //get list of folders
                     editor.set({});
                     showMessage("Loaded database")
-                    populateDropdownFromDatabase(url, service, data,db)
+                    populateDropdownFromDatabase(url, service, data, db)
                     hideSpinner()
                 },
                 function (xhr) {
@@ -228,7 +228,7 @@
 
         }
 
-        function populateDropdownFromDatabase(url, service, data,db) {
+        function populateDropdownFromDatabase(url, service, data, db) {
             var select = document.getElementById("urls")
             for (i = select.options.length - 1; i >= 0; i--) {
                 select.remove(i);
@@ -260,9 +260,9 @@
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
-                langArray.push({ "value": url + "/" +  data[i][0] + "/" + data[i][1]+ "/" + data[i][2]+ "/" + data[i][3]+ "/" + (data[i][4]?data[i][4]:"%20")+ "?db="+db, "text": data[i][1]+"/"+data[i][4]  })
-                if(data[i][1]=="GDB_ServiceItems" && data[i][5] != "0"){
-                    langArray.push({ "value": url + "/table/" + data[i][1]+ "/" + data[i][2]+ "/" + data[i][3]+ "/" + (data[i][4]?data[i][4]:"%20")+ "?db="+db, "text": data[i][1]+"/"+data[i][4] + " (table)"  })    
+                langArray.push({ "value": url + "/" + data[i][0] + "/" + data[i][1] + "/" + data[i][2] + "/" + data[i][3] + "/" + (data[i][4] ? data[i][4] : "%20") + "?db=" + db, "text": data[i][1] + "/" + data[i][4] })
+                if (data[i][1] == "GDB_ServiceItems" && data[i][5] != "0") {
+                    langArray.push({ "value": url + "/table/" + data[i][1] + "/" + data[i][2] + "/" + data[i][3] + "/" + (data[i][4] ? data[i][4] : "%20") + "?db=" + db, "text": data[i][1] + "/" + data[i][4] + " (table)" })
                 }
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.layers[i].id, "text": data.layers[i].name + " Table (" + data.layers[i].id + ")" })
             }
@@ -348,8 +348,8 @@
                 //document.getElementById("xmleditor").style.display = "block"
                 loadXML(url,
                     function (xml) {
-                        if(xml==""){
-                            xml="<root>Empty</root>";
+                        if (xml == "") {
+                            xml = "<root>Empty</root>";
                         }
                         //document.getElementById("xmleditor").innerHTML = vkbeautify.xml(xml,4)
 
@@ -388,7 +388,7 @@
 
                             }
                         }
-                        document.getElementById("resetJSON").style.visibility = "visible";
+                        //document.getElementById("resetJSON").style.visibility = "visible";
 
                         var xmleditor = document.getElementById("xmleditor");
                         Xonomy.render(xml, xmleditor, docSpec);
@@ -411,7 +411,7 @@
                     function (data) {
                         document.getElementById("tableeditor").style.display = "block"
                         document.getElementById("tableeditor").innerHTML = data;
-                        document.getElementById("resetJSON").style.visibility = "visible";
+                        //document.getElementById("resetJSON").style.visibility = "visible";
                         hideSpinner()
                     },
                     function (xhr) {
@@ -424,7 +424,7 @@
                     function (data) {
                         //console.log(data);
                         document.getElementsByClassName("jsoneditor-tree")[0].style.display = "block"
-                        document.getElementById("resetJSON").style.visibility = "hidden";
+                        //document.getElementById("resetJSON").style.visibility = "hidden";
                         editor.set(data);
                         hideSpinner()
                     },
@@ -518,14 +518,16 @@
     <style type="text/css">
         #jsoneditor {
             width: 100%;
-            height: 1200px;
+            height:100%;
+            /*height: 1200px;*/
         }
 
         #tableeditor {
             width: 100%;
-            height: 1200px;
+            height:100%;
+            /*height: 1200px;*/
             display: none;
-            overflow: scroll;
+            overflow: auto;
         }
         /*
         form {
@@ -536,7 +538,9 @@
         #xmleditor {
             display: none;
             width: 100%;
-            height: 1200px;
+            height:100%;
+            /*height: 1200px;*/
+            overflow: auto;
         }
 
         table.a {
@@ -573,8 +577,10 @@
         #urlLbl {
             margin-right: 20px;
         }
+        
+
         .xonomy.nerd {
-            font-size:1em;
+            font-size: 1em;
         }
     </style>
 </head>
@@ -583,9 +589,10 @@
 
     <form class="form-inline" id='loader' name='loader' style="margin-left:2px">
         <!--<input id='url' type='text' style="width:90%">-->
-        <input class="form-control" type="text" value="" id="url" style="width:90%">
+        <label>URL</label>
+        <input class="form-control" type="text" value="" id="url" style="width:95%">
         <button type='submit' class="btn btn-default" id="setJSON" value='URL'>Load</button>
-        <button type='button' class="btn btn-default" id="resetJSON" style="visibility:hidden">Return</button>
+        <!--<button type='button' class="btn btn-default" id="resetJSON" style="visibility:hidden">Return</button>-->
     </form>
 
 
@@ -725,7 +732,7 @@
             //icon.innerHTML = '<a id="saveChangesID" class="btn btn-default btn-pad" title="Save changes to JSON" href="path/to/settings" aria-label="Save changes"> <i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></a>';
             //icon.innerHTML = '<button id="saveChangesID" class="btn btn-default btn-pad" title="Save changes to JSON" href="path/to/settings" aria-label="Save changes"> <i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></button>';
             //data-toggle="modal" data-target="#savejson" 
-            icon.innerHTML = '<a title="Save changes to JSON" style="margin-right:50px" id="savejsonbtn" class="btn btn-pad" aria-label="Left Align"><i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></a>'
+            icon.innerHTML = '<a title="Save changes to JSON/XML" style="margin-right:50px" id="savejsonbtn" class="btn btn-pad" aria-label="Left Align"><i class="fa fa-floppy-o fa-2x" aria-hidden="true"></i></a>'
             document.getElementById("savejsonbtn").onclick = function () {
                 saveJSON();
             }
@@ -747,7 +754,7 @@
 
             //icon = tr[0].insertCell(0);
             //icon.innerHTML = '<div id="urlLbl"></div>'
-
+/*
             document.getElementById("resetJSON").onclick = function () {
                 document.getElementsByClassName("jsoneditor-tree")[0].style.display = "block"
                 document.getElementById("tableeditor").style.display = "none"
@@ -757,11 +764,12 @@
                 editor.set({});
                 //document.getElementById("url").value="";
             }
+            */
             var ed = document.getElementsByClassName("jsoneditor-outer")
-            if(ed.length==0)return;
-            ed[0].appendChild( $('<div id="tableeditor"></div>')[0])
-            ed[0].appendChild( $('<div id="xmleditor"></div>')[0]);
- 
+            if (ed.length == 0) return;
+            ed[0].appendChild($('<div id="tableeditor"></div>')[0])
+            ed[0].appendChild($('<div id="xmleditor"></div>')[0]);
+
 
             /*
             <div class="alert alert-success">
@@ -795,14 +803,27 @@
                 //document.getElementById("url").value="";
                 return;
             }
-            var json = editor.get();
+            var txt
+            //is it XML or JSON
+            if (document.getElementById("xmleditor").style.display == "block") {
+                txt = Xonomy.harvest();
+            }
+            else if (document.getElementById("tableeditor").style.display == "block") {
+                showMessage("Tables are not editable in the browser")
+                return;
+            }
+            else if (document.getElementsByClassName("jsoneditor-tree")[0].style.display == "block") {
+                txt = editor.get();
+                txt = JSON.stringify(txt)
+            }
+
             //var input_el = document.getElementById("updatestr")
             //input_el.value = JSON.stringify(json)
             var url = document.getElementById("url").value
             //var url_el = document.getElementById("urlstr")
             //url_el.value = url
             showSpinner()
-            putJSON(url, JSON.stringify(json),
+            putJSON(url, txt,
                 function (data) {
                     showMessage("Success")
                     hideSpinner()
@@ -915,10 +936,11 @@
                         }
                     }
                 }
-                document.getElementById("resetJSON").style.visibility = "visible";
+                //document.getElementById("resetJSON").style.visibility = "visible";
 
                 var xmleditor = document.getElementById("xmleditor");
                 Xonomy.render(str, xmleditor, docSpec);
+
 
 
                 //str = vkbeautify.xml(str, 4);
