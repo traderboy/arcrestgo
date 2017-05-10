@@ -197,9 +197,10 @@
         }
 
         function loadDatabase(db) {
-            var url = location.href + (location.href.substring(location.href.length - 1) == '/' ? "" : "/") + "offline?db=" + escape(db)
-            var urlsplit = db.split("\\")
-            var service = urlsplit[urlsplit.length - 1]
+            db = escape(db)
+            var url = location.href + (location.href.substring(location.href.length - 1) == '/' ? "" : "/") +"offline"
+            //var urlsplit = db.split("\\")
+            //var service = urlsplit[urlsplit.length - 1]
             //for (var i = 0; i < urlsplit.length; i++) {
             //    if (urlsplit[i].toLowerCase() == 'service' && urlsplit.length > i) {
             //        service = urlsplit[i + 1]
@@ -207,13 +208,15 @@
             // }
 
             //var serviceUrl = urlsplit[0] + "//" + urlsplit[2]
-            loadJSON(url,
+            var service=""
+            console.log(url+ "?db=" + db)
+            loadJSON(url+ "?db=" + db,
                 function (data) {
                     //console.log(data);
                     //get list of folders
                     editor.set({});
                     showMessage("Loaded database")
-                    populateDropdownFromDatabase(url, service, data)
+                    populateDropdownFromDatabase(url, service, data,db)
                     hideSpinner()
                 },
                 function (xhr) {
@@ -225,7 +228,7 @@
 
         }
 
-        function populateDropdownFromDatabase(url, service, data) {
+        function populateDropdownFromDatabase(url, service, data,db) {
             var select = document.getElementById("urls")
             for (i = select.options.length - 1; i >= 0; i--) {
                 select.remove(i);
@@ -253,13 +256,17 @@
                 { "value": "arcgis/rest/services/leasecompliancefor2016/FeatureServer/6", "text": "FeatureServer 6" }
                 */
             ]
-            for (var i = 0; i < data.layers.length; i++) {
+            for (var i = 0; i < data.length; i++) {
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
-                langArray.push({ "value": url + "/offline/arcgis/rest/services/" + service + "/FeatureServer/db/" + (data.layers[i].id + 1) + "?f=json", "text": data.layers[i].name + " Db (" + data.layers[i].id + ")" })
-                langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.layers[i].id, "text": data.layers[i].name + " Table (" + data.layers[i].id + ")" })
+                langArray.push({ "value": url + "/" +  data[i][0] + "/" + data[i][1]+ "/" + data[i][2]+ "/" + data[i][3]+ "/" + (data[i][4]?data[i][4]:"%20")+ "?db="+db, "text": data[i][1]+"/"+data[i][4]  })
+                if(data[i][1]=="GDB_ServiceItems" && data[i][5] != "0"){
+                    langArray.push({ "value": url + "/table/" + data[i][1]+ "/" + data[i][2]+ "/" + data[i][3]+ "/" + (data[i][4]?data[i][4]:"%20")+ "?db="+db, "text": data[i][1]+"/"+data[i][4] + " (table)"  })    
+                }
+                //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.layers[i].id, "text": data.layers[i].name + " Table (" + data.layers[i].id + ")" })
             }
+            /*
             for (var i = 0; i < data.tables.length; i++) {
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "?f=json", "text": data.tables[i].name + " (" + data.tables[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.tables[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.tables[i].name + " ObjectID (" + data.tables[i].id + ")" })
@@ -268,6 +275,7 @@
                 langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/table/" + data.tables[i].id + "?f=json", "text": data.tables[i].name + " Table (" + data.tables[i].id + ")" })
 
             }
+            */
             var il = langArray.length;
             var i = 0;
             var option;
@@ -278,6 +286,7 @@
                 select.appendChild(option);
             }
         }
+
         function updateURL(sel) {
             if (sel.value == "") {
                 document.getElementById("url").value = "";
@@ -339,6 +348,9 @@
                 //document.getElementById("xmleditor").style.display = "block"
                 loadXML(url,
                     function (xml) {
+                        if(xml==""){
+                            xml="<root>Empty</root>";
+                        }
                         //document.getElementById("xmleditor").innerHTML = vkbeautify.xml(xml,4)
 
                         var docSpec = {
@@ -352,6 +364,25 @@
                                     collapsed: function (jsElement) { return false; }
                                 },
                                 "GPSyncDataset": {
+                                    collapsed: function (jsElement) { return false; }
+                                },
+                                "GPCodedValueDomain2": {
+                                    collapsed: function (jsElement) { return false; }
+                                },
+                                "DETableInfo": {
+                                    collapsed: function (jsElement) { return false; }
+                                },
+                                "DERelationshipClassInfo": {
+                                    collapsed: function (jsElement) { return false; }
+                                },
+                                "DEWorkspace": {
+                                    collapsed: function (jsElement) { return false; }
+                                },
+                                "DEFeatureClassInfo": {
+                                    collapsed: function (jsElement) { return false; }
+                                },
+
+                                "GPHistoricalMarker": {
                                     collapsed: function (jsElement) { return false; }
                                 },
 
@@ -541,6 +572,9 @@
 
         #urlLbl {
             margin-right: 20px;
+        }
+        .xonomy.nerd {
+            font-size:1em;
         }
     </style>
 </head>
@@ -761,8 +795,6 @@
                 //document.getElementById("url").value="";
                 return;
             }
-
-
             var json = editor.get();
             //var input_el = document.getElementById("updatestr")
             //input_el.value = JSON.stringify(json)
