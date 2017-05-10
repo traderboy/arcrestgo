@@ -437,6 +437,76 @@
                 );
             }
         }
+        function loadTextFile(file) {
+
+
+            if (!file) {
+                return;
+            }
+            document.getElementsByClassName("jsoneditor-tree")[0].style.display = "none"
+            document.getElementById("xmleditor").style.display = "none"
+            //document.getElementById("xmleditor").style.display = "none"
+            document.getElementById("tableeditor").style.display = "none"
+
+            showSpinner()
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var contents = e.target.result;
+                if (contents.charAt(0) == '<') {
+                    var docSpec = {
+                        elements: {
+                            /*
+                            "GPSyncReplica": {
+                                oneliner: true
+                            },
+                            */
+                            "GPSyncReplica": {
+                                collapsed: function (jsElement) { return false; }
+                            },
+                            "GPSyncDataset": {
+                                collapsed: function (jsElement) { return false; }
+                            },
+                            "GPCodedValueDomain2": {
+                                collapsed: function (jsElement) { return false; }
+                            },
+                            "DETableInfo": {
+                                collapsed: function (jsElement) { return false; }
+                            },
+                            "DERelationshipClassInfo": {
+                                collapsed: function (jsElement) { return false; }
+                            },
+                            "DEWorkspace": {
+                                collapsed: function (jsElement) { return false; }
+                            },
+                            "DEFeatureClassInfo": {
+                                collapsed: function (jsElement) { return false; }
+                            },
+
+                            "GPHistoricalMarker": {
+                                collapsed: function (jsElement) { return false; }
+                            },
+
+                        }
+                    }
+                    //document.getElementById("resetJSON").style.visibility = "visible";
+
+                    var xmleditor = document.getElementById("xmleditor");
+                    Xonomy.render(contents, xmleditor, docSpec);
+                    hideSpinner();
+                    document.getElementById("xmleditor").style.display = "block"
+
+                }
+                else {
+                    document.getElementsByClassName("jsoneditor-tree")[0].style.display = "block"
+                    editor.set(JSON.parse(contents));
+                    hideSpinner();
+                }
+                //displayContents(contents);
+            };
+            reader.readAsText(file);
+
+
+        }
 
         function loadJSON(path, success, error) {
             var xhr = new XMLHttpRequest();
@@ -518,13 +588,13 @@
     <style type="text/css">
         #jsoneditor {
             width: 100%;
-            height:100%;
+            height: 100%;
             /*height: 1200px;*/
         }
 
         #tableeditor {
             width: 100%;
-            height:100%;
+            height: 100%;
             /*height: 1200px;*/
             display: none;
             overflow: auto;
@@ -538,7 +608,7 @@
         #xmleditor {
             display: none;
             width: 100%;
-            height:100%;
+            height: 100%;
             /*height: 1200px;*/
             overflow: auto;
         }
@@ -577,7 +647,7 @@
         #urlLbl {
             margin-right: 20px;
         }
-        
+
 
         .xonomy.nerd {
             font-size: 1em;
@@ -648,7 +718,7 @@
                     <div class="modal-body">
 
                         <div class="form-group">
-                            <label for="dbFileName">Folder path</label>
+                            <label for="dbFileName">Full path to .geodatabase file</label>
                             <input type="text" id="dbFileName" style="width:100%">
                             <!--
                             <input type="file" class="form-control-file" id="dbFileName" aria-describedby="fileHelp">
@@ -668,7 +738,40 @@
         </div>
     </div>
 
+    <div class="modal fade" id="loadfile" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Load an XML or JSON file</h4>
+                </div>
+                <form id='fileview'>
+                    <div class="modal-body">
+
+                        <div class="form-group">
+                            <label for="textFile">File path</label>
+                            <input type="file" id="textFile" class="form-control-file">
+                            <!--
+                            <input type="file" class="form-control-file" id="dbFileName" aria-describedby="fileHelp">
+                            <small id="fileHelp" class="form-text text-muted">This is some placeholder block-level help text for the above input. It's a bit lighter and easily wraps to a new line.</small>
+                            -->
+                        </div>
+
+
+
+                    </div>
+                    <div class="modal-footer">
+                        <!--<button type="submit" id="getFile" class="btn btn-primary">Load file</button>-->
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
     <!--
+
     <div class="modal fade" id="savejson" role="dialog">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -750,21 +853,31 @@
             icon.innerHTML = '<a title="Connect to new service" class="btn btn-pad" data-toggle="modal" data-target="#loadservice" aria-label="Left Align"><i class="fa fa-link fa-2x" aria-hidden="true"></i></a>'
 
             icon = tr[0].insertCell(0);
+            //icon.innerHTML = '<a id="setServiceID" data-toggle="modal" data-target="#myModal" class="btn btn-default btn-pad" title="Set link to service" href="#" aria-label="Set link to service"> <i class="fa fa-link fa-2x" aria-hidden="true"></i></a>';
+            icon.innerHTML = '<a title="Open a JSON/XML file" class="btn btn-pad" data-toggle="modal" data-target="#loadfile" aria-label="Left Align"><i class="fa fa-file-text fa-2x" aria-hidden="true"></i></a>'
+
+            icon = tr[0].insertCell(0);
             icon.innerHTML = '<form class="form-inline" style="padding-right:30px;" id="urlfrm"><span id="urlLbl"></span> <span style="color:white">Source</span> <select class="form-control" style="height:30px" id="urls" onchange="updateURL(this)"></select></form>';
 
+            document.getElementById('textFile').addEventListener('change', function (e) {
+                $("[data-dismiss=modal]").trigger({ type: "click" });
+                var file = e.target.files[0];
+                if (!file) return;
+                loadTextFile(e.target.files[0])
+            }, false);
             //icon = tr[0].insertCell(0);
             //icon.innerHTML = '<div id="urlLbl"></div>'
-/*
-            document.getElementById("resetJSON").onclick = function () {
-                document.getElementsByClassName("jsoneditor-tree")[0].style.display = "block"
-                document.getElementById("tableeditor").style.display = "none"
-                this.style.visibility = "hidden";
-                var select = document.getElementById("urls")
-                select.selectedIndex = 0;
-                editor.set({});
-                //document.getElementById("url").value="";
-            }
-            */
+            /*
+                        document.getElementById("resetJSON").onclick = function () {
+                            document.getElementsByClassName("jsoneditor-tree")[0].style.display = "block"
+                            document.getElementById("tableeditor").style.display = "none"
+                            this.style.visibility = "hidden";
+                            var select = document.getElementById("urls")
+                            select.selectedIndex = 0;
+                            editor.set({});
+                            //document.getElementById("url").value="";
+                        }
+                        */
             var ed = document.getElementsByClassName("jsoneditor-outer")
             if (ed.length == 0) return;
             ed[0].appendChild($('<div id="tableeditor"></div>')[0])
@@ -861,6 +974,21 @@
             //showMessage("Loading " + db.value)
             $("[data-dismiss=modal]").trigger({ type: "click" });
             loadDatabase(db.value)
+            //C:\Users\steve\AppData\Local\Packages\Esri.CollectorforArcGIS_eytg3kh68c6a8\LocalState\hpluser7_p4hlzbyr.pjw\1af029ff6b014b38bdc452a4ed09a940\kv2nifzw.rbz.geodatabase
+            return false;
+        };
+
+        document.getElementById('fileview').onsubmit = function () {
+            //loadURL();
+            var db = document.getElementById("textFile");
+            if (db.value == "") {
+                showError("No file selected")
+                return;
+            }
+            //showMessage("Loading " + db.value)
+            $("[data-dismiss=modal]").trigger({ type: "click" });
+            loadTextFile(db.value)
+            //loadDatabase(db.value)
             //C:\Users\steve\AppData\Local\Packages\Esri.CollectorforArcGIS_eytg3kh68c6a8\LocalState\hpluser7_p4hlzbyr.pjw\1af029ff6b014b38bdc452a4ed09a940\kv2nifzw.rbz.geodatabase
             return false;
         };
