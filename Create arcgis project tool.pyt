@@ -25,7 +25,7 @@ arcpy.env.overwriteOutput = True
 #other gotchas
 #For polygon styles, makes sure to use "style": "esriSFSSolid" and NOT "style": "esriSLSSolid" for the outline style
                    
-
+#OBS! OBJECTID in layers/tables MUST be int32, not integer.  Otherwise lookups will not work, even after creating new records
 
 #import time
 #env.workspace = "CURRENT"
@@ -1355,14 +1355,18 @@ def getLayers(opLayers):
   return layers
 
 #{"name":"PK__HPL_Coll__F4B70D85F8506C58","fields":"OBJECTID","isAscending":true,"isUnique":true,"description":"clustered, unique, primary key"}
-
+#PRAGMA writable_schema=ON;
+#select sql from sqlite_master  where name in ('homesites','homesites_inspections') and type='table';
+#set sql=replace(sql,'OBJECTID integer','OBJECTID int32')
+#update sqlite_master set sql=replace(sql,'OBJECTID integer','OBJECTID int32') where name in ('homesites','homesites_inspections') and type='table';
 #create replica sqlite datatabase for entire MXD including layer and tables.  This is used by the ESRI collector when using the offline features
 def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,username,serviceName,serverName,minx,miny,maxx,maxy,relationshipList,layerIds,serviceItems):
 
   arcpy.CreateRuntimeContent_management(mxd.filePath,
               replicaDestinationPath + os.sep + serviceName,
               serviceName,"#","#",
-              "NETWORK_DATA;FEATURE_AND_TABULAR_DATA","NON_OPTIMIZE_SIZE","ONLINE","PNG","1","#")
+              "NETWORK_DATA;FEATURE_AND_TABULAR_DATA","OPTIMIZE_SIZE","ONLINE","PNG","1","#")
+              #OPTIMIZE_SIZE, NON_OPTIMIZE_SIZE
   filenames = next(os.walk(replicaDestinationPath + "/"+serviceName+"/data/"))[2]
   printMessage("Rename " + replicaDestinationPath + "/"+serviceName+"/data/"+filenames[0]+" to "+ replicaDestinationPath+"/"+serviceName+".geodatabase")
   #if offline geodatabase exists, must delete first
@@ -1434,12 +1438,15 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
   serviceItems["layers"]=[]
 
+  #OBS!  must alter the OBJECTID field type from integer to int32
 
+  tables=""
   id=0
   idx=1
   sql2=[]
   sql3=[]
   sql5=[]
+
   for lyr in allData:
      desc = arcpy.Describe(lyr)
      if hasattr(desc, "layer"):
@@ -1454,6 +1461,12 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      svcType = "Table"
      queryOption="esriRowsTypeNone"
      oidName = desc.OIDFieldName
+     if tables=="":
+        tables=tables+'"'+featureName+'"'
+     else:
+        tables=tables+',"'+featureName+'"'
+     
+     
      
      if hasattr(desc,"featureClass"):
          lyrtype = "esriDTFeatureClass"
@@ -1829,6 +1842,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   #sql5='update "GDB_Items" set ObjectId=ROWID'
   sql1=sql1+("</GPSyncDatasets><AttachmentsSyncDirection>esriAttachmentsSyncDirectionBidirectional</AttachmentsSyncDirection></GPSyncReplica>'"
    ", NULL, NULL, NULL from GDB_Items")
+
+  sql1=sql1+("#PRAGMA writable_schema=ON;update sqlite_master set sql=replace(sql,'OBJECTID integer','OBJECTID int32') where name in ("+tables+") and type='table';#PRAGMA writable_schema=OFF;")
   #serviceRep=[sql1,sql2,sql4]
   #NON_OPTIMIZE_SIZE"
   name=replicaDestinationPath + "/"+serviceName+".sql"
@@ -3171,9 +3186,10 @@ def main():
        host="reais.x10host.com"
        root=r"D:\workspace\go\src\github.com\traderboy\arcrestgo"
        db=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
-       mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"
-       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016grazing.mxd"
-       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
+       #mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"
+       #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016grazing.mxd"
+       #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
+       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016.mxd"
        pg=None
        
        
