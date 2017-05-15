@@ -1490,6 +1490,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      sql5.append(("alter table " + featureName + " rename to " + featureName + "_org"))
      #remove trailing close paren
      sql = sql[:-1]
+     #next line is important when doing lookups
+     sql = sql.replace("OBJECTID integer","OBJECTID int32")
      sql = sql.replace("primary key ","")
      sql = sql.replace(" not null","")
      gdb_transaction_time = 'gdb_transaction_time()'
@@ -1841,9 +1843,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
   #sql5='update "GDB_Items" set ObjectId=ROWID'
   sql1=sql1+("</GPSyncDatasets><AttachmentsSyncDirection>esriAttachmentsSyncDirectionBidirectional</AttachmentsSyncDirection></GPSyncReplica>'"
-   ", NULL, NULL, NULL from GDB_Items")
+   ", NULL, NULL, NULL from GDB_Items;")
 
-  sql1=sql1+("#PRAGMA writable_schema=ON;update sqlite_master set sql=replace(sql,'OBJECTID integer','OBJECTID int32') where name in ("+tables+") and type='table';#PRAGMA writable_schema=OFF;")
+  #sql1=sql1+("#PRAGMA writable_schema=ON;update sqlite_master set sql=replace(sql,'OBJECTID integer','OBJECTID int32') where name in ("+tables+") and type='table';#PRAGMA writable_schema=OFF;")
   #serviceRep=[sql1,sql2,sql4]
   #NON_OPTIMIZE_SIZE"
   name=replicaDestinationPath + "/"+serviceName+".sql"
