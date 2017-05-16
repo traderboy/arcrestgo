@@ -3197,9 +3197,12 @@ def main():
        
     elif socket.gethostname()=='steve-laptop':
        mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B629916B-D98A-42C5-B9E1-336B123CECDF\v103\leasecompliance2016.mxd"
-       mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_DEAAE989-2ED9-4364-9013-F61558B0A7C9\v103\leasecompliance2016homesites.mxd"
+       #mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_DEAAE989-2ED9-4364-9013-F61558B0A7C9\v103\leasecompliance2016homesites.mxd"
+
        host="gis.biz.tm"
+       host="arcrest.ddns.net"
        root=r"C:\docker\src\github.com\traderboy\arcrestgo\leasecompliance2016"
+       root=r"C:\docker\src\github.com\traderboy\arcrestgo"
        db=r"C:\docker\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
 
     #tool.execute(tool.getParameterInfo(),r"C:\hpl\distribution\aar\leasecompliance2014.gdb.mxd")
