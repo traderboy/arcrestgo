@@ -438,8 +438,6 @@
             }
         }
         function loadTextFile(file) {
-
-
             if (!file) {
                 return;
             }
@@ -863,6 +861,8 @@
                 $("[data-dismiss=modal]").trigger({ type: "click" });
                 var file = e.target.files[0];
                 if (!file) return;
+                //console.log(e.target.files[0])
+                showMessage("Viewing file: " + e.target.files[0].name)
                 loadTextFile(e.target.files[0])
             }, false);
             //icon = tr[0].insertCell(0);

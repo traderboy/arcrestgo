@@ -1786,7 +1786,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         
         sql5.append(("insert into " + featureName + "__ATTACH("+newallfields+") select "+allfields+" from "+featureName + "__ATTACH_org"))
         
-        #sql5.append(("drop table "+featureName + "__ATTACH_org")) 
+        sql5.append(("drop table "+featureName + "__ATTACH_org")) 
 
         #sql5.append(('ALTER TABLE '+featureName+'__ATTACH ADD REL_GLOBALID uuidtext'))
         next_row_id='Next_RowID (NULL,\''+featureName+'__ATTACH\')'
