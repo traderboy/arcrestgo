@@ -3033,6 +3033,38 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 			p += sep + config.GetParam(c)
 			vals = append(vals, globalId)
 		}
+		if config.Project.Services[name]["layers"][id]["editFieldsInfo"] != nil {
+			//joinField = config.Project.Services[name]["layers"][id]["joinField"].(string)
+			if rec, ok := config.Project.Services[name]["layers"][id]["editFieldsInfo"].(map[string]interface{}); ok {
+				for key, j := range rec {
+					//for key, j := range config.Project.Services[name]["layers"][id]["editFieldsInfo"] {
+					cols += sep + j.(string) //config.Project.Services[name]["layers"][id]["editFieldsInfo"][key]
+					if key == "creatorField" || key == "editorField" {
+						vals = append(vals, config.Project.Username)
+						p += sep + config.GetParam(c)
+						c++
+					} else if key == "creationDateField" || key == "editDateField" {
+						p += sep + "julianday('now')"
+						//vals = append(vals, "julianday('now')")
+						//cols += sep + j.(string) + "=julianday('now')"
+					}
+
+				}
+			}
+
+			/*
+				cols += sep + config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creatorField"]
+				p += sep + config.GetParam(c)
+				c++
+
+				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creatorField"] = config.Project.Username
+				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["editorField"]=config.Project.Username
+				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creationDateField"]=
+				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["editDateField"]
+			*/
+
+		}
+
 		//vals = append(vals, "")
 
 		//cols += sep + joinField
@@ -3192,6 +3224,33 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 			}
 		}
 		vals = append(vals, objectid)
+		if config.Project.Services[name]["layers"][id]["editFieldsInfo"] != nil {
+			//joinField = config.Project.Services[name]["layers"][id]["joinField"].(string)
+			//for key, j := range config.Project.Services[name]["layers"][id]["editFieldsInfo"] {
+			if rec, ok := config.Project.Services[name]["layers"][id]["editFieldsInfo"].(map[string]interface{}); ok {
+				for key, j := range rec {
+					if key == "creatorField" || key == "editorField" {
+						vals = append(vals, config.Project.Username)
+						cols += sep + j.(string) + "=" + config.GetParam(c) //config.Project.Services[name]["layers"][id]["editFieldsInfo"][key]
+						c++
+					} else if key == "creationDateField" || key == "editDateField" {
+						//vals = append(vals, "julianday('now')")
+						cols += sep + j.(string) + "=julianday('now')"
+					}
+				}
+			}
+			/*
+				cols += sep + config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creatorField"]
+				p += sep + config.GetParam(c)
+				c++
+
+				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creatorField"] = config.Project.Username
+				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["editorField"]=config.Project.Username
+				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creationDateField"]=
+				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["editDateField"]
+			*/
+		}
+
 		log.Println("update " + tableName + " set " + cols + " where OBJECTID=" + config.GetParam(len(vals)))
 		log.Print(vals)
 		//log.Print(objId)

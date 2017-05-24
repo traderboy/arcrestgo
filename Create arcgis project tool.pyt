@@ -959,6 +959,7 @@ class CreateNewProject(object):
                   editorTracking['editDateField']=desc.editedAtFieldName
                   editorTracking['editorField']=desc.editorFieldName
                   feature_json['editFieldsInfo']=editorTracking
+                  
                else:
                   del feature_json['editFieldsInfo']
 
@@ -1117,6 +1118,10 @@ class CreateNewProject(object):
                file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(layerIds[lyr.name])+".objectid.json",feature_json)
                LoadService(sqliteDb,serviceName,"FeatureServer", layerIds[lyr.name],"objectid",file)
                layerObj["itemId"]= lyr.name.replace(" ","_")+str(layerIds[lyr.name])
+               if desc.editorTrackingEnabled:
+                  #save to config too for easy access
+                  layerObj["editFieldsInfo"]=feature_json['editFieldsInfo']
+
                config["services"][serviceName]["layers"][str(layerIds[lyr.name])]=layerObj
                id = id+1
 
@@ -1191,6 +1196,8 @@ class CreateNewProject(object):
                   editorTracking['editDateField']=desc.editedAtFieldName
                   editorTracking['editorField']=desc.editorFieldName
                   feature_json['editFieldsInfo']=editorTracking
+                  #save to config too for easy access
+                  tableObj["editFieldsInfo"]=editorTracking
                else:
                   del feature_json['editFieldsInfo']
 
@@ -1207,6 +1214,7 @@ class CreateNewProject(object):
                file=saveJSON(servicesDestinationPath + "/FeatureServer."+str(layerIds[tbl.name])+".json",feature_json)
                LoadService(sqliteDb,serviceName,"FeatureServer", layerIds[tbl.name],"",file)
                tableObj["itemId"]= tbl.name.replace(" ","_")+str(layerIds[tbl.name])
+               
                config["services"][serviceName]["layers"][str(layerIds[tbl.name])]=tableObj
 
                #fields = copy.deepcopy(feature_json['fields'])
