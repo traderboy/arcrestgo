@@ -3032,9 +3032,11 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 			cols += sep + globalIdName
 			p += sep + config.GetParam(c)
 			vals = append(vals, globalId)
+			i.Attributes[globalIdName] = globalId
 		}
 		if config.Project.Services[name]["layers"][id]["editFieldsInfo"] != nil {
 			//joinField = config.Project.Services[name]["layers"][id]["joinField"].(string)
+			current_time := time.Now().Local()
 			if rec, ok := config.Project.Services[name]["layers"][id]["editFieldsInfo"].(map[string]interface{}); ok {
 				for key, j := range rec {
 					//for key, j := range config.Project.Services[name]["layers"][id]["editFieldsInfo"] {
@@ -3042,9 +3044,12 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 					if key == "creatorField" || key == "editorField" {
 						vals = append(vals, config.Project.Username)
 						p += sep + config.GetParam(c)
+						i.Attributes[key] = config.Project.Username
 						c++
 					} else if key == "creationDateField" || key == "editDateField" {
 						p += sep + "julianday('now')"
+						i.Attributes[key] = DateToNumber(current_time.Year(), current_time.Month(), current_time.Day())
+						//year int, month time.Month, day int)
 						//vals = append(vals, "julianday('now')")
 						//cols += sep + j.(string) + "=julianday('now')"
 					}
@@ -3139,12 +3144,14 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 				log.Println("Error unmarshalling fields into features object: " + string(row))
 				log.Println(err.Error())
 			}
+			fieldObj.Features = append(fieldObj.Features, i)
+
 			var jsonstr []byte
 			jsonstr, err = json.Marshal(fieldObj)
 			if err != nil {
 				log.Println(err)
 			}
-			fieldObj.Features = append(fieldObj.Features, i)
+
 			tx, err := config.Db.Begin()
 			if err != nil {
 				log.Fatal(err)
@@ -3158,6 +3165,7 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 			}
 
 			idInt, _ := strconv.Atoi(id)
+			log.Printf("JSON: %v:\n%v", string(jsonstr), idInt)
 
 			_, err = tx.Stmt(stmt).Exec(string(jsonstr), idInt)
 			if err != nil {
@@ -3682,5 +3690,39 @@ func Deletes(name string, id string, tableName string, deletesTxt string, global
 	}
 	response, _ := json.Marshal(map[string]interface{}{"addResults": []string{}, "updateResults": []string{}, "deleteResults": results})
 	return response
+
+}
+
+// ToNumber converts a year, month, day into a Julian Day Number.
+
+// Based on http://en.wikipedia.org/wiki/Julian_day#Calculation.
+
+// Only valid for dates after the Julian Day epoch which is January 1, 4713 BCE.
+
+func DateToNumber(year int, month time.Month, day int) (julianDay int) {
+
+	if year <= 0 {
+
+		year++
+
+	}
+
+	a := int(14-month) / 12
+
+	y := year + 4800 - a
+
+	m := int(month) + 12*a - 3
+
+	julianDay = int(day) + (153*m+2)/5 + 365*y + y/4
+
+	if year > 1582 || (year == 1582 && (month > time.October || (month == time.October && day >= 15))) {
+
+		return julianDay - y/100 + y/400 - 32045
+
+	} else {
+
+		return julianDay - 32083
+
+	}
 
 }

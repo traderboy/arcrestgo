@@ -40,6 +40,9 @@ var logPath = "logfile.txt"
 func main() {
 	//TestDb()
 	//return
+	//current_time := time.Now().Local()
+	//fmt.Printf("%v/%v/%v", current_time.Year(), int(current_time.Month()), current_time.Day())
+
 	if false {
 		Db, err1 := sql.Open("postgres", "user=postgres dbname=gis host=192.168.99.100")
 		if err1 != nil {
