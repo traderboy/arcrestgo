@@ -2866,7 +2866,7 @@ func StartGorillaMux() *mux.Router {
 			//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 
 			if len(r.FormValue("updates")) > 0 {
-				response = Updates(name, id, tableName, r.FormValue("updates"), globalIdName)
+				response = Updates(name, id, tableName, r.FormValue("updates"), globalIdName, joinField)
 			} else if len(r.FormValue("adds")) > 0 {
 				response = Adds(name, id, tableName, r.FormValue("adds"), joinField, globalIdName)
 			} else if len(r.FormValue("deletes")) > 0 {
@@ -3037,6 +3037,7 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 		if config.Project.Services[name]["layers"][id]["editFieldsInfo"] != nil {
 			//joinField = config.Project.Services[name]["layers"][id]["joinField"].(string)
 			current_time := time.Now().Local()
+
 			if rec, ok := config.Project.Services[name]["layers"][id]["editFieldsInfo"].(map[string]interface{}); ok {
 				for key, j := range rec {
 					//for key, j := range config.Project.Services[name]["layers"][id]["editFieldsInfo"] {
@@ -3047,8 +3048,8 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 						i.Attributes[key] = config.Project.Username
 						c++
 					} else if key == "creationDateField" || key == "editDateField" {
-						p += sep + "julianday('now')"
-						i.Attributes[key] = DateToNumber(current_time.Year(), current_time.Month(), current_time.Day())
+						p += sep + "(julianday('now') - 2440587.5)*86400.0*1000" //julianday('now')"
+						i.Attributes[key] = current_time.Unix() * 1000           //DateToNumber(current_time.Year(), current_time.Month(), current_time.Day())
 						//year int, month time.Month, day int)
 						//vals = append(vals, "julianday('now')")
 						//cols += sep + j.(string) + "=julianday('now')"
@@ -3165,7 +3166,7 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 			}
 
 			idInt, _ := strconv.Atoi(id)
-			log.Printf("JSON: %v:\n%v", string(jsonstr), idInt)
+			//log.Printf("JSON: %v:\n%v", string(jsonstr), idInt)
 
 			_, err = tx.Stmt(stmt).Exec(string(jsonstr), idInt)
 			if err != nil {
@@ -3186,7 +3187,7 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 	return response
 }
 
-func Updates(name string, id string, tableName string, updateTxt string, globalIdName string) []byte {
+func Updates(name string, id string, tableName string, updateTxt string, globalIdName string, joinField string) []byte {
 	//log.Println(updateTxt)
 	var updates structs.Record
 	decoder := json.NewDecoder(strings.NewReader(updateTxt)) //r.Body
@@ -3205,6 +3206,8 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 	//var globalID string
 	var results []interface{}
 	//var objId int
+	//don't update these fields
+	//globaloidname,joinField,oidname
 
 	for num, i := range updates {
 		var vals []interface{}
@@ -3214,6 +3217,9 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 			//fmt.Println(key + ":  ")
 			//var objectid = updates[0].Attributes["OBJECTID"]
 			//var globalId = updates[0].Attributes["GlobalID"]
+			if key == joinField { //"GlobalGUID" {
+				continue
+			}
 			if key == "OBJECTID" {
 				objectid = int(j.(float64))
 				result["objectId"] = objectid
@@ -3224,26 +3230,36 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 				//	globalID = j.(string)
 				//	result["globalId"] = globalID
 			} else {
-				cols += sep + key + "=" + config.GetParam(c)
-				sep = ","
-				vals = append(vals, j)
-				//fmt.Println(j)
-				c++
+				if j != nil {
+					cols += sep + key + "=" + config.GetParam(c)
+					sep = ","
+					vals = append(vals, j)
+					//fmt.Println(j)
+					c++
+				}
 			}
 		}
-		vals = append(vals, objectid)
+		//cast(strftime('%s','now') as int)
+
 		if config.Project.Services[name]["layers"][id]["editFieldsInfo"] != nil {
 			//joinField = config.Project.Services[name]["layers"][id]["joinField"].(string)
 			//for key, j := range config.Project.Services[name]["layers"][id]["editFieldsInfo"] {
+			current_time := time.Now().Local()
 			if rec, ok := config.Project.Services[name]["layers"][id]["editFieldsInfo"].(map[string]interface{}); ok {
 				for key, j := range rec {
 					if key == "creatorField" || key == "editorField" {
 						vals = append(vals, config.Project.Username)
 						cols += sep + j.(string) + "=" + config.GetParam(c) //config.Project.Services[name]["layers"][id]["editFieldsInfo"][key]
+						i.Attributes[key] = config.Project.Username
+						updates[num].Attributes[key] = config.Project.Username
 						c++
 					} else if key == "creationDateField" || key == "editDateField" {
 						//vals = append(vals, "julianday('now')")
-						cols += sep + j.(string) + "=julianday('now')"
+						cols += sep + j.(string) + "=((julianday('now') - 2440587.5)*86400.0*1000)"
+						//julianday('now')"
+						i.Attributes[key] = current_time.Unix() * 1000
+						//DateToNumber(current_time.Year(), current_time.Month(), current_time.Day())
+						updates[num].Attributes[key] = i.Attributes[key]
 					}
 				}
 			}
@@ -3251,13 +3267,15 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 				cols += sep + config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creatorField"]
 				p += sep + config.GetParam(c)
 				c++
-
 				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creatorField"] = config.Project.Username
 				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["editorField"]=config.Project.Username
 				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["creationDateField"]=
 				config.Project.Services[name]["layers"][id]["editFieldsInfo"]["editDateField"]
 			*/
 		}
+		//add objectid last
+		vals = append(vals, objectid)
+		//tableName = strings.Replace(tableName, "_evw", "", -1)
 
 		log.Println("update " + tableName + " set " + cols + " where OBJECTID=" + config.GetParam(len(vals)))
 		log.Print(vals)
@@ -3364,12 +3382,14 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 			if err != nil {
 				log.Println(err)
 			}
+			//log.Println(string(jsonstr))
 			tx, err := config.Db.Begin()
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			sql = "update services set json=? where type='query' and layerId=?"
+			log.Println(sql)
 
 			stmt, err = tx.Prepare(sql)
 			if err != nil {

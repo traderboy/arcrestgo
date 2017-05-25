@@ -724,9 +724,21 @@ func GetArcQuery(catalog string, service string, layerid int, dtype string, obje
 			if in_float_array(i.Attributes["OBJECTID"].(float64), objectIdsFloat) {
 				//oJoinVal = i.Attributes[oJoinKey]
 				results = append(results, i)
+
 				//break
 			}
 		}
+		//globalIdFieldName=GlobalID
+		//objectIdFieldName=OBJECTID
+		featureObj.GlobalIDField = "GlobalID"
+		featureObj.ObjectIDFieldName = "OBJECTID"
+		/*
+			GlobalIDField     string `json:"globalIdField,omitempty"`
+			GlobalIDFieldName string `json:"globalIdFieldName,omitempty"`
+			ObjectIDField      string `json:"objectIdField,omitempty"`
+			ObjectIDFieldName string    `json:"objectIdFieldName,omitempty"`
+		*/
+
 		featureObj.Features = results
 		fields, err = json.Marshal(featureObj)
 		if err != nil {

@@ -112,13 +112,13 @@ type FeatureTable struct {
 	SpatialReference  *struct {
 		Wkid       *int `json:"wkid,omitempty"`
 		LatestWkid *int `json:"latestWkid,omitempty"`
-	} `json:"spatialReference"`
+	} `json:"spatialReference,omitempty"`
 	GeometryType       string `json:"geometryType,omitempty"`
 	ObjectIDField      string `json:"objectIdField,omitempty"`
 	GeometryProperties *struct {
 		ShapeLengthFieldName string `json:"shapeLengthFieldName,omitempty"`
 		Units                string `json:"units,omitempty"`
-	} `json:"geometryProperties"`
+	} `json:"geometryProperties,omitempty"`
 	ObjectIDFieldName string    `json:"objectIdFieldName,omitempty"`
 	DisplayFieldName  string    `json:"displayFieldName,omitempty"`
 	Fields            []Field   `json:"fields,omitempty"`
