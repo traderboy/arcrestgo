@@ -2602,7 +2602,7 @@ func StartGorillaMux() *mux.Router {
 		//	joinField = "substr(" + joinField + ", 2, length(" + joinField + ")-2)"
 		//}
 		var sqlstr = "select " + outFields + " from " + config.Schema +
-			config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string) +
+			config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string) + "_evw" +
 			" where " +
 			config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string) + " in (select " +
 			joinField + " from " +
