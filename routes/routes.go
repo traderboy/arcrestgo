@@ -1228,6 +1228,79 @@ func StartGorillaMux() *mux.Router {
 		}
 	}).Methods("GET", "POST", "PUT")
 
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/uploads/upload", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		name := vars["name"]
+
+		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/uploads/upload (" + r.Method + ")")
+		/*
+			if r.Method == "PUT" {
+				body, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					w.Write([]byte("Error"))
+					return
+				}
+				ret := config.SetArcService(body, name, "FeatureServer", -1, "", dbPath)
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": ret})
+				w.Write(response)
+				return
+			}
+		*/
+		const MAX_MEMORY = 10 * 1024 * 1024
+		if err := r.ParseMultipartForm(MAX_MEMORY); err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusForbidden)
+		}
+
+		for key, value := range r.MultipartForm.Value {
+			//fmt.Fprintf(w, "%s:%s ", key, value)
+			log.Printf("%s:%s", key, value)
+		}
+		//files, _ := ioutil.ReadDir(uploadPath)
+		//fid := len(files) + 1
+		var buf []byte
+		var fileName string
+		for _, fileHeaders := range r.MultipartForm.File {
+			for _, fileHeader := range fileHeaders {
+				file, _ := fileHeader.Open()
+				fileName = fileHeader.Filename
+				//path := fmt.Sprintf("%s%s%v%s%s", uploadPath, string(os.PathSeparator), objectid, "@", fileHeader.Filename)
+				path := fmt.Sprintf("%s", fileHeader.Filename)
+				log.Println(path)
+				buf, _ = ioutil.ReadAll(file)
+				ioutil.WriteFile(path, buf, os.ModePerm)
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		/*
+			{
+			    "success": true,
+			    "item": {
+			        "itemID": "ib740c7bb-e5d0-4156-9cea-12fa7d3a472c",
+			        "itemName": "lake.tif",
+			        "description": "Lake Tahoe",
+			        "date": 1246060800000,
+			        "committed": true
+			    }
+			}
+		*/
+		//item, _ := json.Marshal(map[string]interface{}{"itemID": "1", "itemName": fileName, "description": "description", "date": time.Now().Local().Unix() * 1000, "committed": true})
+		response, _ := json.Marshal(map[string]interface{}{"success": true, "item": map[string]interface{}{"itemID": "1", "itemName": fileName, "description": "description", "date": time.Now().Local().Unix() * 1000, "committed": true}})
+		w.Write(response)
+
+		/*
+			response := config.GetArcService(name, "FeatureServer", -1, "", dbPath)
+			if len(response) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(response)
+			} else {
+				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer.json")
+				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer.json")
+			}
+		*/
+	}).Methods("POST")
+
 	/*
 		r.HandleFunc("/rest/services/{name}/FeatureServer", func(w http.ResponseWriter, r *http.Request) {
 			vars := mux.Vars(r)
