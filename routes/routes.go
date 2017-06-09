@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/twinj/uuid"
+
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	config "github.com/traderboy/arcrestgo/config"
@@ -993,9 +995,12 @@ func StartGorillaMux() *mux.Router {
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/synchronizeReplica", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
+		replicaId := vars["replicaID"]
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/synchronizeReplica")
-		response, _ := json.Marshal(map[string]interface{}{"status": "Completed", "transportType": "esriTransportTypeUrl"})
+		//response, _ := json.Marshal(map[string]interface{}{"status": "Completed", "transportType": "esriTransportTypeUrl"})
+		response, _ := json.Marshal(map[string]interface{}{"statusUrl": "http://" + config.Project.Hostname + "/arcgis/rest/services/" + name + "/FeatureServer/jobs/" + replicaId})
+
 		/*
 			  "responseType": <esriReplicaResponseTypeEdits | esriReplicaResponseTypeEditsAndData| esriReplicaResponseTypeNoEdits>,
 			  "resultUrl": "<url>", //path to JSON (dataFormat=JSON) or a SQLite geodatabase (dataFormat=sqlite)
@@ -1021,6 +1026,20 @@ func StartGorillaMux() *mux.Router {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 	}).Methods("GET")
+
+	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/jobs/jobs/", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		name := vars["name"]
+		jobs := vars["jobs"]
+
+		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/jobs/jobs")
+		var submissionTime int64 = 1441201696150
+		var lastUpdatedTime int64 = 1441201705967
+		response, _ := json.Marshal(map[string]interface{}{"replicaName": "MyReplica", "replicaID": jobs, "submissionTime": submissionTime,
+			"lastUpdatedTime": lastUpdatedTime, "status": "Completed", "resultUrl": ""})
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(response)
+	}).Methods("POST")
 
 	r.HandleFunc("/arcgis/rest/services", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("/arcgis/rest/services (" + r.Method + ")")
@@ -1544,8 +1563,9 @@ func StartGorillaMux() *mux.Router {
 			var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
 			log.Println("Table name: " + tableName)
 
-			sql := "select ATTACHMENTID,CONTENT_TYPE,ATT_NAME from " + tableName + " where REL_GLOBALID=(select " + globalIdName + " from " + parentTableName + " where OBJECTID=" + config.GetParam(0) + ")"
-			log.Println(sql)
+			sql := "select ATTACHMENTID,CONTENT_TYPE,ATT_NAME from " + tableName + " where REL_GLOBALID=(select " + globalIdName + " from " + parentTableName + "_evw where OBJECTID=" + config.GetParam(0) + ")"
+			log.Printf("%v%v", sql, row)
+
 			//stmt, err := config.DbQuery.Prepare(sql)
 
 			//rows, err := config.DbQuery.Query(sql)
@@ -3038,6 +3058,7 @@ func StartGorillaMux() *mux.Router {
 func Adds(name string, id string, tableName string, addsTxt string, joinField string, globalIdName string) []byte {
 	var results []interface{}
 	var objectid int
+	var uuidstr string
 	log.Println(addsTxt)
 	var adds []structs.Feature
 	decoder := json.NewDecoder(strings.NewReader(addsTxt)) //r.Body
@@ -3050,21 +3071,22 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 
 	c := 1
 
-	sql := "select max(OBJECTID)+1 from " + tableName
+	sql := "select max(OBJECTID)+1," + config.UUID + " from " + tableName
 	log.Println(sql)
 	rows, err := config.DbQuery.Query(sql)
 	//defer rows.Close()
 
 	for rows.Next() {
-		err := rows.Scan(&objectid)
+		err := rows.Scan(&objectid, &uuidstr)
 		if err != nil {
 			//log.Fatal(err)
 			objectid = 1
+			uuidstr = strings.ToUpper(uuid.Formatter(uuid.NewV4(), uuid.FormatCanonicalCurly))
 		}
 	}
 	rows.Close()
 
-	var globalId string
+	//var globalId string
 	for _, i := range adds {
 		var vals []interface{}
 		sep := ""
@@ -3083,7 +3105,7 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 				sep = ","
 				if key == joinField {
 					j = strings.ToUpper(j.(string))
-					globalId = j.(string)
+					//globalId = j.(string)
 					//j = strings.Replace(j.(string), "}", "", -1)
 					//j = strings.Replace(j.(string), "{", "", -1)
 				}
@@ -3104,8 +3126,8 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 		if len(globalIdName) > 0 {
 			cols += sep + globalIdName
 			p += sep + config.GetParam(c)
-			vals = append(vals, globalId)
-			i.Attributes[globalIdName] = globalId
+			vals = append(vals, uuidstr)
+			i.Attributes[globalIdName] = uuidstr
 		}
 		if config.Project.Services[name]["layers"][id]["editFieldsInfo"] != nil {
 			//joinField = config.Project.Services[name]["layers"][id]["joinField"].(string)
