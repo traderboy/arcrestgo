@@ -1491,6 +1491,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          "xssTrustedFields":""
 
      }
+     sql5.append(('UPDATE "GDB_ServiceItems" set "DatasetName"="' + featureName + '" where "ItemId"='+str(layerIds[lyr.name])))
      sqlCreation = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
      c.execute(sqlCreation, (featureName,))
      sql = c.fetchone()[0]
@@ -1579,6 +1580,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          '(select UUID from "GDB_Items" where Name="MyReplica" limit 1),'
          '(select UUID from "GDB_Items" where Name="'+featureName+'" limit 1),'
          '1,NULL)'))
+
+    
         
 
      desc = arcpy.Describe(lyr)
@@ -1848,7 +1851,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      'values((select max(OBJECTID)+1 from "GDB_ServiceItems"),\''+serviceName+'\',0,-1,\''+serviceItemsStr+'\',NULL)'))
 
   sql5.append(('update "GDB_Items" set Definition=replace(Definition,\'<ChangeTracked>false</ChangeTracked>\',\'<ChangeTracked>true</ChangeTracked>\') where "Name" !=\'main.'+featureName+'__ATTACHREL\''))
-
+  #sql5.append(('UPDATE "GDB_ServiceItems" set "DatasetName"="' + featureName + '" where "ItemId"='+datasetId))
   #sql5='update "GDB_Items" set ObjectId=ROWID'
   sql1=sql1+("</GPSyncDatasets><AttachmentsSyncDirection>esriAttachmentsSyncDirectionBidirectional</AttachmentsSyncDirection></GPSyncReplica>'"
    ", NULL, NULL, NULL from GDB_Items;")
