@@ -1500,6 +1500,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          "xssTrustedFields":""
 
      }
+     sql5.append(('UPDATE "GDB_ServiceItems" set "DatasetName"="' + featureName + '" where "ItemId"='+str(layerIds[lyr.name])))
      sqlCreation = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
      c.execute(sqlCreation, (featureName,))
      sql = c.fetchone()[0]
@@ -1588,6 +1589,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
          '(select UUID from "GDB_Items" where Name="MyReplica" limit 1),'
          '(select UUID from "GDB_Items" where Name="'+featureName+'" limit 1),'
          '1,NULL)'))
+
+    
         
 
      desc = arcpy.Describe(lyr)
@@ -1860,6 +1863,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
   sql5.append(('update "GDB_ServiceItems" set "ItemInfo" = replace("ItemInfo",\'Create,Delete,Query,Update,Editing\',\'Create,Delete,Query,Update,Editing,Sync\') where "ItemInfo" like \'%Create,Delete,Query,Update,Editing"%\''))
   #sql5.append(('update "GDB_ServiceItems" set "ItemInfo"=replace("ItemInfo",\'"advancedQueryCapabilities":{\',\'"supportsCalculate":true,"supportsTruncate":false,"supportsAttachmentsByUploadId":true,"supportsValidateSql":true,"supportsCoordinatesQuantization":true,"supportsApplyEditsWithGlobalIds":true,"useStandardizedQueries":false,"allowGeometryUpdates":true,"advancedQueryCapabilities":{"supportsQueryRelatedPagination":true,"supportsQueryWithResultType":true,"supportsSqlExpression":true,"supportsAdvancedQueryRelated":true,"supportsQueryAttachments":true,"supportsReturningGeometryCentroid":false,\')'))
+  #sql5.append(('UPDATE "GDB_ServiceItems" set "DatasetName"="' + featureName + '" where "ItemId"='+datasetId))
+  
   #sql5='update "GDB_Items" set ObjectId=ROWID'
   sql5.append(('update "GDB_ColumnRegistry" set object_flags=4 where table_name=\'GDB_ServiceItems\' and column_name in(\'DatasetName\',\'ItemType\',\'ItemId\',\'ItemInfo\')'))
 
