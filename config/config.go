@@ -39,6 +39,8 @@ var Schema = "postgres."
 
 var Project structs.JSONConfig
 var RootPath = "catalogs"
+var SqlFlags = "?cache=shared&mode=wrc"
+var SqlWalFlags = "?PRAGMA journal_mode=WAL"
 
 //leasecompliance2016
 var RootName string
@@ -75,6 +77,9 @@ var RefreshToken = "51vzPXXNl7scWXsw7YXvhMp_eyw_iQzifDIN23jNSsQuejcrDtLmf3IN5_bK
 var AccessToken = "XMdOaajM4srQWx8nQ77KuOYGO8GupnCoYALvXEnTj0V_ZXmEzhrcboHLb7hGtGxZCYUGFt07HKOTnkNLah8LflMDoWmKGr4No2LBSpoNkhJqc9zPa2gR3vfZp5L3yXigqxYOBVjveiuarUo2z_nqQ401_JL-mCRsXq9NO1DYrLw."
 
 func Initialize() {
+	SqlFlags = ""
+	SqlWalFlags = ""
+
 	//var err error
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -195,7 +200,7 @@ func Initialize() {
 				},
 			})
 
-		Db, err = sql.Open("sqlite3", DbName+"?cache=shared&mode=wrc")
+		Db, err = sql.Open("sqlite3", DbName+SqlFlags)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -247,7 +252,7 @@ func Initialize() {
 		DbQueryName := RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase"
 
 		//DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+"?PRAGMA journal_mode=WAL")
-		DbQuery, err = sql.Open("sqlite3", DbQueryName+"?cache=shared&mode=wrc")
+		DbQuery, err = sql.Open("sqlite3", DbQueryName+SqlFlags)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -393,13 +398,13 @@ func SetDatasource(newDatasource int) {
 		log.Print("Pinging Postgresql: ")
 		log.Println(Db.Ping)
 	} else if newDatasource == SQLITE3 {
-		Db, err = sql.Open("sqlite3", "file:"+Project.SqliteDb+"?PRAGMA journal_mode=WAL")
+		Db, err = sql.Open("sqlite3", "file:"+Project.SqliteDb+SqlWalFlags)
 		if err != nil {
 			log.Fatal(err)
 		}
 		DbQueryName := RootPath + string(os.PathSeparator) + RootName + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + RootName + ".geodatabase"
 		log.Println("DbQueryName: " + DbQueryName)
-		DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+"?PRAGMA journal_mode=WAL")
+		DbQuery, err = sql.Open("sqlite3", "file:"+DbQueryName+SqlWalFlags)
 
 		if err != nil {
 			log.Fatal(err)

@@ -34,6 +34,7 @@
         }
     },
     "allowGeometryUpdates": true,
+    "supportsApplyEditsWithGlobalIds": true, 
     "units": "esriMeters",
     "size": 180224,
     "syncEnabled": true,
@@ -44,13 +45,15 @@
         "supportsPerLayerSync": true,
         "supportsPerReplicaSync": true,
         "supportsSyncModelNone": true,
-        "supportsRollbackOnFailure": true
+        "supportsRollbackOnFailure": true,
+        "supportsAttachmentsSyncDirection": true
     },
     "editorTrackingInfo": {
         "enableEditorTracking": true,
         "enableOwnershipAccessControl": false,
         "allowOthersToUpdate": true,
-        "allowOthersToDelete": true
+        "allowOthersToDelete": true,
+        "allowOthersToQuery": true
     },
     "xssPreventionInfo": {
         "xssPreventionEnabled": true,
