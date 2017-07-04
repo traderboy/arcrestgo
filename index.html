@@ -260,7 +260,7 @@
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "?f=json", "text": data.layers[i].name + " (" + data.layers[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?returnGeometry=false&outFields=OBJECTID&f=json", "text": data.layers[i].name + " ObjectID (" + data.layers[i].id + ")" })
                 //langArray.push({ "value": url + "/arcgis/rest/services/" + service + "/FeatureServer/" + data.layers[i].id + "/query?f=json", "text": data.layers[i].name + " Query (" + data.layers[i].id + ")" })
-                langArray.push({ "value": url + "/" + data[i][0] + "/" + data[i][1] + "/" + data[i][2] + "/" + data[i][3] + "/" + (data[i][4] ? data[i][4] : "%20") + "?db=" + db, "text": data[i][1] + "/" + data[i][4] })
+                langArray.push({ "value": url + "/" + data[i][0] + "/" + data[i][1] + "/" + data[i][2] + "/" + data[i][3] + "/" + (data[i][4] ? data[i][4] : "%20") + "?db=" + db, "text": data[i][1] + "/" + data[i][4] + (data[i][6]?" (" + data[i][6] + ")":"") })
                 if (data[i][1] == "GDB_ServiceItems" && data[i][5] != "0") {
                     langArray.push({ "value": url + "/table/" + data[i][1] + "/" + data[i][2] + "/" + data[i][3] + "/" + (data[i][4] ? data[i][4] : "%20") + "?db=" + db, "text": data[i][1] + "/" + data[i][4] + " (table)" })
                 }
