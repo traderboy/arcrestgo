@@ -65,7 +65,7 @@ func StartGorillaMux() *mux.Router {
 		}
 		log.Println("/offline/ (" + r.Method + ")")
 		log.Println("Database: " + dbPath)
-		dbName := "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+		dbName := "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
 
 		DbCollectorDb, err := sql.Open("sqlite3", dbName)
 		if err != nil {
@@ -155,7 +155,7 @@ func StartGorillaMux() *mux.Router {
 		//tableName := config.Project.Services[name]["layers"][id]["data"].(string)
 		//tableName = strings.ToUpper(tableName)
 		//log.Println("/offline/"+type+"/"+name)
-		dbName := "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+		dbName := "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
 		DbCollectorDb, err := sql.Open("sqlite3", dbName)
 		if err != nil {
 			log.Fatal(err)
@@ -903,15 +903,30 @@ func StartGorillaMux() *mux.Router {
 	r.HandleFunc("/sharing/rest/content/items/{id}/info/thumbnail/{img}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
+		if config.DbSource != config.FILE {
+			id = "%"
+		}
+		log.Println("Old name:  " + id)
+		id = config.RootName
+		log.Println("New name:  " + id)
+
 		img := vars["img"]
 		log.Println("/sharing/rest/content/items/" + id + "/info/thumbnail/" + img)
 		log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + id + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "thumbnails" + string(os.PathSeparator) + id + ".png")
 		http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+id+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"thumbnails"+string(os.PathSeparator)+id+".png")
 	}).Methods("GET")
 
+	//https://reais.x10host.com/sharing/rest/content/items/Accommodation%20Agreement%20Rentals/info/thumbnail/ago_downloaded.png?f=json
+	//https://reais.x10host.com/sharing/rest/content/items/leasecompliance2016/info/thumbnail/ago_downloaded.png?f=json
 	r.HandleFunc("/sharing/rest/content/items/{id}/info/thumbnail/ago_downloaded.png", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
+		if config.DbSource != config.FILE {
+			id = "%"
+		}
+		log.Println("Old name:  " + id)
+		id = config.RootName
+		log.Println("New name:  " + id)
 
 		log.Println("/sharing/rest/content/items/" + id + "/info/thumbnail/ago_downloaded.png")
 		response, _ := json.Marshal(map[string]interface{}{"currentVersion": config.ArcGisVersion})
@@ -2059,7 +2074,7 @@ func StartGorillaMux() *mux.Router {
 				config.DbSqliteQuery = nil
 			}
 			config.DbSqliteDbName = dbPath
-			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+			dbName = "file:" + dbPath + config.SqlWalFlags //"?PRAGMA journal_mode=WAL"
 		} else {
 			if config.DbSqliteDbName != dbName {
 				if config.DbSqliteQuery != nil {
@@ -2180,7 +2195,7 @@ func StartGorillaMux() *mux.Router {
 				config.DbSqliteQuery = nil
 			}
 			config.DbSqliteDbName = dbPath
-			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+			dbName = "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
 		} else {
 			if config.DbSqliteDbName != dbName {
 				if config.DbSqliteQuery != nil {
@@ -2289,7 +2304,7 @@ func StartGorillaMux() *mux.Router {
 				config.DbSqliteQuery = nil
 			}
 			config.DbSqliteDbName = dbPath
-			dbName = "file:" + dbPath + "?PRAGMA journal_mode=WAL"
+			dbName = "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
 			/*
 				if config.DbSqliteQuery != nil {
 					config.DbSqliteQuery.Close()

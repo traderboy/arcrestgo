@@ -6,7 +6,7 @@
     "guid": null,
     "name": null,
     "title": "",
-    "type": "Map Service",
+    "type": "Web Map",
     "typeKeywords": [
         "ArcGIS Server",
         "Data",
@@ -14,7 +14,16 @@
         "Multilayer",
         "Service",
         "Tiled",
-        "Service Proxy"
+        "Service Proxy",
+        "ArcGIS Online",     
+        "Collector",         
+        "Data Editing",      
+        "Explorer Web Map",  
+        "Map",               
+        "Offline",           
+        "Online Map",        
+        "Web Map"            
+        
     ],
     "description": "",
     "tags": [
@@ -35,14 +44,13 @@
             85
         ]
     ],
-    "spatialReference": "102100",
+    "spatialReference": null,
     "accessInformation": "",
     "licenseInfo": null,
     "culture": "en-us",
     "properties": null,
     "url": "",
-    "sourceUrl": "",
-    "access": "org",
+    "access": "private",
     "size": 77,
     "appCategories": [],
     "industries": [],

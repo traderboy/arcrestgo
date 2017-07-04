@@ -184,6 +184,7 @@ class CreateNewProject(object):
         sqliteDb = parameters[3].valueAsText
         pg  = parameters[4].valueAsText
         created_ts=int(time.time()*1000)
+        sep = "/"
 
         # suppose you want to add it to the current MXD (open MXD)
         try:
@@ -212,6 +213,7 @@ class CreateNewProject(object):
             sqliteDb = sqliteDb + ".sqlite"
         if os.path.exists(sqliteDb):
             os.remove(sqliteDb)
+        sqliteDb = sqliteDb.replace("\\","/")
 
         #try:
         #   arcpy.gp.CreateSQLiteDatabase(sqliteDb, "SPATIALITE")
@@ -259,12 +261,12 @@ class CreateNewProject(object):
         
         if baseDestinationPath:
               baseDestinationPath = unicode(baseDestinationPath).encode('unicode-escape')
-              baseDestinationPath=baseDestinationPath.replace("\\","/")+ os.sep +"catalogs"
+              baseDestinationPath=baseDestinationPath.replace("\\","/")+ sep +"catalogs"
         else:
-              baseDestinationPath = toolkitPath+ os.sep +"catalogs"
+              baseDestinationPath = toolkitPath+ sep +"catalogs"
 
-        #baseDestinationPath = baseDestinationPath + os.sep + serviceName
-        serviceDestinationPath = baseDestinationPath + os.sep + serviceName
+        #baseDestinationPath = baseDestinationPath + sep + serviceName
+        serviceDestinationPath = baseDestinationPath + sep + serviceName
 
         #if the folder does not exist create it
         if not os.path.exists(baseDestinationPath):
@@ -322,10 +324,12 @@ class CreateNewProject(object):
             except:
                printMessage("Service already exists: " + serviceName)
             config["services"][serviceName]["layers"]={}
+            config["services"][serviceName]["mxd"]=mxd.filePath 
         else:
            config={}
            config["services"]={}
            config["services"][serviceName]={"layers":{}}
+           config["services"][serviceName]["mxd"]=mxd.filePath
 
         config["hostname"]=serverName
         config["username"]=username
@@ -336,7 +340,7 @@ class CreateNewProject(object):
         #config["services"][serviceName]["dataSource"]="sqlite"
         #config["services"][serviceName]["rootPath"]=baseDestinationPath
 
-        config["mxd"]=mxd.filePath
+        
         config["sqliteDb"]=sqliteDb
         config["pg"]=pg
         config["dataSource"]="sqlite"
@@ -544,7 +548,8 @@ class CreateNewProject(object):
                  featureName=os.path.basename(desc.catalogPath)
                  rootFGDB=os.path.dirname(desc.catalogPath).replace("\\","/")
 
-           config["fgdb"]=rootFGDB
+           config["services"][serviceName]["fgdb"]=rootFGDB
+           config["services"][serviceName]["replica"]=replicaDestinationPath+"/"+serviceName+".geodatabase"
            relationshipList = {}
            relationshipObj = {}
            relations={}
@@ -791,7 +796,9 @@ class CreateNewProject(object):
            LoadService(sqliteDb,serviceName,"content", -1,"data",file)
 
            content_items_json=openJSON(templatePath + "/content.items.json")
-           content_items_json["id"]=title
+           #content_items_json["id"]=title
+           content_items_json["id"]=serviceName
+           content_items_json["name"]=None
            content_items_json["owner"]=username
            content_items_json["created"]=created_ts
            content_items_json["modified"]=created_ts
@@ -802,9 +809,11 @@ class CreateNewProject(object):
            content_items_json['extent'][0][1]=ymin_geo
            content_items_json['extent'][1][0]=xmax_geo
            content_items_json['extent'][1][1]=ymax_geo
+           content_items_json["url"]=None
 
-           content_items_json["type"]="Feature Service"
-           content_items_json["url"]="http://"+serverName+"/rest/services/"+serviceName+"/FeatureServer"
+           #content_items_json["type"]="Feature Service"
+           #content_items_json["url"]="http://"+serverName+"/rest/services/"+serviceName+"/FeatureServer"
+
            file=saveJSON(servicesDestinationPath + "/content.items.json",content_items_json)
            LoadService(sqliteDb,serviceName,"content", -1,"items",file)
 
@@ -1851,8 +1860,14 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
      'values((select max(OBJECTID)+1 from "GDB_ServiceItems"),\''+serviceName+'\',0,-1,\''+serviceItemsStr+'\',NULL)'))
 
   sql5.append(('update "GDB_Items" set Definition=replace(Definition,\'<ChangeTracked>false</ChangeTracked>\',\'<ChangeTracked>true</ChangeTracked>\') where "Name" !=\'main.'+featureName+'__ATTACHREL\''))
+
+  sql5.append(('update "GDB_ServiceItems" set "ItemInfo" = replace("ItemInfo",\'Create,Delete,Query,Update,Editing\',\'Create,Delete,Query,Update,Editing,Sync\') where "ItemInfo" like \'%Create,Delete,Query,Update,Editing"%\''))
+  #sql5.append(('update "GDB_ServiceItems" set "ItemInfo"=replace("ItemInfo",\'"advancedQueryCapabilities":{\',\'"supportsCalculate":true,"supportsTruncate":false,"supportsAttachmentsByUploadId":true,"supportsValidateSql":true,"supportsCoordinatesQuantization":true,"supportsApplyEditsWithGlobalIds":true,"useStandardizedQueries":false,"allowGeometryUpdates":true,"advancedQueryCapabilities":{"supportsQueryRelatedPagination":true,"supportsQueryWithResultType":true,"supportsSqlExpression":true,"supportsAdvancedQueryRelated":true,"supportsQueryAttachments":true,"supportsReturningGeometryCentroid":false,\')'))
   #sql5.append(('UPDATE "GDB_ServiceItems" set "DatasetName"="' + featureName + '" where "ItemId"='+datasetId))
+  
   #sql5='update "GDB_Items" set ObjectId=ROWID'
+  sql5.append(('update "GDB_ColumnRegistry" set object_flags=4 where table_name=\'GDB_ServiceItems\' and column_name in(\'DatasetName\',\'ItemType\',\'ItemId\',\'ItemInfo\')'))
+
   sql1=sql1+("</GPSyncDatasets><AttachmentsSyncDirection>esriAttachmentsSyncDirectionBidirectional</AttachmentsSyncDirection></GPSyncReplica>'"
    ", NULL, NULL, NULL from GDB_Items;")
 
@@ -1862,7 +1877,9 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   name=replicaDestinationPath + "/"+serviceName+".sql"
   with open(name,'w') as f:
        f.write("SELECT load_extension( 'stgeometry_sqlite.dll', 'SDE_SQL_funcs_init');\n")
-       f.write("PRAGMA journal_mode=WAL;\n")
+       #not sure here - use wal or not?
+       #f.write("PRAGMA journal_mode=WAL;\n")
+
        #f.write(";\n")
 
        f.write(sql1)
@@ -3201,8 +3218,8 @@ def main():
        db=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
        #mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"
        #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016grazing.mxd"
-       #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
-       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016.mxd"
+       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
+       #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016.mxd"
        pg=None
        
        
