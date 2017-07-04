@@ -8,6 +8,7 @@ leasecompliance/*
 leasecompliance.1/*
 leasecompliance*/*
 leasecompliance2016.old/*
+catalogs.2/*
 *.saz
 trash.txt
 ssl/*
@@ -48,3 +49,5 @@ server.exe
 vk*.json
 go-sqlite3/*
 catalogs.old/*
+*.ini
+
