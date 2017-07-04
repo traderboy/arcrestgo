@@ -65,13 +65,13 @@ func StartGorillaMux() *mux.Router {
 		}
 		log.Println("/offline/ (" + r.Method + ")")
 		log.Println("Database: " + dbPath)
-		dbName := "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
+		dbName := "file:" + dbPath + config.SqlWalFlags //"?PRAGMA journal_mode=WAL"
 
 		DbCollectorDb, err := sql.Open("sqlite3", dbName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		sqlstr := "SELECT 'json','GDB_ServiceItems','ItemInfo','DatasetName',\"DatasetName\",\"ItemType\" from \"GDB_ServiceItems\" UNION SELECT 'xml','GDB_Items','Definition','Name',\"Name\",\"ObjectID\" FROM \"GDB_Items\""
+		sqlstr := "SELECT 'json','GDB_ServiceItems','ItemInfo','DatasetName',\"DatasetName\",\"ItemType\",\"ItemId\" from \"GDB_ServiceItems\" UNION SELECT 'xml','GDB_Items','Definition','Name',\"Name\",\"ObjectID\",\"DatasetSubtype1\" FROM \"GDB_Items\""
 		log.Printf("Query: " + sqlstr)
 
 		/*
@@ -101,16 +101,17 @@ func StartGorillaMux() *mux.Router {
 		var field []byte
 		var queryField []byte
 		var itemtype []byte
+		var itemid []byte
 
 		var results [][]string
 		//var items map[string]interface{}
 
 		for rows.Next() {
-			err := rows.Scan(&table, &format, &field, &queryField, &value, &itemtype)
+			err := rows.Scan(&table, &format, &field, &queryField, &value, &itemtype, &itemid)
 			if err != nil {
 				log.Fatal(err)
 			}
-			vals := []string{string(table), string(format), string(field), string(queryField), string(value), string(itemtype)}
+			vals := []string{string(table), string(format), string(field), string(queryField), string(value), string(itemtype), string(itemid)}
 			results = append(results, vals)
 
 		}
@@ -128,7 +129,6 @@ func StartGorillaMux() *mux.Router {
 		w.Write(response)
 
 	}).Methods("GET", "PUT")
-
 	r.HandleFunc("/offline/{format}/{table}/{field}/{queryField}/{value}", func(w http.ResponseWriter, r *http.Request) {
 		//vars := mux.Vars(r)
 		//value := vars["value"]
