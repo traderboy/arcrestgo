@@ -1862,6 +1862,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
   sql5.append(('update "GDB_Items" set Definition=replace(Definition,\'<ChangeTracked>false</ChangeTracked>\',\'<ChangeTracked>true</ChangeTracked>\') where "Name" !=\'main.'+featureName+'__ATTACHREL\''))
 
   sql5.append(('update "GDB_ServiceItems" set "ItemInfo" = replace("ItemInfo",\'Create,Delete,Query,Update,Editing\',\'Create,Delete,Query,Update,Editing,Sync\') where "ItemInfo" like \'%Create,Delete,Query,Update,Editing"%\''))
+  sql5.append(('update "GDB_ServiceItems" set "ItemInfo"=replace("ItemInfo",\'"hasAttachments":true\',\'"hasAttachments":true,"attachmentProperties":[{"name":"name","isEnabled":true},{"name":"size","isEnabled":true},{"name":"contentType","isEnabled":true},{"name":"keywords","isEnabled":true}]\')'))
   #sql5.append(('update "GDB_ServiceItems" set "ItemInfo"=replace("ItemInfo",\'"advancedQueryCapabilities":{\',\'"supportsCalculate":true,"supportsTruncate":false,"supportsAttachmentsByUploadId":true,"supportsValidateSql":true,"supportsCoordinatesQuantization":true,"supportsApplyEditsWithGlobalIds":true,"useStandardizedQueries":false,"allowGeometryUpdates":true,"advancedQueryCapabilities":{"supportsQueryRelatedPagination":true,"supportsQueryWithResultType":true,"supportsSqlExpression":true,"supportsAdvancedQueryRelated":true,"supportsQueryAttachments":true,"supportsReturningGeometryCentroid":false,\')'))
   #sql5.append(('UPDATE "GDB_ServiceItems" set "DatasetName"="' + featureName + '" where "ItemId"='+datasetId))
   
