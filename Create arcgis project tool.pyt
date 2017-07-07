@@ -316,20 +316,29 @@ class CreateNewProject(object):
 
         symbols = getSymbology(mxd)
         dataFrames = arcpy.mapping.ListDataFrames(mxd, "*")
-
+        service = {}
         if os.path.exists(baseDestinationPath + "/config.json"):
             config=openJSON(baseDestinationPath + "/config.json")
             try:
-               config["services"][serviceName]={}
+               config["services"][serviceName]=service
             except:
                printMessage("Service already exists: " + serviceName)
-            config["services"][serviceName]["layers"]={}
-            config["services"][serviceName]["mxd"]=mxd.filePath 
+               service = config["services"][serviceName]
+            #config["services"][serviceName]["layers"]={}
+            #config["services"][serviceName]["mxd"]=mxd.filePath 
+            service["layers"]={}
+            service["mxd"]=mxd.filePath
         else:
            config={}
            config["services"]={}
-           config["services"][serviceName]={"layers":{}}
-           config["services"][serviceName]["mxd"]=mxd.filePath
+           config["services"][serviceName]=service
+           #service["name"]=serviceName
+           #config["services"]=[service]
+           service["layers"]={}
+           config["mxd"]=mxd.filePath
+           
+           #config["services"][serviceName]={"layers":{}}
+           #config["services"][serviceName]["mxd"]=mxd.filePath
 
         config["hostname"]=serverName
         config["username"]=username
@@ -548,8 +557,11 @@ class CreateNewProject(object):
                  featureName=os.path.basename(desc.catalogPath)
                  rootFGDB=os.path.dirname(desc.catalogPath).replace("\\","/")
 
-           config["services"][serviceName]["fgdb"]=rootFGDB
-           config["services"][serviceName]["replica"]=replicaDestinationPath+"/"+serviceName+".geodatabase"
+           config["fgdb"]=rootFGDB
+           config["replica"]=replicaDestinationPath+"/"+serviceName+".geodatabase"
+
+           #config["services"][serviceName]["fgdb"]=rootFGDB
+           #config["services"][serviceName]["replica"]=replicaDestinationPath+"/"+serviceName+".geodatabase"
            relationshipList = {}
            relationshipObj = {}
            relations={}
@@ -638,7 +650,8 @@ class CreateNewProject(object):
 
            #printMessage(json.dumps(relationshipObj, indent=4, sort_keys=True))
            #print(destIds)
-           config["services"][serviceName]["relationships"]=relations
+           #config["services"][serviceName]["relationships"]=relations
+           service["relationships"]=relations
            #return
 
 
@@ -1131,7 +1144,8 @@ class CreateNewProject(object):
                   #save to config too for easy access
                   layerObj["editFieldsInfo"]=feature_json['editFieldsInfo']
 
-               config["services"][serviceName]["layers"][str(layerIds[lyr.name])]=layerObj
+               #config["services"][serviceName]["layers"][str(layerIds[lyr.name])]=layerObj
+               service["layers"][str(layerIds[lyr.name])]=layerObj
                id = id+1
 
            #now save any tables
@@ -1224,7 +1238,8 @@ class CreateNewProject(object):
                LoadService(sqliteDb,serviceName,"FeatureServer", layerIds[tbl.name],"",file)
                tableObj["itemId"]= tbl.name.replace(" ","_")+str(layerIds[tbl.name])
                
-               config["services"][serviceName]["layers"][str(layerIds[tbl.name])]=tableObj
+               #config["services"][serviceName]["layers"][str(layerIds[tbl.name])]=tableObj
+               service["layers"][str(layerIds[tbl.name])]=tableObj
 
                #fields = copy.deepcopy(feature_json['fields'])
                fSet = arcpy.RecordSet()
@@ -1668,6 +1683,8 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
      printMessage("Loading " + lyr.name)
      #now process any attachment tables
+     #OBS! The order of fields in these tables is important!!!
+     #CREATE TABLE homesites_inspections__ATTACH (ATTACHMENTID int32 check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null, GLOBALID uuidtext check(typeof(GLOBALID) = 'text' and length(GLOBALID) = 38), REL_GLOBALID uuidtext check((typeof(REL_GLOBALID) = 'text' or typeof(REL_GLOBALID) = 'null') and length(REL_GLOBALID) = 38), CONTENT_TYPE text(150) check(typeof(CONTENT_TYPE) = 'text' and not length(CONTENT_TYPE) > 150), ATT_NAME text(250) check(typeof(ATT_NAME) = 'text' and not length(ATT_NAME) > 250), DATA_SIZE int32 check(typeof(DATA_SIZE) = 'integer' and DATA_SIZE >= -2147483648 and DATA_SIZE <= 2147483647), DATA blob check(typeof(DATA) = 'blob' or typeof(DATA) = 'null'), gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (julianday('now')),gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59')));
      if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
         excludes=["OBJECTID","Shape_Length","Shape_Area"]
         pre=""
@@ -1675,6 +1692,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         allfields=""
         newallfields=""
         globalField = featureName+"_GlobalID"
+        correct_field_order=["ATTACHMENTID","GLOBALID","REL_GLOBALID","CONTENT_TYPE","ATT_NAME","DATA_SIZE","DATA","gdb_archive_oid","gdb_from_date","gdb_to_date"]
 
         # elif field.type == 'Guid':
         #   fieldInfos['type']='esriFieldTypeGUID'
@@ -1729,6 +1747,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
         sql5.append(("UPDATE GDB_ColumnRegistry set column_name='REL_GLOBALID' where column_name='"+globalField+"' and table_name='"+featureName+"__ATTACH'"))
         sql5.append(("UPDATE GDB_ColumnRegistry set column_name='GLOBALID' where column_name='GlobalID' and table_name='"+featureName+"__ATTACH'"))
+        sql5.append(("DELETE FROM GDB_ColumnRegistry where column_name='REL_OBJECTID' and table_name='"+featureName+"__ATTACH'"))
         
         #sql5.append(("UPDATE GDB_ColumnRegistry set column_name='GLOBALID' where column_name='GlobalID'"))
         #("table_name", "column_name", "sde_type", "column_size", "decimal_digits", "description", "object_flags", "object_id")'
@@ -1764,46 +1783,56 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
 
         #allfields="ATTACHMENTID,GLOBALID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA"
         #newFields="NEW.ATTACHMENTID,NEW.GLOBALID,NEW.REL_GLOBALID,NEW.CONTENT_TYPE,NEW.ATT_NAME,NEW.DATA_SIZE,NEW.DATA"
-
-        sqlCreation = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
-        c.execute(sqlCreation, (featureName+"__ATTACH",))
-        sql = c.fetchone()[0]
-        printMessage(sql )
-        sql5.append(("alter table " + featureName + "__ATTACH rename to " + featureName + "__ATTACH_org"))
-        #remove trailing close paren
-        sql = sql[:-1]
-        sql = sql.replace("primary key ","")
-        sql = sql.replace(" not null","")
-        #sql = sql.replace("REL_OBJECTID int32 check((typeof(REL_OBJECTID) = 'integer' or typeof(REL_OBJECTID) = 'null') and REL_OBJECTID >= -2147483648 and REL_OBJECTID <= 2147483647),","")
-
-        sql = sql.replace(globalField,"REL_GLOBALID")
-        sql = sql.replace("GlobalID","GLOBALID")
-        newallfields = newallfields.replace(globalField,"REL_GLOBALID")
-        newallfields = newallfields.replace("GlobalID","GLOBALID")
-        newallfields = newallfields.replace("REL_OBJECTID,","")
-
-        newFields = newFields.replace(globalField,"REL_GLOBALID")
+        sql5.append(("alter table " + featureName +"__ATTACH rename to " + featureName + "__ATTACH_org"))
+        newallfields = newallfields.replace(globalField, "REL_GLOBALID")
+        newallfields = newallfields.replace("GlobalID", "GLOBALID")
+        newallfields = newallfields.replace("REL_OBJECTID,", "")
+   
+        newFields = newFields.replace(globalField, "REL_GLOBALID")
         #newFields = newFields.replace("GlobalID","GLOBALID")
-        newFields = newFields.replace("NEW.GlobalID",uuid)
-        newFields = newFields.replace("NEW.REL_OBJECTID,","")
-        newFields = newFields.replace("NEW.ATTACHMENTID,","")
+        newFields = newFields.replace("NEW.GlobalID", uuid)
+        newFields = newFields.replace("NEW.REL_OBJECTID,", "")
+        newFields = newFields.replace("NEW.ATTACHMENTID,", "")
+        #just hardcode the fields
+        newallfields = "ATTACHMENTID,GLOBALID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA"
+        newFields = "NEW.GLOBALID,NEW.REL_GLOBALID,NEW.CONTENT_TYPE,NEW.ATT_NAME,NEW.DATA_SIZE,NEW.DATA"
+        #,julianday('now'),julianday ('9999-12-31 23:59:59')
+   
+        allfields = allfields.replace("REL_OBJECTID,", "")
 
-        allfields=allfields.replace("REL_OBJECTID,","")
-        sql = sql.replace("ATTACHMENTID integer","ATTACHMENTID int32 check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null")
+        if False:
+           sqlCreation = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
+           c.execute(sqlCreation, (featureName + "__ATTACH",))
+           sql = c.fetchone()[0]
+           printMessage(sql)
+           #remove trailing close paren
+           sql = sql[:-1]
+           sql = sql.replace("primary key ", "")
+           sql = sql.replace(" not null", "")
+           #sql = sql.replace("REL_OBJECTID int32 check((typeof(REL_OBJECTID) = 'integer' or typeof(REL_OBJECTID) = 'null') and REL_OBJECTID >= -2147483648 and REL_OBJECTID <= 2147483647),","")
+   
+           sql = sql.replace(globalField, "REL_GLOBALID")
+           sql = sql.replace("GlobalID", "GLOBALID")
+           sql = sql.replace("ATTACHMENTID integer",
+                             "ATTACHMENTID int32 check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null")
+   
+           #newallfields = newallfields.replace("REL_OBJECTID,","")
+   
+           gdb_transaction_time = 'gdb_transaction_time()'
+           gdb_transaction_time = "strftime('%s', 'now')"
+           gdb_transaction_time = "julianday('now')"
+   
+           #oidName = desc.OIDFieldName
+           #sql = sql.replace("GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38) not null","GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38)")
+           sql = sql + ", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (" + \
+               gdb_transaction_time + \
+               "),gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59'))) "
+   
+           #sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) not null default (gdb_transaction_time ()), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) not null default         (julianday ('9999-12-31 23:59:59')))"
 
-        #newallfields = newallfields.replace("REL_OBJECTID,","")
+        #just create the dang table
+        sql5.append(("CREATE TABLE "+featureName+"__ATTACH ( ATTACHMENTID int32 check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null,        GLOBALID uuidtext check(typeof(GLOBALID) = 'text' and length(GLOBALID) = 38), REL_GLOBALID uuidtext check((typeof(REL_GLOBALID) = 'text' or typeof(REL_GLOBALID) = 'null') and length(REL_GLOBALID) = 38),         CONTENT_TYPE text(150) check(typeof(CONTENT_TYPE) = 'text' and not length(CONTENT_TYPE) > 150), ATT_NAME text(250) check(typeof(ATT_NAME) = 'text' and not length(ATT_NAME) > 250), DATA_SIZE int32 check(typeof(DATA_SIZE) = 'integer' and DATA_SIZE >= -2147483648 and DATA_SIZE <= 2147483647), DATA blob check(typeof(DATA) = 'blob' or typeof(DATA) = 'null'),  gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (julianday('now')), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59')))"))
 
-        gdb_transaction_time = 'gdb_transaction_time()'
-        gdb_transaction_time = "strftime('%s', 'now')"
-        gdb_transaction_time = "julianday('now')"
-
-        #oidName = desc.OIDFieldName
-        #sql = sql.replace("GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38) not null","GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38)")
-        sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default ("+gdb_transaction_time  +"),gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59'))) "
-
-        #sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) not null default (gdb_transaction_time ()), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) not null default         (julianday ('9999-12-31 23:59:59')))"
-        sql5.append(sql)
-        
         sql5.append(("insert into " + featureName + "__ATTACH("+newallfields+") select "+allfields+" from "+featureName + "__ATTACH_org"))
         
         sql5.append(("drop table "+featureName + "__ATTACH_org")) 
