@@ -1705,6 +1705,7 @@ func StartGorillaMux() *mux.Router {
 
 		var objectid int
 		var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 		var tableName = parentTableName + "__ATTACH_evw"
 		var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
 		log.Println("Table name: " + tableName)
@@ -1725,7 +1726,7 @@ func StartGorillaMux() *mux.Router {
 		err = stmt.QueryRow().Scan(&objectid)
 		var globalid string
 		//get the parent globalid
-		sql = "select " + globalIdName + " from " + parentTableName + " where OBJECTID=" + config.GetParam(0)
+		sql = "select " + globalIdName + " from " + parentTableName + " where " + parentObjectID + "=" + config.GetParam(0)
 		stmt, err = config.DbQuery.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
@@ -2014,12 +2015,13 @@ func StartGorillaMux() *mux.Router {
 		//aid = strconv.Itoa(aidInt - 1)
 
 		var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 		var tableName = parentTableName + "__ATTACH_evw"
 		var vals []interface{}
 		vals = append(vals, row)
 
 		sql := "delete from " + tableName + " where ATTACHMENTID=" + config.GetParam(0)
-		log.Printf("delele from %v where OBJECTID=%v", tableName, row)
+		log.Printf("delele from %v where "+parentObjectID+"=%v", tableName, row)
 
 		_, err := config.DbQuery.Exec(sql, vals...)
 		if err != nil {
@@ -2066,6 +2068,7 @@ func StartGorillaMux() *mux.Router {
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/db/" + id)
 
 		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
+		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 		if len(dbPath) > 0 {
 			if config.DbSqliteDbName != dbPath {
 				if config.DbSqliteQuery != nil {
@@ -2104,7 +2107,7 @@ func StartGorillaMux() *mux.Router {
 				return
 			}
 			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
-			sql := "update \"GDB_ServiceItems\" set " + fieldStr + "=? where OBJECTID=?"
+			sql := "update \"GDB_ServiceItems\" set " + fieldStr + "=? where " + parentObjectID + "=?"
 			log.Println(sql)
 			//log.Println(body)
 			log.Println(id)
@@ -2135,7 +2138,7 @@ func StartGorillaMux() *mux.Router {
 		//Db.Exec(initializeStr)
 		log.Print("Sqlite database: " + dbName)
 		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT " + fieldStr + " FROM \"GDB_ServiceItems\" where OBJECTID=?"
+		sql := "SELECT " + fieldStr + " FROM \"GDB_ServiceItems\" where " + parentObjectID + "=?"
 		log.Printf("Query: "+sql+"%v", idInt)
 
 		stmt, err := config.DbSqliteQuery.Prepare(sql)
@@ -2418,6 +2421,7 @@ func StartGorillaMux() *mux.Router {
 		where := r.FormValue("where")
 		outFields := r.FormValue("outFields")
 		returnIdsOnly := r.FormValue("returnIdsOnly")
+		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 		//returnGeometry := r.FormValue("returnGeometry")
 		objectIds := r.FormValue("objectIds")
 		//returnIdsOnly = true
@@ -2459,7 +2463,7 @@ func StartGorillaMux() *mux.Router {
 
 			}
 			//if returnGeometry == "false" &&
-		} else if strings.Index(outFields, "OBJECTID") > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
+		} else if strings.Index(outFields, parentObjectID) > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
 			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/outfields")
 
 			response := config.GetArcService(name, "FeatureServer", idInt, "outfields", dbPath)
@@ -2489,6 +2493,22 @@ func StartGorillaMux() *mux.Router {
 
 	//http://192.168.2.59:8080/arcgis/rest/services/accommodationagreementrentals/FeatureServer/1/queryRelatedRecords?objectIds=12&outFields=*&relationshipId=2&returnGeometry=true&f=json
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryRelatedRecords", func(w http.ResponseWriter, r *http.Request) {
+		/*
+			if 1 == 1 {
+				//arcgis fields, arcgis vals
+				var s = "{\"fields\":[{\"name\":\"OBJECTID\",\"type\":\"esriFieldTypeOID\",\"alias\":\"OBJECTID\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"occupied\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Occupation\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"condition_of_homesite\",\"type\":\"esriFieldTypeString\",\"alias\":\"Condition of homesite\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"solar_power\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Uses solar power?\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"septic_system\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Has septic system?\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_corrals\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of corrals\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_sheds\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of sheds\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_abandoned_vehicles\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of abandoned vehicles\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"structures_outside_boundary\",\"type\":\"esriFieldTypeString\",\"alias\":\"Structures outside homesite boundary\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"nonlessee_homesite_occupant\",\"type\":\"esriFieldTypeString\",\"alias\":\"Non-lessee homesite occupant_\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"condition_of_area\",\"type\":\"esriFieldTypeString\",\"alias\":\"Condition of area\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"lessee_denied_inspection\",\"type\":\"esriFieldTypeString\",\"alias\":\"Lessee denied inspection\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"Comments\",\"type\":\"esriFieldTypeString\",\"alias\":\"Comments\",\"sqlType\":\"sqlTypeOther\",\"length\":8000,\"domain\":null,\"defaultValue\":null},{\"name\":\"GlobalGUID\",\"type\":\"esriFieldTypeGUID\",\"alias\":\"GlobalGUID\",\"sqlType\":\"sqlTypeOther\",\"length\":38,\"domain\":null,\"defaultValue\":null},{\"name\":\"created_user\",\"type\":\"esriFieldTypeString\",\"alias\":\"Created user\",\"sqlType\":\"sqlTypeOther\",\"length\":255,\"domain\":null,\"defaultValue\":null},{\"name\":\"created_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Created date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"last_edited_user\",\"type\":\"esriFieldTypeString\",\"alias\":\"Last edited user\",\"sqlType\":\"sqlTypeOther\",\"length\":255,\"domain\":null,\"defaultValue\":null},{\"name\":\"last_edited_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Last edited date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_name\",\"type\":\"esriFieldTypeString\",\"alias\":\"Reviewer name\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Reviewer date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_title\",\"type\":\"esriFieldTypeString\",\"alias\":\"Reviewer title\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"GlobalID\",\"type\":\"esriFieldTypeGlobalID\",\"alias\":\"GlobalID\",\"sqlType\":\"sqlTypeOther\",\"length\":38,\"domain\":null,\"defaultValue\":null}],\"relatedRecordGroups\":[{\"objectId\":47,\"relatedRecords\":[{\"attributes\":{\"OBJECTID\":6,\"occupied\":1,\"condition_of_homesite\":null,\"solar_power\":null,\"septic_system\":null,\"number_corrals\":null,\"number_sheds\":null,\"number_abandoned_vehicles\":null,\"structures_outside_boundary\":null,\"nonlessee_homesite_occupant\":null,\"condition_of_area\":null,\"lessee_denied_inspection\":null,\"Comments\":null,\"GlobalGUID\":\"f66536f3-3f53-4cb1-8816-c7c366a02c8c\",\"created_user\":\"hpluser8\",\"created_date\":1499434034798,\"last_edited_user\":\"hpluser8\",\"last_edited_date\":1499434034798,\"reviewer_name\":null,\"reviewer_date\":null,\"reviewer_title\":null,\"GlobalID\":\"776b6cad-9427-47a4-a4a7-e81b701ef48e\"}}]}]}"
+				//local fields, arcgis vals
+				s = "{\"fields\":[{\"domain\":null,\"name\":\"OBJECTID\",\"nullable\":false,\"defaultValue\":null,\"editable\":false,\"alias\":\"OBJECTID\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeOID\"},{\"domain\":null,\"name\":\"occupied\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Occupation\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeSmallInteger\",\"length\":2},{\"domain\":null,\"name\":\"condition_of_homesite\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Condition of homesite\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":50},{\"domain\":null,\"name\":\"solar_power\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Uses solar power?\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeSmallInteger\",\"length\":2},{\"domain\":null,\"name\":\"septic_system\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Has septic system?\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeSmallInteger\",\"length\":2},{\"domain\":null,\"name\":\"number_corrals\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Number of corrals\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeSmallInteger\",\"length\":2},{\"domain\":null,\"name\":\"number_sheds\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Number of sheds\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeSmallInteger\",\"length\":2},{\"domain\":null,\"name\":\"number_abandoned_vehicles\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Number of abandoned vehicles\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeSmallInteger\",\"length\":2},{\"domain\":null,\"name\":\"structures_outside_boundary\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Structures outside homesite boundary\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":50},{\"domain\":null,\"name\":\"nonlessee_homesite_occupant\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Non-lessee homesite occupant_\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":50},{\"domain\":null,\"name\":\"condition_of_area\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Condition of area\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":50},{\"domain\":null,\"name\":\"lessee_denied_inspection\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Lessee denied inspection\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":50},{\"domain\":null,\"name\":\"Comments\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Comments\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":8000},{\"domain\":null,\"name\":\"GlobalGUID\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"GlobalGUID\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeGUID\",\"length\":38},{\"domain\":null,\"name\":\"created_user\",\"nullable\":true,\"defaultValue\":null,\"editable\":false,\"alias\":\"Created user\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":255},{\"domain\":null,\"name\":\"created_date\",\"nullable\":true,\"defaultValue\":null,\"editable\":false,\"alias\":\"Created date\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeDate\",\"length\":8},{\"domain\":null,\"name\":\"last_edited_user\",\"nullable\":true,\"defaultValue\":null,\"editable\":false,\"alias\":\"Last edited user\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":255},{\"domain\":null,\"name\":\"last_edited_date\",\"nullable\":true,\"defaultValue\":null,\"editable\":false,\"alias\":\"Last edited date\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeDate\",\"length\":8},{\"domain\":null,\"name\":\"reviewer_name\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Reviewer name\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":50},{\"domain\":null,\"name\":\"reviewer_date\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Reviewer date\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeDate\",\"length\":8},{\"domain\":null,\"name\":\"reviewer_title\",\"nullable\":true,\"defaultValue\":null,\"editable\":true,\"alias\":\"Reviewer title\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeString\",\"length\":50},{\"domain\":null,\"name\":\"GlobalID\",\"nullable\":false,\"defaultValue\":null,\"editable\":false,\"alias\":\"GlobalID\",\"sqlType\":\"sqlTypeOther\",\"type\":\"esriFieldTypeGlobalID\",\"length\":38}],\"relatedRecordGroups\":[{\"objectId\":47,\"relatedRecords\":[{\"attributes\":{\"OBJECTID\":6,\"occupied\":1,\"condition_of_homesite\":null,\"solar_power\":null,\"septic_system\":null,\"number_corrals\":null,\"number_sheds\":null,\"number_abandoned_vehicles\":null,\"structures_outside_boundary\":null,\"nonlessee_homesite_occupant\":null,\"condition_of_area\":null,\"lessee_denied_inspection\":null,\"Comments\":null,\"GlobalGUID\":\"f66536f3-3f53-4cb1-8816-c7c366a02c8c\",\"created_user\":\"hpluser8\",\"created_date\":1499434034798,\"last_edited_user\":\"hpluser8\",\"last_edited_date\":1499434034798,\"reviewer_name\":null,\"reviewer_date\":null,\"reviewer_title\":null,\"GlobalID\":\"776b6cad-9427-47a4-a4a7-e81b701ef48e\"}}]}]}"
+				//arcgis fields, local vals
+				s = "{\"fields\":[{\"name\":\"OBJECTID\",\"type\":\"esriFieldTypeOID\",\"alias\":\"OBJECTID\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"occupied\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Occupation\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"condition_of_homesite\",\"type\":\"esriFieldTypeString\",\"alias\":\"Condition of homesite\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"solar_power\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Uses solar power?\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"septic_system\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Has septic system?\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_corrals\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of corrals\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_sheds\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of sheds\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_abandoned_vehicles\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of abandoned vehicles\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"structures_outside_boundary\",\"type\":\"esriFieldTypeString\",\"alias\":\"Structures outside homesite boundary\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"nonlessee_homesite_occupant\",\"type\":\"esriFieldTypeString\",\"alias\":\"Non-lessee homesite occupant_\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"condition_of_area\",\"type\":\"esriFieldTypeString\",\"alias\":\"Condition of area\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"lessee_denied_inspection\",\"type\":\"esriFieldTypeString\",\"alias\":\"Lessee denied inspection\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"Comments\",\"type\":\"esriFieldTypeString\",\"alias\":\"Comments\",\"sqlType\":\"sqlTypeOther\",\"length\":8000,\"domain\":null,\"defaultValue\":null},{\"name\":\"GlobalGUID\",\"type\":\"esriFieldTypeGUID\",\"alias\":\"GlobalGUID\",\"sqlType\":\"sqlTypeOther\",\"length\":38,\"domain\":null,\"defaultValue\":null},{\"name\":\"created_user\",\"type\":\"esriFieldTypeString\",\"alias\":\"Created user\",\"sqlType\":\"sqlTypeOther\",\"length\":255,\"domain\":null,\"defaultValue\":null},{\"name\":\"created_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Created date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"last_edited_user\",\"type\":\"esriFieldTypeString\",\"alias\":\"Last edited user\",\"sqlType\":\"sqlTypeOther\",\"length\":255,\"domain\":null,\"defaultValue\":null},{\"name\":\"last_edited_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Last edited date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_name\",\"type\":\"esriFieldTypeString\",\"alias\":\"Reviewer name\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Reviewer date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_title\",\"type\":\"esriFieldTypeString\",\"alias\":\"Reviewer title\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"GlobalID\",\"type\":\"esriFieldTypeGlobalID\",\"alias\":\"GlobalID\",\"sqlType\":\"sqlTypeOther\",\"length\":38,\"domain\":null,\"defaultValue\":null}],\"relatedRecordGroups\":[{\"objectId\":\"47\",\"relatedRecords\":[{\"attributes\":{\"Comments\":null,\"GlobalGUID\":\"f66536f3-3f53-4cb1-8816-c7c366a02c8c\",\"GlobalID\":\"5ba5b963-bc05-4487-99a0-86e8d6fc5e3a\",\"OBJECTID\":1,\"condition_of_area\":null,\"condition_of_homesite\":null,\"created_date\":1499433868634,\"created_user\":\"hpluser8\",\"last_edited_date\":1499433868634,\"last_edited_user\":\"shale\",\"lessee_denied_inspection\":null,\"nonlessee_homesite_occupant\":null,\"number_abandoned_vehicles\":null,\"number_corrals\":null,\"number_sheds\":null,\"occupied\":1,\"reviewer_date\":null,\"reviewer_name\":null,\"reviewer_title\":null,\"septic_system\":null,\"solar_power\":null,\"structures_outside_boundary\":null}}]}]}"
+
+				s = "{\"fields\":[{\"name\":\"OBJECTID\",\"type\":\"esriFieldTypeOID\",\"alias\":\"OBJECTID\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"occupied\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Occupation\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"condition_of_homesite\",\"type\":\"esriFieldTypeString\",\"alias\":\"Condition of homesite\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"solar_power\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Uses solar power?\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"septic_system\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Has septic system?\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_corrals\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of corrals\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_sheds\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of sheds\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_abandoned_vehicles\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of abandoned vehicles\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"structures_outside_boundary\",\"type\":\"esriFieldTypeString\",\"alias\":\"Structures outside homesite boundary\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"nonlessee_homesite_occupant\",\"type\":\"esriFieldTypeString\",\"alias\":\"Non-lessee homesite occupant_\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"condition_of_area\",\"type\":\"esriFieldTypeString\",\"alias\":\"Condition of area\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"lessee_denied_inspection\",\"type\":\"esriFieldTypeString\",\"alias\":\"Lessee denied inspection\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"Comments\",\"type\":\"esriFieldTypeString\",\"alias\":\"Comments\",\"sqlType\":\"sqlTypeOther\",\"length\":8000,\"domain\":null,\"defaultValue\":null},{\"name\":\"GlobalGUID\",\"type\":\"esriFieldTypeGUID\",\"alias\":\"GlobalGUID\",\"sqlType\":\"sqlTypeOther\",\"length\":38,\"domain\":null,\"defaultValue\":null},{\"name\":\"created_user\",\"type\":\"esriFieldTypeString\",\"alias\":\"Created user\",\"sqlType\":\"sqlTypeOther\",\"length\":255,\"domain\":null,\"defaultValue\":null},{\"name\":\"created_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Created date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"last_edited_user\",\"type\":\"esriFieldTypeString\",\"alias\":\"Last edited user\",\"sqlType\":\"sqlTypeOther\",\"length\":255,\"domain\":null,\"defaultValue\":null},{\"name\":\"last_edited_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Last edited date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_name\",\"type\":\"esriFieldTypeString\",\"alias\":\"Reviewer name\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Reviewer date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_title\",\"type\":\"esriFieldTypeString\",\"alias\":\"Reviewer title\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"GlobalID\",\"type\":\"esriFieldTypeGlobalID\",\"alias\":\"GlobalID\",\"sqlType\":\"sqlTypeOther\",\"length\":38,\"domain\":null,\"defaultValue\":null}],\"relatedRecordGroups\":[{\"objectId\":47",\"relatedRecords\":[{\"attributes\":{\"Comments\":null,\"GlobalGUID\":\"F66536F3-3F53-4CB1-8816-C7C366A02C8C\",\"GlobalID\":\"5BA5B963-BC05-4487-99A0-86E8D6FC5E3A\",\"OBJECTID\":4,\"condition_of_area\":null,\"condition_of_homesite\":null,\"created_date\":1499433868634,\"created_user\":\"shale\",\"last_edited_date\":1499433868634,\"last_edited_user\":\"shale\",\"lessee_denied_inspection\":null,\"nonlessee_homesite_occupant\":null,\"number_abandoned_vehicles\":null,\"number_corrals\":null,\"number_sheds\":null,\"occupied\":1,\"reviewer_date\":null,\"reviewer_name\":null,\"reviewer_title\":null,\"septic_system\":null,\"solar_power\":null,\"structures_outside_boundary\":null,}}]}]}"			//s = "{\"fields\":[{\"name\":\"OBJECTID\",\"type\":\"esriFieldTypeOID\",\"alias\":\"OBJECTID\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"occupied\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Occupation\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"condition_of_homesite\",\"type\":\"esriFieldTypeString\",\"alias\":\"Condition of homesite\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"solar_power\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Uses solar power?\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"septic_system\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Has septic system?\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_corrals\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of corrals\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_sheds\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of sheds\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"number_abandoned_vehicles\",\"type\":\"esriFieldTypeSmallInteger\",\"alias\":\"Number of abandoned vehicles\",\"sqlType\":\"sqlTypeOther\",\"domain\":null,\"defaultValue\":null},{\"name\":\"structures_outside_boundary\",\"type\":\"esriFieldTypeString\",\"alias\":\"Structures outside homesite boundary\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"nonlessee_homesite_occupant\",\"type\":\"esriFieldTypeString\",\"alias\":\"Non-lessee homesite occupant_\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"condition_of_area\",\"type\":\"esriFieldTypeString\",\"alias\":\"Condition of area\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"lessee_denied_inspection\",\"type\":\"esriFieldTypeString\",\"alias\":\"Lessee denied inspection\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"Comments\",\"type\":\"esriFieldTypeString\",\"alias\":\"Comments\",\"sqlType\":\"sqlTypeOther\",\"length\":8000,\"domain\":null,\"defaultValue\":null},{\"name\":\"GlobalGUID\",\"type\":\"esriFieldTypeGUID\",\"alias\":\"GlobalGUID\",\"sqlType\":\"sqlTypeOther\",\"length\":38,\"domain\":null,\"defaultValue\":null},{\"name\":\"created_user\",\"type\":\"esriFieldTypeString\",\"alias\":\"Created user\",\"sqlType\":\"sqlTypeOther\",\"length\":255,\"domain\":null,\"defaultValue\":null},{\"name\":\"created_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Created date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"last_edited_user\",\"type\":\"esriFieldTypeString\",\"alias\":\"Last edited user\",\"sqlType\":\"sqlTypeOther\",\"length\":255,\"domain\":null,\"defaultValue\":null},{\"name\":\"last_edited_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Last edited date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_name\",\"type\":\"esriFieldTypeString\",\"alias\":\"Reviewer name\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_date\",\"type\":\"esriFieldTypeDate\",\"alias\":\"Reviewer date\",\"sqlType\":\"sqlTypeOther\",\"length\":8,\"domain\":null,\"defaultValue\":null},{\"name\":\"reviewer_title\",\"type\":\"esriFieldTypeString\",\"alias\":\"Reviewer title\",\"sqlType\":\"sqlTypeOther\",\"length\":50,\"domain\":null,\"defaultValue\":null},{\"name\":\"GlobalID\",\"type\":\"esriFieldTypeGlobalID\",\"alias\":\"GlobalID\",\"sqlType\":\"sqlTypeOther\",\"length\":38,\"domain\":null,\"defaultValue\":null}],\"relatedRecordGroups\":[{\"objectId\":47,\"relatedRecords\":[{\"attributes\":{\"OBJECTID\":6,\"occupied\":1,\"condition_of_homesite\":null,\"solar_power\":null,\"septic_system\":null,\"number_corrals\":null,\"number_sheds\":null,\"number_abandoned_vehicles\":null,\"structures_outside_boundary\":null,\"nonlessee_homesite_occupant\":null,\"condition_of_area\":null,\"lessee_denied_inspection\":null,\"Comments\":null,\"GlobalGUID\":\"f66536f3-3f53-4cb1-8816-c7c366a02c8c\",\"created_user\":\"hpluser8\",\"created_date\":1499434034798,\"last_edited_user\":\"hpluser8\",\"last_edited_date\":1499434034798,\"reviewer_name\":null,\"reviewer_date\":null,\"reviewer_title\":null,\"GlobalID\":\"776b6cad-9427-47a4-a4a7-e81b701ef48e\"}}]}]}"
+				//\"relatedRecordGroups\":[{\"objectId\":\"47\",\"relatedRecords\":[{\"attributes\":{\"Comments\":null,\"GlobalGUID\":\"f66536f3-3f53-4cb1-8816-c7c366a02c8c\",\"GlobalID\":\"776b6cad-9427-47a4-a4a7-e81b701ef48e\",\"OBJECTID\":4,\"condition_of_area\":null,\"condition_of_homesite\":null,\"created_date\":1499433868634,\"created_user\":\"shale\",\"last_edited_date\":1499433868634,\"last_edited_user\":\"shale\",\"lessee_denied_inspection\":null,\"nonlessee_homesite_occupant\":null,\"number_abandoned_vehicles\":null,\"number_corrals\":null,\"number_sheds\":null,\"occupied\":1,\"reviewer_date\":null,\"reviewer_name\":null,\"reviewer_title\":null,\"septic_system\":null,\"solar_power\":null,\"structures_outside_boundary\":null}}]}]}"
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte(s))
+				return
+			}
+		*/
 
 		vars := mux.Vars(r)
 		name := vars["name"]
@@ -2508,6 +2528,7 @@ func StartGorillaMux() *mux.Router {
 		var objectId, _ = strconv.Atoi(objectIds)
 		//get fields for the related table
 		dID := config.Project.Services[name]["relationships"][relationshipId]["dId"]
+		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 
 		//get the fields json
 
@@ -2545,7 +2566,7 @@ func StartGorillaMux() *mux.Router {
 				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
 				//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
 
-				if int(i.Attributes["OBJECTID"].(float64)) == objectId {
+				if int(i.Attributes[parentObjectID].(float64)) == objectId {
 					oJoinVal = i.Attributes[oJoinKey]
 					//i.Attributes["OBJECTID"]
 					//fieldObj.Features[k].Attributes = updates[num].Attributes
@@ -2700,6 +2721,7 @@ func StartGorillaMux() *mux.Router {
 		//return
 		//var replicaDb = config.RootPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
 		var tableName = config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string)
+
 		log.Println(tableName)
 		//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 		//var jsonFields=JSON.parse(file)
@@ -2715,7 +2737,7 @@ func StartGorillaMux() *mux.Router {
 			config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string) + " in (select " +
 			joinField + " from " +
 			config.Project.Services[name]["relationships"][relationshipId]["oTable"].(string) +
-			" where OBJECTID in(" + config.GetParam(1) + "))"
+			" where " + parentObjectID + " in(" + config.GetParam(1) + "))"
 
 		//_, err = w.Write([]byte(sqlstr))
 		log.Println(strings.Replace(sqlstr, config.GetParam(1), objectIds, -1))
@@ -2736,6 +2758,8 @@ func StartGorillaMux() *mux.Router {
 
 		//var colLookup = map[string]interface{}{"objectid": "OBJECTID", "globalid": "GlobalID", "creationdate": "CreationDate", "creator": "Creator", "editdate": "EditDate", "editor": "Editor"}
 		var colLookup = map[string]string{"objectid": "OBJECTID", "globalguid": "GlobalGUID", "globalid": "GlobalID", "creationdate": "CreationDate", "creator": "Creator", "editdate": "EditDate", "editor": "Editor", "comments": "Comments"}
+		var guuids = map[string]int{"GlobalGUID": 1, "GlobalID": 1}
+		var dates = map[string]int{"created_date": 1, "last_edited_date": 1}
 		columns, _ := rows.Columns()
 		count := len(columns)
 		values := make([]interface{}, count)
@@ -2767,12 +2791,22 @@ func StartGorillaMux() *mux.Router {
 					//fmt.Printf("Integer: %v=%v\n", col, t)
 					tmp_struct[col] = val
 				case float64:
-					//fmt.Printf("Float64: %v\n", t)
 					tmp_struct[col] = val
+					if dates[col] == 1 && val != nil {
+						tmp_struct[col] = int(val.(float64))
+					} else {
+						tmp_struct[col] = val
+					}
+					//fmt.Printf("Float64: %v %v\n", col, val)
 				case []uint8:
-					//fmt.Printf("String: %v\n", t)
+					//fmt.Printf("Col: %v (uint8): %v\n", col, t)
 					b, _ := val.([]byte)
 					tmp_struct[col] = fmt.Sprintf("%s", b)
+					if guuids[col] == 1 {
+						tmp_struct[col] = strings.Trim(tmp_struct[col].(string), "{}")
+					}
+					//fmt.Printf("Col: %v (uint8): %v\n", col, tmp_struct[col])
+
 				case int64:
 					//fmt.Printf("Integer 64: %v\n", t)
 					tmp_struct[col] = val
@@ -2805,7 +2839,10 @@ func StartGorillaMux() *mux.Router {
 		var response []byte
 		if len(final_result) > 0 {
 			var result = map[string]interface{}{}
-			result["objectId"] = objectIds //strconv.Atoi(objectIds)
+			//result["objectId"] = objectIds //strconv.Atoi(objectIds)
+			//OBS! must convert objectID to int or it fails on Android
+			oid, _ := strconv.Atoi(objectIds)
+			result["objectId"] = oid
 			result["relatedRecords"] = final_result
 			response, _ = json.Marshal(map[string]interface{}{"relatedRecordGroups": []interface{}{result}})
 			response = response[1:]
@@ -2828,6 +2865,7 @@ func StartGorillaMux() *mux.Router {
 		vars := mux.Vars(r)
 		name := vars["name"]
 		id := vars["id"]
+		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 		//idInt, _ := strconv.Atoi(id)
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/applyEdits")
 		var response []byte
@@ -2869,7 +2907,7 @@ func StartGorillaMux() *mux.Router {
 				for k, i := range fieldObj.Features {
 					//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
 					//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
-					if int(i.Attributes["OBJECTID"].(float64)) == objectid {
+					if int(i.Attributes[parentObjectID].(float64)) == objectid {
 						//i.Attributes["OBJECTID"]
 						fieldObj.Features[k].Attributes = updates[0].Attributes
 						break
@@ -2904,7 +2942,7 @@ func StartGorillaMux() *mux.Router {
 				objectid = len(fieldObj.Features) + 1
 				for _, i := range adds {
 					//i.Attributes["objectId"] = objectid
-					i.Attributes["OBJECTID"] = objectid
+					i.Attributes[parentObjectID] = objectid
 					//i.Attributes["globalId"]=strings.ToUpper(i.Attributes["globalId"])
 					if len(i.Attributes[joinField].(string)) > 0 {
 						//input := strings.ToUpper(i.Attributes[joinField].(string))
@@ -2943,7 +2981,7 @@ func StartGorillaMux() *mux.Router {
 					return
 				}
 				for k, i := range fieldObj.Features {
-					if int(i.Attributes["OBJECTID"].(float64)) == objectid {
+					if int(i.Attributes[parentObjectID].(float64)) == objectid {
 						//i.Attributes["OBJECTID"]
 						fieldObj.Features = append(fieldObj.Features[:k], fieldObj.Features[k+1:]...)
 						break
@@ -2974,11 +3012,11 @@ func StartGorillaMux() *mux.Router {
 			//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 
 			if len(r.FormValue("updates")) > 0 {
-				response = Updates(name, id, tableName, r.FormValue("updates"), globalIdName, joinField)
+				response = Updates(name, id, tableName, r.FormValue("updates"), globalIdName, joinField, parentObjectID)
 			} else if len(r.FormValue("adds")) > 0 {
-				response = Adds(name, id, tableName, r.FormValue("adds"), joinField, globalIdName)
+				response = Adds(name, id, tableName, r.FormValue("adds"), joinField, globalIdName, parentObjectID)
 			} else if len(r.FormValue("deletes")) > 0 {
-				response = Deletes(name, id, tableName, r.FormValue("deletes"), globalIdName)
+				response = Deletes(name, id, tableName, r.FormValue("deletes"), globalIdName, parentObjectID)
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -3070,7 +3108,7 @@ func StartGorillaMux() *mux.Router {
 	return r
 }
 
-func Adds(name string, id string, tableName string, addsTxt string, joinField string, globalIdName string) []byte {
+func Adds(name string, id string, tableName string, addsTxt string, joinField string, globalIdName string, parentObjectID string) []byte {
 	var results []interface{}
 	var objectid int
 	var uuidstr string
@@ -3086,7 +3124,7 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 
 	c := 1
 
-	sql := "select max(OBJECTID)+1," + config.UUID + " from " + tableName
+	sql := "select max(" + parentObjectID + ")+1," + config.UUID + " from " + tableName
 	log.Println(sql)
 	rows, err := config.DbQuery.Query(sql)
 	//defer rows.Close()
@@ -3107,8 +3145,8 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 		sep := ""
 
 		for key, j := range i.Attributes {
-			if key == "OBJECTID" {
-				i.Attributes["OBJECTID"] = objectid
+			if key == parentObjectID {
+				i.Attributes[parentObjectID] = objectid
 				cols += sep + key
 				p += sep + config.GetParam(c)
 				sep = ","
@@ -3120,6 +3158,11 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 				sep = ","
 				if key == joinField {
 					j = strings.ToUpper(j.(string))
+
+					if len(j.(string)) == 36 {
+						j = "{" + j.(string) + "}"
+					}
+
 					//globalId = j.(string)
 					//j = strings.Replace(j.(string), "}", "", -1)
 					//j = strings.Replace(j.(string), "{", "", -1)
@@ -3297,7 +3340,7 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 	return response
 }
 
-func Updates(name string, id string, tableName string, updateTxt string, globalIdName string, joinField string) []byte {
+func Updates(name string, id string, tableName string, updateTxt string, globalIdName string, joinField string, parentObjectID string) []byte {
 	//log.Println(updateTxt)
 	var updates structs.Record
 	decoder := json.NewDecoder(strings.NewReader(updateTxt)) //r.Body
@@ -3330,7 +3373,11 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 			if key == joinField { //"GlobalGUID" {
 				continue
 			}
-			if key == "OBJECTID" {
+			//never update GlobalID
+			if key == "GlobalID" {
+				continue
+			}
+			if key == parentObjectID {
 				objectid = int(j.(float64))
 				result["objectId"] = objectid
 
@@ -3340,13 +3387,19 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 				//	globalID = j.(string)
 				//	result["globalId"] = globalID
 			} else {
-				if j != nil {
+				//if j != nil {
+				//need to handle nulls
+				if j == nil {
+					cols += sep + key + "=null"
+				} else {
 					cols += sep + key + "=" + config.GetParam(c)
-					sep = ","
 					vals = append(vals, j)
-					//fmt.Println(j)
 					c++
 				}
+				sep = ","
+				//fmt.Println(j)
+
+				//}
 			}
 		}
 		//cast(strftime('%s','now') as int)
@@ -3387,14 +3440,14 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 		vals = append(vals, objectid)
 		//tableName = strings.Replace(tableName, "_evw", "", -1)
 
-		log.Println("update " + tableName + " set " + cols + " where OBJECTID=" + config.GetParam(len(vals)))
+		log.Println("update " + tableName + " set " + cols + " where " + parentObjectID + "=" + config.GetParam(len(vals)))
 		log.Print(vals)
 		//log.Print(objId)
 		var sql string
 		if config.DbSource == config.PGSQL {
-			sql = "update " + tableName + " set " + cols + " where OBJECTID=" + config.GetParam(len(vals))
+			sql = "update " + tableName + " set " + cols + " where " + parentObjectID + "=" + config.GetParam(len(vals))
 		} else if config.DbSource == config.SQLITE3 {
-			sql = "update " + tableName + " set " + cols + " where OBJECTID=?"
+			sql = "update " + tableName + " set " + cols + " where " + parentObjectID + "=?"
 		}
 
 		stmt, err := config.DbQuery.Prepare(sql)
@@ -3481,7 +3534,7 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 			for k, i := range fieldObj.Features {
 				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
 				//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
-				if int(i.Attributes["OBJECTID"].(float64)) == objectid {
+				if int(i.Attributes[parentObjectID].(float64)) == objectid {
 					//i.Attributes["OBJECTID"]
 					fieldObj.Features[k].Attributes = updates[num].Attributes
 					break
@@ -3700,7 +3753,7 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 	//update json file with updates
 }
 
-func Deletes(name string, id string, tableName string, deletesTxt string, globalIdName string) []byte {
+func Deletes(name string, id string, tableName string, deletesTxt string, globalIdName string, parentObjectID string) []byte {
 	//deletesTxt should be a objectId
 	var objectid, _ = strconv.Atoi(deletesTxt)
 	var results []interface{}
@@ -3710,9 +3763,9 @@ func Deletes(name string, id string, tableName string, deletesTxt string, global
 	result["globalId"] = nil
 	results = append(results, result)
 	//delete from table
-	log.Println("delete from " + tableName + " where OBJECTID in (" + config.GetParam(0) + ")")
+	log.Println("delete from " + tableName + " where " + parentObjectID + " in (" + config.GetParam(0) + ")")
 	log.Println("delete objectids:  " + deletesTxt + "/" + strconv.Itoa(objectid))
-	var sql = "delete from " + tableName + " where OBJECTID in (" + config.GetParam(0) + ")"
+	var sql = "delete from " + tableName + " where " + parentObjectID + " in (" + config.GetParam(0) + ")"
 	stmt, err := config.DbQuery.Prepare(sql)
 	if err != nil {
 		log.Println(err.Error())
@@ -3783,7 +3836,7 @@ func Deletes(name string, id string, tableName string, deletesTxt string, global
 		for k, i := range fieldObj.Features {
 			//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
 			//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
-			if int(i.Attributes["OBJECTID"].(float64)) == objectid {
+			if int(i.Attributes[parentObjectID].(float64)) == objectid {
 				//i.Attributes["OBJECTID"]
 				//fieldObj.Features = fieldObj.Features[k]
 				fieldObj.Features = append(fieldObj.Features[:k], fieldObj.Features[k+1:]...)
