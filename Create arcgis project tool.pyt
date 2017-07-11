@@ -327,7 +327,7 @@ class CreateNewProject(object):
             #config["services"][serviceName]["layers"]={}
             #config["services"][serviceName]["mxd"]=mxd.filePath 
             service["layers"]={}
-            service["mxd"]=mxd.filePath
+            config["mxd"]=mxd.filePath
         else:
            config={}
            config["services"]={}
@@ -1814,7 +1814,7 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
            sql = sql.replace(globalField, "REL_GLOBALID")
            sql = sql.replace("GlobalID", "GLOBALID")
            sql = sql.replace("ATTACHMENTID integer",
-                             "ATTACHMENTID int32 check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null")
+                             "ATTACHMENTID int32 constraint attachementidcheck  check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null")
    
            #newallfields = newallfields.replace("REL_OBJECTID,","")
    
@@ -1824,22 +1824,22 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
    
            #oidName = desc.OIDFieldName
            #sql = sql.replace("GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38) not null","GlobalID uuidtext check(typeof(GlobalID) = 'text' and length(GlobalID) = 38)")
-           sql = sql + ", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (" + \
+           sql = sql + ", gdb_archive_oid integer primary key not null, gdb_from_date realdate constraint gdbfromdatecheck check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (" + \
                gdb_transaction_time + \
-               "),gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59'))) "
+               "),gdb_to_date realdate constraint gdbtodatecheck  check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59'))) "
    
            #sql = sql +", gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) not null default (gdb_transaction_time ()), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) not null default         (julianday ('9999-12-31 23:59:59')))"
 
         #just create the dang table
-        sql5.append(("CREATE TABLE "+featureName+"__ATTACH ( ATTACHMENTID int32 check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null,        GLOBALID uuidtext check(typeof(GLOBALID) = 'text' and length(GLOBALID) = 38), REL_GLOBALID uuidtext check((typeof(REL_GLOBALID) = 'text' or typeof(REL_GLOBALID) = 'null') and length(REL_GLOBALID) = 38),         CONTENT_TYPE text(150) check(typeof(CONTENT_TYPE) = 'text' and not length(CONTENT_TYPE) > 150), ATT_NAME text(250) check(typeof(ATT_NAME) = 'text' and not length(ATT_NAME) > 250), DATA_SIZE int32 check(typeof(DATA_SIZE) = 'integer' and DATA_SIZE >= -2147483648 and DATA_SIZE <= 2147483647), DATA blob check(typeof(DATA) = 'blob' or typeof(DATA) = 'null'),  gdb_archive_oid integer primary key not null, gdb_from_date realdate check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (julianday('now')), gdb_to_date realdate check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59')))"))
+        sql5.append(("CREATE TABLE "+featureName+"__ATTACH ( ATTACHMENTID int32 constraint attachementidcheck check(typeof(ATTACHMENTID) = 'integer' and ATTACHMENTID >= -2147483648 and ATTACHMENTID <= 2147483647) not null,        GLOBALID uuidtext constraint globalidcheck check(typeof(GLOBALID) = 'text' and length(GLOBALID) = 38), REL_GLOBALID uuidtext constraint relglobalidcheck check((typeof(REL_GLOBALID) = 'text' or typeof(REL_GLOBALID) = 'null') and length(REL_GLOBALID) = 38),         CONTENT_TYPE text(150) constraint contexttypecheck  check(typeof(CONTENT_TYPE) = 'text' and not length(CONTENT_TYPE) > 150), ATT_NAME text(250) constraint attnamecheck  check(typeof(ATT_NAME) = 'text' and not length(ATT_NAME) > 250), DATA_SIZE int32 constraint datasizecheck check(typeof(DATA_SIZE) = 'integer' and DATA_SIZE >= -2147483648 and DATA_SIZE <= 2147483647), DATA blob constraint datablobcheck check(typeof(DATA) = 'blob' or typeof(DATA) = 'null'),  gdb_archive_oid integer primary key not null, gdb_from_date realdate constraint gdbfromdatecheck check(typeof(gdb_from_date) = 'real' and gdb_from_date >= 0.0) default (julianday('now')), gdb_to_date realdate constraint gdbtodatecheck check(typeof(gdb_to_date) = 'real' and gdb_to_date >= 0.0) default (julianday ('9999-12-31 23:59:59')))"))
 
         sql5.append(("insert into " + featureName + "__ATTACH("+newallfields+") select "+allfields+" from "+featureName + "__ATTACH_org"))
         
         sql5.append(("drop table "+featureName + "__ATTACH_org")) 
 
         #sql5.append(('ALTER TABLE '+featureName+'__ATTACH ADD REL_GLOBALID uuidtext'))
-        next_row_id='Next_RowID (NULL,\''+featureName+'__ATTACH\')'
-        next_row_id='(select max(rowid)+1 from \''+featureName+'__ATTACH\')'
+        #next_row_id='Next_RowID (NULL,\''+featureName+'__ATTACH\')'
+        #next_row_id='(select max(rowid)+1 from \''+featureName+'__ATTACH\')'
         next_row_id='(coalesce (NEW.ATTACHMENTID,(select max(ATTACHMENTID)+1 from \''+featureName+'__ATTACH\'),1))'
 
         sql5.append(("CREATE INDEX gdb_ct4_"+str(idx)+" ON "+featureName+"__ATTACH (ATTACHMENTID,gdb_from_date) "))
@@ -1857,8 +1857,11 @@ def createReplica(mxd,dataFrame,allData,replicaDestinationPath,toolkitPath,usern
         'WHERE ATTACHMENTID = OLD.ATTACHMENTID AND gdb_to_date BETWEEN (julianday (\'9999-12-31 23:59:59\') - 0.000000001) AND (julianday (\'9999-12-31 23:59:59\') + 0.000000001); END;'))
 
         sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_insert INSTEAD OF INSERT ON '+featureName+'__ATTACH_evw BEGIN '
-        'INSERT INTO '+featureName+'__ATTACH ('+newallfields+',gdb_archive_oid,gdb_from_date,gdb_to_date) '
-        'VALUES ('+next_row_id+','+newFields+','+next_row_id+','+gdb_transaction_time  +',julianday (\'9999-12-31 23:59:59\')); END;'))
+        'INSERT INTO '+featureName+'__ATTACH ('+newallfields+',gdb_from_date,gdb_to_date) '
+        #'INSERT INTO '+featureName+'__ATTACH ('+newallfields+',gdb_archive_oid,gdb_from_date,gdb_to_date) '
+        'VALUES ('+next_row_id+','+newFields+','+gdb_transaction_time  +',julianday (\'9999-12-31 23:59:59\')); END;'))
+        #do I need to include the gdb_archive_oid?
+        #'VALUES ('+next_row_id+','+newFields+','+next_row_id+','+gdb_transaction_time  +',julianday (\'9999-12-31 23:59:59\')); END;'))
 
         sql5.append(('CREATE TRIGGER '+featureName+'__ATTACH_evw_update INSTEAD OF UPDATE ON '+featureName+'__ATTACH_evw BEGIN '
         'UPDATE OR IGNORE '+featureName+'__ATTACH SET gdb_to_date = '+gdb_transaction_time  +' '
@@ -3248,8 +3251,8 @@ def main():
        db=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
        #mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"
        #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016grazing.mxd"
-       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
-       #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016.mxd"
+       #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
+       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016.mxd"
        pg=None
        
        

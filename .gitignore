@@ -50,4 +50,4 @@ vk*.json
 go-sqlite3/*
 catalogs.old/*
 *.ini
-
+delta*.geodatabase
