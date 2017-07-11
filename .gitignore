@@ -37,6 +37,7 @@ node_modules/*
 ls
 sqlite2mongodb
 settings.json
+settings.ini
 spatialite_gui*
 *.7z
 *.database
