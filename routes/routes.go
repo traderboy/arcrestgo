@@ -1010,7 +1010,52 @@ func StartGorillaMux() *mux.Router {
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/synchronizeReplica", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
+		var deltaFile = "delta.geodatabase"
 		replicaId := vars["replicaID"]
+
+		//check to see if delta.geodatabase has been uploaded, then merge results with masterdatabase, then delete delta.geodatabase
+		if _, err := os.Stat(deltaFile); !os.IsNotExist(err) {
+			// path/to/whatever exists
+			log.Println("Found delta.geodatabase")
+			deltaDb, err := sql.Open("sqlite3", deltaFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			/*
+			   SELECT a.*,b.*,'T_'||b.ChangedDatasetID||(case when b.ChangeType=2 then '_updates' else '_inserts' end)
+			   FROM "GDB_DataChangesDatasets" a,"GDB_DataChangesDeltas" b
+			   where a.id=b.id
+			*/
+			//sql := "ATTACH DATABASE '" + deltaFile + "' AS delta"
+
+			sql := "SELECT \"ID\",\"LayerID\" FROM \"GDB_DataChangesDatasets\""
+
+			stmt, err := deltaDb.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+			}
+
+			_, err = stmt.Exec()
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+				log.Println(err.Error())
+				return
+			}
+			stmt.Close()
+
+			//sql := "DETACH DATABASE delta"
+			/*
+				err := os.Remove(deltaFile)
+				if err != nil {
+					log.Println("Unable to delete: " + deltaFile)
+				}
+			*/
+		}
 
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/synchronizeReplica")
 		//response, _ := json.Marshal(map[string]interface{}{"status": "Completed", "transportType": "esriTransportTypeUrl"})
@@ -1643,22 +1688,66 @@ func StartGorillaMux() *mux.Router {
 		row := vars["row"]
 		//imgInt, _ := strconv.Atoi(img)
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/" + row + "/attachments/img")
-		//var attachment = config.AttachmentsPath + string(os.PathSeparator) + name + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator) + img + ".jpg"
-		var AttachmentPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
-		files, _ := ioutil.ReadDir(AttachmentPath)
-		//i := 0
-		for _, f := range files {
-			name := f.Name()
-			if name[0:len(img+"@")] == img+"@" {
-				http.ServeFile(w, r, AttachmentPath+string(os.PathSeparator)+f.Name())
-				log.Println(AttachmentPath + string(os.PathSeparator) + f.Name())
+		useFileSystem := false
+		if useFileSystem {
+
+			//var attachment = config.AttachmentsPath + string(os.PathSeparator) + name + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator) + img + ".jpg"
+			var AttachmentPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
+			files, _ := ioutil.ReadDir(AttachmentPath)
+			//i := 0
+			for _, f := range files {
+				name := f.Name()
+				if name[0:len(img+"@")] == img+"@" {
+					http.ServeFile(w, r, AttachmentPath+string(os.PathSeparator)+f.Name())
+					log.Println(AttachmentPath + string(os.PathSeparator) + f.Name())
+					return
+				}
+			}
+			//{ "id": 2, "contentType": "application/pdf", "size": 270133,"name": "Sales Deed"  }
+			response, _ := json.Marshal(map[string]interface{}{"error": "File not found"})
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(response)
+		} else {
+			var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var tableName = parentTableName + "__ATTACH_evw"
+			var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
+			log.Println("Table name: " + tableName)
+
+			sql := "select CONTENT_TYPE,ATT_NAME,DATA from " + tableName + " where REL_GLOBALID=(select " + globalIdName + " from " + parentTableName + "_evw where OBJECTID=" + config.GetParam(0) + ")"
+			log.Printf("%v%v", sql, row)
+
+			//stmt, err := config.DbQuery.Prepare(sql)
+
+			//rows, err := config.DbQuery.Query(sql)
+			var attachment []byte
+			var contentType string
+			var attName string
+			//err = stmt.QueryRow().Scan(&objectid)
+			rows, err := config.DbQuery.Query(sql, row)
+			if err != nil {
+				log.Println(err.Error())
+				//w.Write([]byte(err.Error()))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
 				return
 			}
+
+			for rows.Next() {
+				err := rows.Scan(&contentType, &attName, &attachment)
+				if err != nil {
+					//log.Fatal(err)
+
+				}
+				//attachfile := map[string]interface{}{"id": attachmentID, "contentType": contentType, "name": attName}
+				//attachments = append(attachments, attachfile)
+			}
+			rows.Close()
+			w.Header().Set("Content-Type", contentType)
+
+			w.Write(attachment)
+
 		}
-		//{ "id": 2, "contentType": "application/pdf", "size": 270133,"name": "Sales Deed"  }
-		response, _ := json.Marshal(map[string]interface{}{"error": "File not found"})
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(response)
 
 		/*
 			files, _ := ioutil.ReadDir("./")
@@ -1708,10 +1797,46 @@ func StartGorillaMux() *mux.Router {
 		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 		var tableName = parentTableName + "__ATTACH_evw"
 		var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
+		var uuidstr string
 		log.Println("Table name: " + tableName)
 
-		sql := "select ifnull(max(ATTACHMENTID)+1,1) from " + tableName
+		//sql := "select ifnull(max(ATTACHMENTID)+1,1) from " + tableName
+		sql := "select \"base_id\"," + config.UUID + " from \"GDB_RowidGenerators\" where \"registration_id\" in ( SELECT \"registration_id\" FROM \"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
+		//sql := "select max(" + parentObjectID + ")+1," + config.UUID + " from " + tableName
 		log.Println(sql)
+		rows, err := config.DbQuery.Query(sql)
+		//defer rows.Close()
+
+		for rows.Next() {
+			err := rows.Scan(&objectid, &uuidstr)
+			if err != nil {
+				//log.Fatal(err)
+				objectid = 1
+				uuidstr = strings.ToUpper(uuid.Formatter(uuid.NewV4(), uuid.FormatCanonicalCurly))
+			}
+		}
+		rows.Close()
+		sql = "update \"GDB_RowidGenerators\" set \"base_id\"=" + (strconv.Itoa(objectid + 1)) + " where \"registration_id\" in ( SELECT \"registration_id\" FROM \"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
+		log.Println(sql)
+		_, err = config.DbQuery.Exec(sql)
+
+		//log.Println(sql)
+		//stmt, err := config.DbQuery.Prepare(sql)
+		if err != nil {
+			log.Println(err.Error())
+			//w.Write([]byte(err.Error()))
+			w.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+			w.Write(response)
+			return
+		}
+		//rows, err := config.DbQuery.Query(sql)
+		//err = stmt.QueryRow().Scan(&objectid)
+		var globalid string
+
+		//get the parent globalid
+		sql = "select " + globalIdName + " from " + parentTableName + " where " + parentObjectID + "=" + config.GetParam(0)
+		//log.Println(sql)
 		stmt, err := config.DbQuery.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
@@ -1723,24 +1848,7 @@ func StartGorillaMux() *mux.Router {
 		}
 
 		//rows, err := config.DbQuery.Query(sql)
-		err = stmt.QueryRow().Scan(&objectid)
-		var globalid string
-		var uuid string
-		//get the parent globalid
-		sql = "select " + globalIdName + "," + config.UUID + " from " + parentTableName + " where " + parentObjectID + "=" + config.GetParam(0)
-		//log.Println(sql)
-		stmt, err = config.DbQuery.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-			//w.Write([]byte(err.Error()))
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-			w.Write(response)
-			return
-		}
-
-		//rows, err := config.DbQuery.Query(sql)
-		err = stmt.QueryRow(row).Scan(&globalid, &uuid)
+		err = stmt.QueryRow(row).Scan(&globalid)
 		stmt.Close()
 		/*
 			cols += sep + key
@@ -1793,7 +1901,7 @@ func StartGorillaMux() *mux.Router {
 			var vals []interface{}
 			vals = append(vals, objectid)
 			//vals = append(vals, config.UUID)
-			vals = append(vals, uuid)
+			vals = append(vals, uuidstr)
 			vals = append(vals, globalid)
 			vals = append(vals, http.DetectContentType(buf[:512]))
 			vals = append(vals, fileName)
@@ -3007,17 +3115,17 @@ func StartGorillaMux() *mux.Router {
 			}
 
 		} else {
-			var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string) + "_evw"
+			var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
 			var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
 			log.Println("Table name: " + tableName)
 			//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 
 			if len(r.FormValue("updates")) > 0 {
-				response = Updates(name, id, tableName, r.FormValue("updates"), globalIdName, joinField, parentObjectID)
+				response = Updates(name, id, tableName, tableName+"_evw", r.FormValue("updates"), globalIdName, joinField, parentObjectID)
 			} else if len(r.FormValue("adds")) > 0 {
-				response = Adds(name, id, tableName, r.FormValue("adds"), joinField, globalIdName, parentObjectID)
+				response = Adds(name, id, tableName, tableName+"_evw", r.FormValue("adds"), joinField, globalIdName, parentObjectID)
 			} else if len(r.FormValue("deletes")) > 0 {
-				response = Deletes(name, id, tableName, r.FormValue("deletes"), globalIdName, parentObjectID)
+				response = Deletes(name, id, tableName, tableName+"_evw", r.FormValue("deletes"), globalIdName, parentObjectID)
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -3109,10 +3217,11 @@ func StartGorillaMux() *mux.Router {
 	return r
 }
 
-func Adds(name string, id string, tableName string, addsTxt string, joinField string, globalIdName string, parentObjectID string) []byte {
+func Adds(name string, id string, parentTableName string, tableName string, addsTxt string, joinField string, globalIdName string, parentObjectID string) []byte {
 	var results []interface{}
 	var objectid int
 	var uuidstr string
+
 	log.Println(addsTxt)
 	var adds []structs.Feature
 	decoder := json.NewDecoder(strings.NewReader(addsTxt)) //r.Body
@@ -3125,11 +3234,12 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 
 	c := 1
 
-	sql := "select max(" + parentObjectID + ")+1," + config.UUID + " from " + tableName
+	//need to update "GDB_RowidGenerators"->"base_id" to new id
+	sql := "select \"base_id\"," + config.UUID + " from \"GDB_RowidGenerators\" where \"registration_id\" in ( SELECT \"registration_id\" FROM \"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
+	//sql := "select max(" + parentObjectID + ")+1," + config.UUID + " from " + tableName
 	log.Println(sql)
 	rows, err := config.DbQuery.Query(sql)
 	//defer rows.Close()
-
 	for rows.Next() {
 		err := rows.Scan(&objectid, &uuidstr)
 		if err != nil {
@@ -3139,6 +3249,17 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 		}
 	}
 	rows.Close()
+	sql = "update \"GDB_RowidGenerators\" set \"base_id\"=" + (strconv.Itoa(objectid + 1)) + " where \"registration_id\" in ( SELECT \"registration_id\" FROM \"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
+	log.Println(sql)
+	_, err = config.DbQuery.Exec(sql)
+	if err != nil {
+		log.Println(err.Error())
+		//w.Write([]byte(err.Error()))
+		//w.Header().Set("Content-Type", "application/json")
+		response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+		//w.Write(response)
+		return response
+	}
 
 	//var globalId string
 	for _, i := range adds {
@@ -3341,7 +3462,7 @@ func Adds(name string, id string, tableName string, addsTxt string, joinField st
 	return response
 }
 
-func Updates(name string, id string, tableName string, updateTxt string, globalIdName string, joinField string, parentObjectID string) []byte {
+func Updates(name string, id string, parentTableName string, tableName string, updateTxt string, globalIdName string, joinField string, parentObjectID string) []byte {
 	//log.Println(updateTxt)
 	var updates structs.Record
 	decoder := json.NewDecoder(strings.NewReader(updateTxt)) //r.Body
@@ -3754,7 +3875,7 @@ func Updates(name string, id string, tableName string, updateTxt string, globalI
 	//update json file with updates
 }
 
-func Deletes(name string, id string, tableName string, deletesTxt string, globalIdName string, parentObjectID string) []byte {
+func Deletes(name string, id string, parentTableName string, tableName string, deletesTxt string, globalIdName string, parentObjectID string) []byte {
 	//deletesTxt should be a objectId
 	var objectid, _ = strconv.Atoi(deletesTxt)
 	var results []interface{}

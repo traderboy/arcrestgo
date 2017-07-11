@@ -327,7 +327,7 @@ class CreateNewProject(object):
             #config["services"][serviceName]["layers"]={}
             #config["services"][serviceName]["mxd"]=mxd.filePath 
             service["layers"]={}
-            service["mxd"]=mxd.filePath
+            config["mxd"]=mxd.filePath
         else:
            config={}
            config["services"]={}
@@ -335,7 +335,7 @@ class CreateNewProject(object):
            #service["name"]=serviceName
            #config["services"]=[service]
            service["layers"]={}
-           service["mxd"]=mxd.filePath
+           config["mxd"]=mxd.filePath
            
            #config["services"][serviceName]={"layers":{}}
            #config["services"][serviceName]["mxd"]=mxd.filePath
@@ -3250,8 +3250,8 @@ def main():
        db=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
        #mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"
        #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016grazing.mxd"
-       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
-       #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016.mxd"
+       #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
+       mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016.mxd"
        pg=None
        
        
