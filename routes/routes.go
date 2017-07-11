@@ -1725,8 +1725,10 @@ func StartGorillaMux() *mux.Router {
 		//rows, err := config.DbQuery.Query(sql)
 		err = stmt.QueryRow().Scan(&objectid)
 		var globalid string
+		var uuid string
 		//get the parent globalid
-		sql = "select " + globalIdName + " from " + parentTableName + " where " + parentObjectID + "=" + config.GetParam(0)
+		sql = "select " + globalIdName + "," + config.UUID + " from " + parentTableName + " where " + parentObjectID + "=" + config.GetParam(0)
+		//log.Println(sql)
 		stmt, err = config.DbQuery.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
@@ -1738,7 +1740,7 @@ func StartGorillaMux() *mux.Router {
 		}
 
 		//rows, err := config.DbQuery.Query(sql)
-		err = stmt.QueryRow(row).Scan(&globalid)
+		err = stmt.QueryRow(row).Scan(&globalid, &uuid)
 		stmt.Close()
 		/*
 			cols += sep + key
@@ -1781,22 +1783,21 @@ func StartGorillaMux() *mux.Router {
 					ioutil.WriteFile(path, buf, os.ModePerm)
 				}
 			}
-			cols := "ATTACHMENTID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA"
+			cols := "ATTACHMENTID,GLOBALID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA" //REL_GLOBALID
 			sep := ""
 			p := ""
-			for i := 0; i < 6; i++ {
+			for i := 0; i < 7; i++ {
 				p = p + sep + config.GetParam(i)
 				sep = ","
 			}
 			var vals []interface{}
 			vals = append(vals, objectid)
 			//vals = append(vals, config.UUID)
+			vals = append(vals, uuid)
 			vals = append(vals, globalid)
-
 			vals = append(vals, http.DetectContentType(buf[:512]))
 			vals = append(vals, fileName)
 			vals = append(vals, len(buf))
-
 			vals = append(vals, buf)
 
 			//blob, err := ioutil.ReadAll(file)
@@ -1825,7 +1826,7 @@ func StartGorillaMux() *mux.Router {
 			//log.Print(vals)
 
 			sql = "insert into " + tableName + "(" + cols + ") values(" + p + ")"
-			log.Printf("insert into %v(%v) values(%v,'%v','%v','%v',%v)", tableName, cols, vals[0], vals[1], vals[2], vals[3], vals[4])
+			log.Printf("insert into %v(%v) values(%v,'%v','%v','%v','%v',%v)", tableName, cols, vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
 
 			/*
 				stmt, err := config.DbQuery.Prepare(sql)
