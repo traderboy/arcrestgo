@@ -71,7 +71,7 @@ func StartGorillaMux() *mux.Router {
 		if err != nil {
 			log.Fatal(err)
 		}
-		sqlstr := "SELECT 'json','GDB_ServiceItems','ItemInfo','DatasetName',\"DatasetName\",\"ItemType\",\"ItemId\" from \"GDB_ServiceItems\" UNION SELECT 'xml','GDB_Items','Definition','Name',\"Name\",\"ObjectID\",\"DatasetSubtype1\" FROM \"GDB_Items\""
+		sqlstr := "SELECT 'json','GDB_ServiceItems','ItemInfo','DatasetName',\"DatasetName\",\"ItemType\",\"ItemId\" from \"GDB_ServiceItems\" UNION SELECT 'xml','GDB_Items','Definition','Name',\"Name\",\"ObjectID\",\"DatasetSubtype1\" FROM " + config.Schema + config.DblQuote("GDB_Items")
 		log.Printf("Query: " + sqlstr)
 
 		/*
@@ -171,7 +171,7 @@ func StartGorillaMux() *mux.Router {
 			}
 
 			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
-			sql := "update \"" + table + "\" set \"" + field + "\"=? where " + queryField + "=?" //OBJECTID=?"
+			sql := "update " + config.DblQuote(table) + " set " + config.DblQuote(field) + "=? where " + queryField + "=?" //OBJECTID=?"
 			stmt, err := DbCollectorDb.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
@@ -201,7 +201,7 @@ func StartGorillaMux() *mux.Router {
 			return
 		}
 		if format == "table" {
-			sql := "SELECT * FROM \"" + value + "\""
+			sql := "SELECT * FROM " + config.DblQuote(value)
 			log.Printf("Query: " + sql)
 
 			//var itemInfo *[]byte
@@ -268,7 +268,7 @@ func StartGorillaMux() *mux.Router {
 		//Db.Exec(initializeStr)
 		//log.Print("Sqlite database: " + dbName)
 		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT \"" + field + "\" from \"" + table + "\" where \"" + queryField + "\"=\"" + value + "\"" // 'GDB_ServiceItems',\"DatasetName\" from \"GDB_ServiceItems\" UNION SELECT 'GDB_Items',\"Name\" FROM \"GDB_Items\""
+		sql := "SELECT " + config.DblQuote(field) + " from " + config.DblQuote(table) + " where " + config.DblQuote(queryField) + "=" + config.DblQuote(value) // 'GDB_ServiceItems',\"DatasetName\" from \"GDB_ServiceItems\" UNION SELECT 'GDB_Items',\"Name\" FROM \"GDB_Items\""
 		log.Printf("Query: " + sql)
 		stmt, err := DbCollectorDb.Prepare(sql)
 		if err != nil {
@@ -690,9 +690,9 @@ func StartGorillaMux() *mux.Router {
 			name = "%"
 
 		}
-		log.Println("Old name:  " + name)
+		//log.Println("Old name:  " + name)
 		name = config.RootName
-		log.Println("New name:  " + name)
+		//log.Println("New name:  " + name)
 		log.Println("/sharing/rest/content/items/" + name + "/data (" + r.Method + ")")
 		if r.Method == "PUT" {
 			body, err := ioutil.ReadAll(r.Body)
@@ -906,9 +906,9 @@ func StartGorillaMux() *mux.Router {
 		if config.DbSource != config.FILE {
 			id = "%"
 		}
-		log.Println("Old name:  " + id)
+		//log.Println("Old name:  " + id)
 		id = config.RootName
-		log.Println("New name:  " + id)
+		//log.Println("New name:  " + id)
 
 		img := vars["img"]
 		log.Println("/sharing/rest/content/items/" + id + "/info/thumbnail/" + img)
@@ -924,9 +924,9 @@ func StartGorillaMux() *mux.Router {
 		if config.DbSource != config.FILE {
 			id = "%"
 		}
-		log.Println("Old name:  " + id)
+		//log.Println("Old name:  " + id)
 		id = config.RootName
-		log.Println("New name:  " + id)
+		//log.Println("New name:  " + id)
 
 		log.Println("/sharing/rest/content/items/" + id + "/info/thumbnail/ago_downloaded.png")
 		response, _ := json.Marshal(map[string]interface{}{"currentVersion": config.ArcGisVersion})
@@ -1028,7 +1028,7 @@ func StartGorillaMux() *mux.Router {
 			*/
 			//sql := "ATTACH DATABASE '" + deltaFile + "' AS delta"
 
-			sql := "SELECT \"ID\",\"LayerID\" FROM \"GDB_DataChangesDatasets\""
+			sql := "SELECT \"ID\",\"LayerID\" FROM " + config.Schema + config.DblQuote("GDB_DataChangesDatasets")
 
 			stmt, err := deltaDb.Prepare(sql)
 			if err != nil {
@@ -1600,8 +1600,9 @@ func StartGorillaMux() *mux.Router {
 		attachments := make([]interface{}, 0)
 		//[]interface{}
 		//fields.Fields, "relatedRecordGroups": []interface{}{result}}
-		useFileSystem := false
-		if useFileSystem {
+		//useFileSystem := false
+		//if useFileSystem {
+		if config.DbSource == config.FILE {
 			files, _ := ioutil.ReadDir(AttachmentPath)
 			i := 0
 			for _, f := range files {
@@ -1618,12 +1619,13 @@ func StartGorillaMux() *mux.Router {
 			}
 		} else {
 			//var objectid int
-			var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
-			var tableName = parentTableName + "__ATTACH_evw"
+			//config.Schema +
+			var parentTableName = config.Project.Services[name]["layers"][id]["data"].(string)
+			var tableName = parentTableName + "__ATTACH" + config.TableSuffix
 			var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
 			log.Println("Table name: " + tableName)
 
-			sql := "select ATTACHMENTID,CONTENT_TYPE,ATT_NAME from " + tableName + " where REL_GLOBALID=(select " + globalIdName + " from " + parentTableName + "_evw where OBJECTID=" + config.GetParam(0) + ")"
+			sql := "select \"ATTACHMENTID\",\"CONTENT_TYPE\",\"ATT_NAME\" from " + config.Schema + config.DblQuote(tableName) + " where  " + config.DblQuote("REL_GLOBALID") + "=(select " + config.DblQuote(globalIdName) + " from " + config.Schema + config.DblQuote(parentTableName+config.TableSuffix) + " where " + config.DblQuote("OBJECTID") + "=" + config.GetParam(1) + ")"
 			log.Printf("%v%v", sql, row)
 
 			//stmt, err := config.DbQuery.Prepare(sql)
@@ -1688,8 +1690,9 @@ func StartGorillaMux() *mux.Router {
 		row := vars["row"]
 		//imgInt, _ := strconv.Atoi(img)
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/" + row + "/attachments/img")
-		useFileSystem := false
-		if useFileSystem {
+		//useFileSystem := false
+		//if useFileSystem {
+		if config.DbSource == config.FILE {
 
 			//var attachment = config.AttachmentsPath + string(os.PathSeparator) + name + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator) + img + ".jpg"
 			var AttachmentPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
@@ -1708,12 +1711,12 @@ func StartGorillaMux() *mux.Router {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(response)
 		} else {
-			var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
-			var tableName = parentTableName + "__ATTACH_evw"
+			var parentTableName = config.Project.Services[name]["layers"][id]["data"].(string)
+			var tableName = parentTableName + "__ATTACH" + config.TableSuffix
 			var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
 			log.Println("Table name: " + tableName)
 
-			sql := "select CONTENT_TYPE,ATT_NAME,DATA from " + tableName + " where REL_GLOBALID=(select " + globalIdName + " from " + parentTableName + "_evw where OBJECTID=" + config.GetParam(0) + ")"
+			sql := "select \"CONTENT_TYPE\",\"ATT_NAME\",\"DATA\" from " + config.Schema + config.DblQuote(tableName) + " where " + config.DblQuote("REL_GLOBALID") + "=(select " + config.DblQuote(globalIdName) + " from " + config.Schema + config.DblQuote(parentTableName+config.TableSuffix) + " where " + config.DblQuote("OBJECTID") + "=" + config.GetParam(1) + ")"
 			log.Printf("%v%v", sql, row)
 
 			//stmt, err := config.DbQuery.Prepare(sql)
@@ -1779,6 +1782,11 @@ func StartGorillaMux() *mux.Router {
 		*/
 	}).Methods("GET")
 
+	/**
+	Add attachments.
+	File:  save attachment to filesystem only
+	DB:    save attachment to filesystem and database
+	*/
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/{row}/addAttachment", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		name := vars["name"]
@@ -1793,63 +1801,89 @@ func StartGorillaMux() *mux.Router {
 		os.MkdirAll(uploadPath, 0755)
 
 		var objectid int
-		var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+		var parentTableName = config.Project.Services[name]["layers"][id]["data"].(string)
 		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
-		var tableName = parentTableName + "__ATTACH_evw"
+		var tableName = parentTableName + "__ATTACH" + config.TableSuffix
 		var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
 		var uuidstr string
-		log.Println("Table name: " + tableName)
-
-		//sql := "select ifnull(max(ATTACHMENTID)+1,1) from " + tableName
-		sql := "select \"base_id\"," + config.UUID + " from \"GDB_RowidGenerators\" where \"registration_id\" in ( SELECT \"registration_id\" FROM \"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
-		//sql := "select max(" + parentObjectID + ")+1," + config.UUID + " from " + tableName
-		log.Println(sql)
-		rows, err := config.DbQuery.Query(sql)
-		//defer rows.Close()
-
-		for rows.Next() {
-			err := rows.Scan(&objectid, &uuidstr)
-			if err != nil {
-				//log.Fatal(err)
-				objectid = 1
-				uuidstr = strings.ToUpper(uuid.Formatter(uuid.NewV4(), uuid.FormatCanonicalCurly))
-			}
-		}
-		rows.Close()
-		sql = "update \"GDB_RowidGenerators\" set \"base_id\"=" + (strconv.Itoa(objectid + 1)) + " where \"registration_id\" in ( SELECT \"registration_id\" FROM \"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
-		log.Println(sql)
-		_, err = config.DbQuery.Exec(sql)
-
-		//log.Println(sql)
-		//stmt, err := config.DbQuery.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-			//w.Write([]byte(err.Error()))
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-			w.Write(response)
-			return
-		}
-		//rows, err := config.DbQuery.Query(sql)
-		//err = stmt.QueryRow().Scan(&objectid)
 		var globalid string
+		log.Println("Table name: " + tableName)
+		if config.DbSource == config.FILE {
+			var AttachmentPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
+			files, _ := ioutil.ReadDir(AttachmentPath)
+			//i := 0
+			//find the largest ATTACHMENTID and inc
+			objectid = 1
+			globalid = strings.ToUpper(uuid.Formatter(uuid.NewV4(), uuid.FormatCanonicalCurly))
+			globalid = globalid[1 : len(globalid)-1]
+			for _, f := range files {
+				name := f.Name()
+				namearr := strings.Split(name, "@")
 
-		//get the parent globalid
-		sql = "select " + globalIdName + " from " + parentTableName + " where " + parentObjectID + "=" + config.GetParam(0)
-		//log.Println(sql)
-		stmt, err := config.DbQuery.Prepare(sql)
-		if err != nil {
-			log.Println(err.Error())
-			//w.Write([]byte(err.Error()))
-			w.Header().Set("Content-Type", "application/json")
-			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
-			w.Write(response)
-			return
-		}
+				if len(namearr) > 1 {
+					curId, _ := strconv.Atoi(namearr[0])
+					if curId > objectid {
+						objectid = curId
+					}
+				}
+				//if name[0:len(img+"@")] == img+"@" {
+				//http.ServeFile(w, r, AttachmentPath+string(os.PathSeparator)+f.Name())
+				//log.Println(AttachmentPath + string(os.PathSeparator) + f.Name())
+				//return
+				//}
+			}
 
-		//rows, err := config.DbQuery.Query(sql)
-		err = stmt.QueryRow(row).Scan(&globalid)
-		stmt.Close()
+		} else {
+			//sql := "select ifnull(max(ATTACHMENTID)+1,1) from " + tableName
+			sql := "select \"base_id\"," + config.UUID + " from " + config.Schema + "\"GDB_RowidGenerators\" where \"registration_id\" in ( SELECT \"registration_id\" FROM " + config.Schema + "\"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
+			//sql := "select max(" + parentObjectID + ")+1," + config.UUID + " from " + tableName
+			log.Println(sql)
+			rows, err := config.DbQuery.Query(sql)
+			//defer rows.Close()
+
+			for rows.Next() {
+				err := rows.Scan(&objectid, &uuidstr)
+				if err != nil {
+					//log.Fatal(err)
+					objectid = 1
+					uuidstr = strings.ToUpper(uuid.Formatter(uuid.NewV4(), uuid.FormatCanonicalCurly))
+				}
+			}
+			rows.Close()
+			sql = "update " + config.Schema + "\"GDB_RowidGenerators\" set \"base_id\"=" + (strconv.Itoa(objectid + 1)) + " where \"registration_id\" in ( SELECT \"registration_id\" FROM " + config.Schema + "\"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
+			log.Println(sql)
+			_, err = config.DbQuery.Exec(sql)
+
+			//log.Println(sql)
+			//stmt, err := config.DbQuery.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+				//w.Write([]byte(err.Error()))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+				return
+			}
+			//rows, err := config.DbQuery.Query(sql)
+			//err = stmt.QueryRow().Scan(&objectid)
+
+			//get the parent globalid
+			sql = "select " + config.DblQuote(globalIdName) + " from " + config.Schema + config.DblQuote(parentTableName) + " where " + config.DblQuote(parentObjectID) + "=" + config.GetParam(1)
+			//log.Println(sql)
+			stmt, err := config.DbQuery.Prepare(sql)
+			if err != nil {
+				log.Println(err.Error())
+				//w.Write([]byte(err.Error()))
+				w.Header().Set("Content-Type", "application/json")
+				response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
+				w.Write(response)
+				return
+			}
+
+			//rows, err := config.DbQuery.Query(sql)
+			err = stmt.QueryRow(row).Scan(&globalid)
+			stmt.Close()
+		} //END SQL
 		/*
 			cols += sep + key
 			p += sep + config.GetParam(c)
@@ -1873,10 +1907,10 @@ func StartGorillaMux() *mux.Router {
 				http.Error(w, err.Error(), http.StatusForbidden)
 			}
 
-			for key, value := range r.MultipartForm.Value {
-				//fmt.Fprintf(w, "%s:%s ", key, value)
-				log.Printf("%s:%s", key, value)
-			}
+			//for key, value := range r.MultipartForm.Value {
+			//fmt.Fprintf(w, "%s:%s ", key, value)
+			//log.Printf("%s:%s", key, value)
+			//}
 			//files, _ := ioutil.ReadDir(uploadPath)
 			//fid := len(files) + 1
 			var buf []byte
@@ -1891,67 +1925,72 @@ func StartGorillaMux() *mux.Router {
 					ioutil.WriteFile(path, buf, os.ModePerm)
 				}
 			}
-			cols := "ATTACHMENTID,GLOBALID,REL_GLOBALID,CONTENT_TYPE,ATT_NAME,DATA_SIZE,DATA" //REL_GLOBALID
-			sep := ""
-			p := ""
-			for i := 0; i < 7; i++ {
-				p = p + sep + config.GetParam(i)
-				sep = ","
-			}
-			var vals []interface{}
-			vals = append(vals, objectid)
-			//vals = append(vals, config.UUID)
-			vals = append(vals, uuidstr)
-			vals = append(vals, globalid)
-			vals = append(vals, http.DetectContentType(buf[:512]))
-			vals = append(vals, fileName)
-			vals = append(vals, len(buf))
-			vals = append(vals, buf)
+			if config.DbSource != config.FILE {
+				cols := "\"ATTACHMENTID\",\"GLOBALID\",\"REL_GLOBALID\",\"CONTENT_TYPE\",\"ATT_NAME\",\"DATA_SIZE\",\"DATA\"" //REL_GLOBALID
+				sep := ""
+				p := ""
+				for i := 1; i < 8; i++ {
+					p = p + sep + config.GetParam(i)
+					sep = ","
+				}
+				var vals []interface{}
+				vals = append(vals, objectid)
+				//vals = append(vals, config.UUID)
+				vals = append(vals, uuidstr)
+				vals = append(vals, globalid)
+				vals = append(vals, http.DetectContentType(buf[:512]))
+				vals = append(vals, fileName)
+				vals = append(vals, len(buf))
+				vals = append(vals, buf)
 
-			//blob, err := ioutil.ReadAll(file)
-			//c := 1
+				//blob, err := ioutil.ReadAll(file)
+				//c := 1
 
-			//defer rows.Close()
-			/*
-				for rows.Next() {
-					err := rows.Scan(&objectid)
-					if err != nil {
-						//log.Fatal(err)
-						objectid = 1
+				//defer rows.Close()
+				/*
+					for rows.Next() {
+						err := rows.Scan(&objectid)
+						if err != nil {
+							//log.Fatal(err)
+							objectid = 1
+						}
 					}
-				}
-				rows.Close()
-			*/
-			/*
-				if len(globalIdName) > 0 {
-					cols += sep + globalIdName
-					p += sep + config.GetParam(c)
-					vals = append(vals, globalId)
-				}
-			*/
-			//1	{1085FDD1-89A3-4DEC-8171-787DA675FA84}	{89F39A8E-A4BD-4FB4-AE40-4A70F7AF6134}	image/jpeg	fark_EBoAgJdmC_knRWz-3t9Nx-2Tz8Y.jpg	21053	BLOB sz=21053 JPEG image
-			//log.Println("insert into " + tableName + "(" + cols + ") values(" + p + ")")
-			//log.Print(vals)
+					rows.Close()
+				*/
+				/*
+					if len(globalIdName) > 0 {
+						cols += sep + globalIdName
+						p += sep + config.GetParam(c)
+						vals = append(vals, globalId)
+					}
+				*/
+				//1	{1085FDD1-89A3-4DEC-8171-787DA675FA84}	{89F39A8E-A4BD-4FB4-AE40-4A70F7AF6134}	image/jpeg	fark_EBoAgJdmC_knRWz-3t9Nx-2Tz8Y.jpg	21053	BLOB sz=21053 JPEG image
+				//log.Println("insert into " + tableName + "(" + cols + ") values(" + p + ")")
+				//log.Print(vals)
 
-			sql = "insert into " + tableName + "(" + cols + ") values(" + p + ")"
-			log.Printf("insert into %v(%v) values(%v,'%v','%v','%v','%v',%v)", tableName, cols, vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
+				sql := "insert into " + config.Schema + config.DblQuote(tableName) + "(" + cols + ") values(" + p + ")"
+				log.Printf("insert into %v(%v) values(%v,'%v','%v','%v','%v',%v)", config.Schema+tableName, cols, vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
 
-			/*
-				stmt, err := config.DbQuery.Prepare(sql)
+				/*
+					stmt, err := config.DbQuery.Prepare(sql)
+					if err != nil {
+						log.Println(err.Error())
+					}
+				*/
+				res, err := config.DbQuery.Exec(sql, vals...)
 				if err != nil {
 					log.Println(err.Error())
-				}
-			*/
-			res, err := config.DbQuery.Exec(sql, vals...)
-			if err != nil {
-				log.Println(err.Error())
-			} else {
-				objectid, err := res.LastInsertId()
-				if err != nil {
-					println("Error:", err.Error())
 				} else {
-					println("LastInsertId:", objectid)
+					if config.DbSource == config.SQLITE3 {
+						objectid, err := res.LastInsertId()
+						if err != nil {
+							println("Error:", err.Error())
+						} else {
+							println("LastInsertId:", objectid)
+						}
+					}
 				}
+
 			}
 
 			response, _ := json.Marshal(map[string]interface{}{"addAttachmentResult": map[string]interface{}{"objectId": objectid, "globalId": globalid, "success": true}})
@@ -2038,9 +2077,8 @@ func StartGorillaMux() *mux.Router {
 		var aid = r.FormValue("attachmentId")
 		//aidInt, _ := strconv.Atoi(aid)
 		//aid = strconv.Itoa(aidInt - 1)
-		var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
-		var tableName = parentTableName + "__ATTACH_evw"
 
+		//if config.DbSource == config.FILE {
 		var uploadPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/" + row + "/updateAttachment")
 		const MAX_MEMORY = 10 * 1024 * 1024
@@ -2064,35 +2102,41 @@ func StartGorillaMux() *mux.Router {
 				ioutil.WriteFile(path, buf, os.ModePerm)
 			}
 		}
-		cols := []string{"CONTENT_TYPE", "ATT_NAME", "DATA_SIZE", "DATA"}
-		sep := ""
-		p := ""
-		for i := 0; i < len(cols); i++ {
-			p = p + sep + cols[i] + "=" + config.GetParam(i)
-			sep = ","
-		}
-		var vals []interface{}
-		//vals = append(vals, objectid)
-		//vals = append(vals, config.UUID)
-		//vals = append(vals, globalid)
+		//} else {
+		if config.DbSource != config.FILE {
+			var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var tableName = parentTableName + "__ATTACH" + config.TableSuffix
 
-		vals = append(vals, http.DetectContentType(buf[:512]))
-		vals = append(vals, fileName)
-		vals = append(vals, len(buf))
+			cols := []string{"CONTENT_TYPE", "ATT_NAME", "DATA_SIZE", "DATA"}
+			sep := ""
+			p := ""
+			for i := 0; i < len(cols); i++ {
+				p = p + sep + config.DblQuote(cols[i]) + "=" + config.GetParam(i)
+				sep = ","
+			}
+			var vals []interface{}
+			//vals = append(vals, objectid)
+			//vals = append(vals, config.UUID)
+			//vals = append(vals, globalid)
 
-		vals = append(vals, buf)
+			vals = append(vals, http.DetectContentType(buf[:512]))
+			vals = append(vals, fileName)
+			vals = append(vals, len(buf))
 
-		sql := "update " + tableName + " set " + p + " where ATTACHMENTID=" + config.GetParam(0)
-		log.Printf("update %v(%v) values('%v','%v',%v)", tableName, cols, vals[0], vals[1], vals[2])
-		res, err := config.DbQuery.Exec(sql, vals...)
-		if err != nil {
-			log.Println(err.Error())
-		} else {
-			objectid, err := res.LastInsertId()
+			vals = append(vals, buf)
+
+			sql := "update " + tableName + " set " + p + " where ATTACHMENTID=" + config.GetParam(1)
+			log.Printf("update %v(%v) values('%v','%v',%v)", tableName, cols, vals[0], vals[1], vals[2])
+			res, err := config.DbQuery.Exec(sql, vals...)
 			if err != nil {
-				println("Error:", err.Error())
+				log.Println(err.Error())
 			} else {
-				println("LastInsertId:", objectid)
+				objectid, err := res.LastInsertId()
+				if err != nil {
+					println("Error:", err.Error())
+				} else {
+					println("LastInsertId:", objectid)
+				}
 			}
 		}
 
@@ -2123,21 +2167,9 @@ func StartGorillaMux() *mux.Router {
 		aidInt, _ := strconv.Atoi(aid)
 		//aid = strconv.Itoa(aidInt - 1)
 
-		var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
-		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
-		var tableName = parentTableName + "__ATTACH_evw"
-		var vals []interface{}
-		vals = append(vals, row)
-
-		sql := "delete from " + tableName + " where ATTACHMENTID=" + config.GetParam(0)
-		log.Printf("delele from %v where "+parentObjectID+"=%v", tableName, row)
-
-		_, err := config.DbQuery.Exec(sql, vals...)
-		if err != nil {
-			log.Println(err.Error())
-		}
 		//results := []string{"objectId": id, "globalId": nil, "success": true}
 		//results := []string{aid}
+
 		var AttachmentPath = config.AttachmentsPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "attachments" + string(os.PathSeparator) + id + string(os.PathSeparator) + row + string(os.PathSeparator)
 		files, _ := ioutil.ReadDir(AttachmentPath)
 		//i := 0
@@ -2155,6 +2187,22 @@ func StartGorillaMux() *mux.Router {
 				break
 			}
 		}
+		if config.DbSource != config.FILE {
+			var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
+			var tableName = parentTableName + "__ATTACH" + config.TableSuffix
+			var vals []interface{}
+			vals = append(vals, row)
+
+			sql := "delete from " + tableName + " where ATTACHMENTID=" + config.GetParam(1)
+			log.Printf("delele from %v where "+config.DblQuote(parentObjectID)+"=%v", tableName, row)
+
+			_, err := config.DbQuery.Exec(sql, vals...)
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+		}
 
 		response, _ := json.Marshal(map[string]interface{}{"deleteAttachmentResults": aidInt})
 		w.Header().Set("Content-Type", "application/json")
@@ -2170,7 +2218,7 @@ func StartGorillaMux() *mux.Router {
 		idInt, _ := strconv.Atoi(id)
 		fieldStr := r.URL.Query().Get("field")
 		if len(fieldStr) == 0 {
-			fieldStr = "\"ItemInfo\""
+			fieldStr = config.DblQuote("ItemInfo")
 		}
 		dbPath := r.URL.Query().Get("db")
 
@@ -2216,7 +2264,7 @@ func StartGorillaMux() *mux.Router {
 				return
 			}
 			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
-			sql := "update \"GDB_ServiceItems\" set " + fieldStr + "=? where " + parentObjectID + "=?"
+			sql := "update " + config.Schema + config.DblQuote("GDB_ServiceItems") + " set " + fieldStr + "=? where " + config.DblQuote(parentObjectID) + "=?"
 			log.Println(sql)
 			//log.Println(body)
 			log.Println(id)
@@ -2247,7 +2295,7 @@ func StartGorillaMux() *mux.Router {
 		//Db.Exec(initializeStr)
 		log.Print("Sqlite database: " + dbName)
 		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT " + fieldStr + " FROM \"GDB_ServiceItems\" where " + parentObjectID + "=?"
+		sql := "SELECT " + fieldStr + " FROM " + config.Schema + config.DblQuote("GDB_ServiceItems") + " where " + config.DblQuote(parentObjectID) + "=?"
 		log.Printf("Query: "+sql+"%v", idInt)
 
 		stmt, err := config.DbSqliteQuery.Prepare(sql)
@@ -2337,7 +2385,7 @@ func StartGorillaMux() *mux.Router {
 				return
 			}
 			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
-			sql := "update \"GDB_Items\" set \"Definition\"=? where PhysicalName=?" //OBJECTID=?"
+			sql := "update " + config.Schema + "\"GDB_Items\" set \"Definition\"=? where PhysicalName=?" //OBJECTID=?"
 			stmt, err := config.DbSqliteQuery.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
@@ -2365,7 +2413,7 @@ func StartGorillaMux() *mux.Router {
 		//Db.Exec(initializeStr)
 		log.Print("Sqlite database: " + dbName)
 		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT \"Definition\" FROM \"GDB_Items\" where PhysicalName=?" //OBJECTID=?"
+		sql := "SELECT \"Definition\" FROM " + config.Schema + "\"GDB_Items\" where PhysicalName=?" //OBJECTID=?"
 		log.Printf("Query: "+sql+"%v", tableName)
 
 		stmt, err := config.DbSqliteQuery.Prepare(sql)
@@ -2451,7 +2499,7 @@ func StartGorillaMux() *mux.Router {
 		//Db.Exec(initializeStr)
 		log.Print("Sqlite database: " + dbName)
 		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT * FROM \"" + tableName + "\""
+		sql := "SELECT * FROM " + config.DblQuote(tableName)
 		log.Printf("Query: " + sql)
 
 		//var itemInfo *[]byte
@@ -2533,13 +2581,15 @@ func StartGorillaMux() *mux.Router {
 		var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 		//returnGeometry := r.FormValue("returnGeometry")
 		objectIds := r.FormValue("objectIds")
+		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query")
 		//returnIdsOnly = true
 
-		log.Println(r.FormValue("returnGeometry"))
-		log.Println(r.FormValue("outFields"))
+		//log.Println(r.FormValue("returnGeometry"))
+		//log.Println(r.FormValue("outFields"))
 		//sql := "select "+outFields + " from " +
 
 		if len(where) > 0 {
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/where=" + where)
 			//response := config.GetArcQuery(name, "FeatureServer", idInt, "query",objectIds,where)
 			w.Header().Set("Content-Type", "application/json")
 			//var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
@@ -2547,7 +2597,7 @@ func StartGorillaMux() *mux.Router {
 			w.Write(response)
 
 		} else if returnIdsOnly == "true" {
-			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/objectids")
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/objectids")
 
 			response := config.GetArcService(name, "FeatureServer", idInt, "objectids", dbPath)
 			if len(response) > 0 {
@@ -2558,6 +2608,7 @@ func StartGorillaMux() *mux.Router {
 				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".objectids.json")
 			}
 		} else if len(objectIds) > 0 {
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/objectIds=" + objectIds)
 
 			//only get the select objectIds
 			//response := config.GetArcService(name, "FeatureServer", idInt, "query")
@@ -2573,7 +2624,7 @@ func StartGorillaMux() *mux.Router {
 			}
 			//if returnGeometry == "false" &&
 		} else if strings.Index(outFields, parentObjectID) > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
-			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/outfields")
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/outfields=" + outFields)
 
 			response := config.GetArcService(name, "FeatureServer", idInt, "outfields", dbPath)
 			if len(response) > 0 {
@@ -2584,7 +2635,7 @@ func StartGorillaMux() *mux.Router {
 				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".outfields.json")
 			}
 		} else {
-			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query")
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/else")
 
 			response := config.GetArcService(name, "FeatureServer", idInt, "query", dbPath)
 			if len(response) > 0 {
@@ -2712,7 +2763,7 @@ func StartGorillaMux() *mux.Router {
 			//records.ObjectId = objectId
 			//records.RelatedRecord = map[string]interface{}
 			//c := 0
-			log.Printf("Finding: %v", oJoinVal)
+			//log.Printf("Finding: %v", oJoinVal)
 
 			for k, i := range fieldObj.Features {
 				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
@@ -2720,7 +2771,7 @@ func StartGorillaMux() *mux.Router {
 
 				if i.Attributes[dJoinKey] == oJoinVal {
 					//if strings.EqualFold(i.Attributes[dJoinKey],oJoinVal)
-					log.Printf("Found: %v", i.Attributes[dJoinKey])
+					//log.Printf("Found: %v", i.Attributes[dJoinKey])
 					var rec structs.RelatedRecord
 					//i.Attributes["OBJECTID"]
 					//fieldObj.Features[k].Attributes = updates[num].Attributes
@@ -2781,10 +2832,11 @@ func StartGorillaMux() *mux.Router {
 
 		var sql string
 		var fields []byte
+		var fieldsArr []structs.Field
 
 		if config.DbSource == config.PGSQL {
-			sql = "select json->'fields' from services where service=$1 and name=$2 and layerid=$3 and type=$4"
-			log.Printf("select json->'fields' from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
+			sql = "select json->'fields' from " + config.Schema + "services where service=$1 and name=$2 and layerid=$3 and type=$4"
+			log.Printf("select json->'fields' from "+config.Schema+"services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
 			stmt, err := config.Db.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
@@ -2797,6 +2849,40 @@ func StartGorillaMux() *mux.Router {
 				w.Write([]byte("{\"fields\":[],\"relatedRecordGroups\":[]}"))
 				return
 			}
+			err = json.Unmarshal(fields, &fieldsArr)
+			if err != nil {
+				log.Println("Error unmarshalling fields into features object: " + string(fields))
+				log.Println(err.Error())
+			}
+			/*
+				var outFieldsArr []string
+				if outFields != "*" {
+					outFieldsArr = strings.Split(outFields, ",")
+				}
+			*/
+			outFields = ""
+			pre := ""
+			//need to change date fields to TO_CHAR(created_date, 'J')
+			for _, i := range fieldsArr {
+				//log.Println("%v %v\n", k, i)
+				if i.Type == "esriFieldTypeDate" {
+					//outFields += pre + "TO_CHAR(" + i.Name + ", 'J') as " + i.Name
+					outFields += pre + "(CAST (to_char(" + i.Name + ", 'J') AS INT) - 2440587.5)*86400.0*1000  as " + i.Name
+				} else {
+					outFields += pre + config.DblQuote(i.Name)
+				}
+				pre = ","
+				//outFields += config.DblQuote(fieldObj.Features[k].Attributes)
+				//if fieldObj.Features[i].Attributes["OBJECTID"] == objectid {
+				//log.Printf("%v:%v", i.Attributes["OBJECTID"].(float64), strconv.Itoa(objectid))
+				//if int(i.Attributes[parentObjectID].(float64)) == objectid {
+				//i.Attributes["OBJECTID"]
+				//fieldObj.Features[k].Attributes = updates[0].Attributes
+				//break
+				//}
+			}
+			//log.Println("%v", outFieldsArr)
+
 		} else if config.DbSource == config.SQLITE3 {
 			sql = "select json from services where service=? and name=? and layerid=? and type=?"
 			log.Printf("select json from services where service='%v' and name='%v' and layerid=%v and type='%v'", name, "FeatureServer", dID, "")
@@ -2813,6 +2899,7 @@ func StartGorillaMux() *mux.Router {
 				return
 			}
 			//fields = fields["fields"]
+
 			var fieldObj structs.FeatureTable
 			//map[string]map[string]map[string]
 			err = json.Unmarshal(fields, &fieldObj)
@@ -2820,18 +2907,23 @@ func StartGorillaMux() *mux.Router {
 				log.Println("Error unmarshalling fields into features object: " + string(fields))
 				log.Println(err.Error())
 			}
-			fields, err = json.Marshal(fieldObj.Fields)
-			if err != nil {
-				log.Println(err)
-			}
+			fieldsArr = fieldObj.Fields
+
 		}
+		//Fields            []Field   `json:"fields,omitempty"`
+		//create outFields
+
+		//fields = fields["fields"]
+		//map[string]map[string]map[string]
+
+		//for
 
 		//_, err = w.Write(fields)
 		//return
 		//var replicaDb = config.RootPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
-		var tableName = config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string)
+		//var tableName = config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string)
 
-		log.Println(tableName)
+		//log.Println(tableName)
 		//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 		//var jsonFields=JSON.parse(file)
 		//log.Println("sqlite: " + replicaDb)
@@ -2841,12 +2933,12 @@ func StartGorillaMux() *mux.Router {
 		//	joinField = "substr(" + joinField + ", 2, length(" + joinField + ")-2)"
 		//}
 		var sqlstr = "select " + outFields + " from " + config.Schema +
-			config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string) + "_evw" +
+			config.DblQuote(config.Project.Services[name]["relationships"][relationshipId]["dTable"].(string)+config.TableSuffix) +
 			" where " +
-			config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string) + " in (select " +
-			joinField + " from " +
-			config.Project.Services[name]["relationships"][relationshipId]["oTable"].(string) +
-			" where " + parentObjectID + " in(" + config.GetParam(1) + "))"
+			config.DblQuote(config.Project.Services[name]["relationships"][relationshipId]["dJoinKey"].(string)) + " in (select " +
+			config.DblQuote(joinField) + " from " +
+			config.Schema + config.DblQuote(config.Project.Services[name]["relationships"][relationshipId]["oTable"].(string)) +
+			" where " + config.DblQuote(parentObjectID) + " in(" + config.GetParam(1) + "))"
 
 		//_, err = w.Write([]byte(sqlstr))
 		log.Println(strings.Replace(sqlstr, config.GetParam(1), objectIds, -1))
@@ -2870,9 +2962,13 @@ func StartGorillaMux() *mux.Router {
 		var guuids = map[string]int{"GlobalGUID": 1, "GlobalID": 1}
 		var dates = map[string]int{"created_date": 1, "last_edited_date": 1}
 		columns, _ := rows.Columns()
+		//colTypes, _ := rows.ColumnTypes()
 		count := len(columns)
 		values := make([]interface{}, count)
 		valuePtrs := make([]interface{}, count)
+		//for i, col := range colTypes {
+		//	log.Printf("%v: %v", col.Name, col.DatabaseTypeName)
+		//}
 		//final_result := map[int]map[string]string{}
 		//works final_result := map[int]map[string]interface{}{}
 		final_result := make([]interface{}, 0)
@@ -2891,10 +2987,11 @@ func StartGorillaMux() *mux.Router {
 			for i, col := range columns {
 				//var v interface{}
 				val := values[i]
-				//log.Printf("%v", val)
+
 				if colLookup[col] != "" {
 					col = colLookup[col]
 				}
+				//fmt.Printf("Integer: %v=%v\n", col, val)
 				switch t := val.(type) {
 				case int:
 					//fmt.Printf("Integer: %v=%v\n", col, t)
@@ -2911,7 +3008,8 @@ func StartGorillaMux() *mux.Router {
 					//fmt.Printf("Col: %v (uint8): %v\n", col, t)
 					b, _ := val.([]byte)
 					tmp_struct[col] = fmt.Sprintf("%s", b)
-					if guuids[col] == 1 {
+					//sqlite
+					if guuids[col] == 1 && tmp_struct[col] != nil {
 						tmp_struct[col] = strings.Trim(tmp_struct[col].(string), "{}")
 					}
 					//fmt.Printf("Col: %v (uint8): %v\n", col, tmp_struct[col])
@@ -2920,8 +3018,12 @@ func StartGorillaMux() *mux.Router {
 					//fmt.Printf("Integer 64: %v\n", t)
 					tmp_struct[col] = val
 				case string:
-					//fmt.Printf("String: %v=%v\n", col, val)
 					tmp_struct[col] = fmt.Sprintf("%s", val)
+					//pg
+					if guuids[col] == 1 && tmp_struct[col] != nil {
+						tmp_struct[col] = strings.Trim(tmp_struct[col].(string), "{}")
+					}
+					//fmt.Printf("String: %v=%v:  %v\n", col, val, tmp_struct[col])
 				case bool:
 					//fmt.Printf("Bool: %v\n", t)
 					tmp_struct[col] = val
@@ -2957,6 +3059,11 @@ func StartGorillaMux() *mux.Router {
 			response = response[1:]
 		} else {
 			response = []byte("\"relatedRecordGroups\":[]}")
+		}
+		//convert fields to string
+		fields, err = json.Marshal(fieldsArr)
+		if err != nil {
+			log.Println(err)
 		}
 
 		//var response []byte
@@ -3115,17 +3222,17 @@ func StartGorillaMux() *mux.Router {
 			}
 
 		} else {
-			var tableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var tableName = config.Project.Services[name]["layers"][id]["data"].(string)
 			var globalIdName = config.Project.Services[name]["layers"][id]["globaloidname"].(string)
-			log.Println("Table name: " + tableName)
+			//log.Println("Table name: " + tableName)
 			//var layerId = int(config.Services[name]["relationships"][relationshipId]["dId"].(float64))
 
 			if len(r.FormValue("updates")) > 0 {
-				response = Updates(name, id, tableName, tableName+"_evw", r.FormValue("updates"), globalIdName, joinField, parentObjectID)
+				response = Updates(name, id, tableName, tableName+config.TableSuffix, r.FormValue("updates"), globalIdName, joinField, parentObjectID)
 			} else if len(r.FormValue("adds")) > 0 {
-				response = Adds(name, id, tableName, tableName+"_evw", r.FormValue("adds"), joinField, globalIdName, parentObjectID)
+				response = Adds(name, id, tableName, tableName+config.TableSuffix, r.FormValue("adds"), joinField, globalIdName, parentObjectID)
 			} else if len(r.FormValue("deletes")) > 0 {
-				response = Deletes(name, id, tableName, tableName+"_evw", r.FormValue("deletes"), globalIdName, parentObjectID)
+				response = Deletes(name, id, tableName, tableName+config.TableSuffix, r.FormValue("deletes"), globalIdName, parentObjectID)
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -3222,7 +3329,7 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 	var objectid int
 	var uuidstr string
 
-	log.Println(addsTxt)
+	//log.Println(addsTxt)
 	var adds []structs.Feature
 	decoder := json.NewDecoder(strings.NewReader(addsTxt)) //r.Body
 	err := decoder.Decode(&adds)
@@ -3235,7 +3342,7 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 	c := 1
 
 	//need to update "GDB_RowidGenerators"->"base_id" to new id
-	sql := "select \"base_id\"," + config.UUID + " from \"GDB_RowidGenerators\" where \"registration_id\" in ( SELECT \"registration_id\" FROM \"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
+	sql := "select \"base_id\"," + config.UUID + " from " + config.Schema + "\"GDB_RowidGenerators\" where \"registration_id\" in ( SELECT \"registration_id\" FROM " + config.Schema + "\"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
 	//sql := "select max(" + parentObjectID + ")+1," + config.UUID + " from " + tableName
 	log.Println(sql)
 	rows, err := config.DbQuery.Query(sql)
@@ -3249,7 +3356,7 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 		}
 	}
 	rows.Close()
-	sql = "update \"GDB_RowidGenerators\" set \"base_id\"=" + (strconv.Itoa(objectid + 1)) + " where \"registration_id\" in ( SELECT \"registration_id\" FROM \"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
+	sql = "update " + config.Schema + "\"GDB_RowidGenerators\" set \"base_id\"=" + (strconv.Itoa(objectid + 1)) + " where \"registration_id\" in ( SELECT \"registration_id\" FROM " + config.Schema + "\"GDB_TableRegistry\" where \"table_name\"='" + parentTableName + "')"
 	log.Println(sql)
 	_, err = config.DbQuery.Exec(sql)
 	if err != nil {
@@ -3269,13 +3376,13 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 		for key, j := range i.Attributes {
 			if key == parentObjectID {
 				i.Attributes[parentObjectID] = objectid
-				cols += sep + key
+				cols += sep + config.DblQuote(key)
 				p += sep + config.GetParam(c)
 				sep = ","
 				vals = append(vals, objectid)
 				c++
 			} else {
-				cols += sep + key
+				cols += sep + config.DblQuote(key)
 				p += sep + config.GetParam(c)
 				sep = ","
 				if key == joinField {
@@ -3304,10 +3411,11 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 			}
 		}
 		if len(globalIdName) > 0 {
-			cols += sep + globalIdName
+			cols += sep + config.DblQuote(globalIdName)
 			p += sep + config.GetParam(c)
 			vals = append(vals, uuidstr)
 			i.Attributes[globalIdName] = uuidstr
+			c++
 		}
 		if config.Project.Services[name]["layers"][id]["editFieldsInfo"] != nil {
 			//joinField = config.Project.Services[name]["layers"][id]["joinField"].(string)
@@ -3316,15 +3424,15 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 			if rec, ok := config.Project.Services[name]["layers"][id]["editFieldsInfo"].(map[string]interface{}); ok {
 				for key, j := range rec {
 					//for key, j := range config.Project.Services[name]["layers"][id]["editFieldsInfo"] {
-					cols += sep + j.(string) //config.Project.Services[name]["layers"][id]["editFieldsInfo"][key]
+					cols += sep + config.DblQuote(j.(string)) //config.Project.Services[name]["layers"][id]["editFieldsInfo"][key]
 					if key == "creatorField" || key == "editorField" {
 						vals = append(vals, config.Project.Username)
 						p += sep + config.GetParam(c)
 						i.Attributes[key] = config.Project.Username
 						c++
 					} else if key == "creationDateField" || key == "editDateField" {
-						p += sep + "(julianday('now') - 2440587.5)*86400.0*1000" //julianday('now')"
-						i.Attributes[key] = current_time.Unix() * 1000           //DateToNumber(current_time.Year(), current_time.Month(), current_time.Day())
+						p += sep + config.DbTimeStamp                  //julianday('now')"
+						i.Attributes[key] = current_time.Unix() * 1000 //DateToNumber(current_time.Year(), current_time.Month(), current_time.Day())
 						//year int, month time.Month, day int)
 						//vals = append(vals, "julianday('now')")
 						//cols += sep + j.(string) + "=julianday('now')"
@@ -3352,10 +3460,10 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 		//p += sep + config.GetParam(c)
 		//vals = append(vals, "")
 
-		log.Println("insert into " + tableName + "(" + cols + ") values(" + p + ")")
+		log.Println("insert into " + config.Schema + tableName + "(" + cols + ") values(" + p + ")")
 		log.Print(vals)
 
-		sql := "insert into " + tableName + "(" + cols + ") values(" + p + ")"
+		sql := "insert into " + config.Schema + tableName + "(" + cols + ") values(" + p + ")"
 		/*
 			stmt, err := config.DbQuery.Prepare(sql)
 			if err != nil {
@@ -3366,18 +3474,20 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 		if err != nil {
 			log.Println(err.Error())
 		} else {
-			objectid, err := res.LastInsertId()
-			if err != nil {
-				println("Error:", err.Error())
-			} else {
-				println("LastInsertId:", objectid)
+			if config.DbSource == config.SQLITE3 {
+				objectid, err := res.LastInsertId()
+				if err != nil {
+					println("Error:", err.Error())
+				} else {
+					println("LastInsertId:", objectid)
+				}
 			}
 		}
 		//stmt.Close()
 
 		if config.DbSource == config.PGSQL {
 			//addsTxt = addsTxt[15 : len(addsTxt)-2]
-			sql = "update services set json=jsonb_set(json,'{features}',$1::jsonb,true) where type='query' and layerId=$2"
+			sql = "update " + config.Schema + "services set json=jsonb_set(json,'{features}',json->'features' || $1::jsonb,true) where type='query' and layerId=$2"
 			log.Println(sql)
 			stmt, err := config.Db.Prepare(sql)
 			if err != nil {
@@ -3397,7 +3507,7 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 			}
 			stmt.Close()
 		} else if config.DbSource == config.SQLITE3 {
-			sql := "select json from services where type='query' and layerId=?"
+			sql := "select json from " + config.Schema + "services where type='query' and layerId=?"
 			stmt, err := config.Db.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
@@ -3433,7 +3543,7 @@ func Adds(name string, id string, parentTableName string, tableName string, adds
 				log.Fatal(err)
 			}
 
-			sql = "update services set json=? where type='query' and layerId=?"
+			sql = "update " + config.Schema + "services set json=? where type='query' and layerId=?"
 
 			stmt, err = tx.Prepare(sql)
 			if err != nil {
@@ -3512,9 +3622,9 @@ func Updates(name string, id string, parentTableName string, tableName string, u
 				//if j != nil {
 				//need to handle nulls
 				if j == nil {
-					cols += sep + key + "=null"
+					cols += sep + config.DblQuote(key) + "=null"
 				} else {
-					cols += sep + key + "=" + config.GetParam(c)
+					cols += sep + config.DblQuote(key) + "=" + config.GetParam(c)
 					vals = append(vals, j)
 					c++
 				}
@@ -3533,14 +3643,20 @@ func Updates(name string, id string, parentTableName string, tableName string, u
 			if rec, ok := config.Project.Services[name]["layers"][id]["editFieldsInfo"].(map[string]interface{}); ok {
 				for key, j := range rec {
 					if key == "creatorField" || key == "editorField" {
+						if key == "creatorField" {
+							continue
+						}
 						vals = append(vals, config.Project.Username)
-						cols += sep + j.(string) + "=" + config.GetParam(c) //config.Project.Services[name]["layers"][id]["editFieldsInfo"][key]
+						cols += sep + config.DblQuote(j.(string)) + "=" + config.GetParam(c) //config.Project.Services[name]["layers"][id]["editFieldsInfo"][key]
 						i.Attributes[key] = config.Project.Username
 						updates[num].Attributes[key] = config.Project.Username
 						c++
 					} else if key == "creationDateField" || key == "editDateField" {
 						//vals = append(vals, "julianday('now')")
-						cols += sep + j.(string) + "=((julianday('now') - 2440587.5)*86400.0*1000)"
+						if key == "creationDateField" {
+							continue
+						}
+						cols += sep + config.DblQuote(j.(string)) + "=" + config.DbTimeStamp // "=((julianday('now') - 2440587.5)*86400.0*1000)"
 						//julianday('now')"
 						i.Attributes[key] = current_time.Unix() * 1000
 						//DateToNumber(current_time.Year(), current_time.Month(), current_time.Day())
@@ -3562,14 +3678,14 @@ func Updates(name string, id string, parentTableName string, tableName string, u
 		vals = append(vals, objectid)
 		//tableName = strings.Replace(tableName, "_evw", "", -1)
 
-		log.Println("update " + tableName + " set " + cols + " where " + parentObjectID + "=" + config.GetParam(len(vals)))
+		log.Println("update " + config.Schema + tableName + " set " + cols + " where " + config.DblQuote(parentObjectID) + "=" + config.GetParam(len(vals)))
 		log.Print(vals)
 		//log.Print(objId)
 		var sql string
 		if config.DbSource == config.PGSQL {
-			sql = "update " + tableName + " set " + cols + " where " + parentObjectID + "=" + config.GetParam(len(vals))
+			sql = "update " + config.Schema + config.DblQuote(tableName) + " set " + cols + " where " + config.DblQuote(parentObjectID) + "=" + config.GetParam(len(vals))
 		} else if config.DbSource == config.SQLITE3 {
-			sql = "update " + tableName + " set " + cols + " where " + parentObjectID + "=?"
+			sql = "update " + tableName + " set " + cols + " where " + config.DblQuote(parentObjectID) + "=?"
 		}
 
 		stmt, err := config.DbQuery.Prepare(sql)
@@ -3598,13 +3714,13 @@ func Updates(name string, id string, parentTableName string, tableName string, u
 
 		updateTxt = updateTxt[15 : len(updateTxt)-2]
 		if config.DbSource == config.PGSQL {
-			sql = "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
+			sql = "select pos-1  from " + config.Schema + "services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
 
 			log.Println(sql)
-			log.Print("Layer ID: ")
-			log.Println(id)
-			log.Print("Objectid: ")
-			log.Println(objectid)
+			log.Printf("Layer ID: %v, ObjectID: %v\n", id, objectid)
+			//log.Println(id)
+			//log.Print("Objectid: ")
+			//log.Println(objectid)
 			rows, err := config.Db.Query(sql, id, objectid)
 
 			var rowId int
@@ -3615,7 +3731,8 @@ func Updates(name string, id string, parentTableName string, tableName string, u
 				}
 			}
 			rows.Close()
-			sql = "update services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+			sql = "update " + config.Schema + "services set json=jsonb_set(json,'{features," + strconv.Itoa(rowId) + ",attributes}',$1::jsonb,false) where type='query' and layerId=$2"
+			log.Println(sql)
 			stmt, err = config.Db.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
@@ -3673,7 +3790,7 @@ func Updates(name string, id string, parentTableName string, tableName string, u
 				log.Fatal(err)
 			}
 
-			sql = "update services set json=? where type='query' and layerId=?"
+			sql = "update " + config.Schema + "services set json=? where type='query' and layerId=?"
 			log.Println(sql)
 
 			stmt, err = tx.Prepare(sql)
@@ -3885,9 +4002,9 @@ func Deletes(name string, id string, parentTableName string, tableName string, d
 	result["globalId"] = nil
 	results = append(results, result)
 	//delete from table
-	log.Println("delete from " + tableName + " where " + parentObjectID + " in (" + config.GetParam(0) + ")")
+	log.Println("delete from " + config.Schema + tableName + " where " + config.DblQuote(parentObjectID) + " in (" + config.GetParam(1) + ")")
 	log.Println("delete objectids:  " + deletesTxt + "/" + strconv.Itoa(objectid))
-	var sql = "delete from " + tableName + " where " + parentObjectID + " in (" + config.GetParam(0) + ")"
+	var sql = "delete from " + config.Schema + tableName + " where " + config.DblQuote(parentObjectID) + " in (" + config.GetParam(1) + ")"
 	stmt, err := config.DbQuery.Prepare(sql)
 	if err != nil {
 		log.Println(err.Error())
@@ -3900,7 +4017,7 @@ func Deletes(name string, id string, parentTableName string, tableName string, d
 	stmt.Close()
 
 	if config.DbSource == config.PGSQL {
-		sql := "select pos-1  from services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
+		sql := "select pos-1  from " + config.Schema + "services,jsonb_array_elements(json->'features') with ordinality arr(elem,pos) where type='query' and layerId=$1 and elem->'attributes'->>'OBJECTID'=$2"
 
 		log.Println(sql)
 		log.Printf("Layer ID: %v", id)
@@ -3917,7 +4034,7 @@ func Deletes(name string, id string, parentTableName string, tableName string, d
 		}
 		rows.Close()
 		//sql = "update services set json=json->'features' - " + strconv.Itoa(rowId) + " where type='query' and layerId=$1"
-		sql = "update services set json=json #- '{features," + strconv.Itoa(rowId) + "}' where type='query' and layerId=$1"
+		sql = "update " + config.Schema + "services set json=json #- '{features," + strconv.Itoa(rowId) + "}' where type='query' and layerId=$1"
 		log.Println(sql)
 		log.Printf("Row id: %v", rowId)
 		stmt, err := config.Db.Prepare(sql)
@@ -3976,7 +4093,7 @@ func Deletes(name string, id string, parentTableName string, tableName string, d
 			log.Fatal(err)
 		}
 
-		sql = "update services set json=? where type='query' and layerId=?"
+		sql = "update " + config.Schema + "services set json=? where type='query' and layerId=?"
 
 		stmt, err = tx.Prepare(sql)
 		if err != nil {

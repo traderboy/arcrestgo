@@ -16,8 +16,25 @@ import shutil
 import types
 import ConfigParser
 import copy
+import logging
 
 Config = ConfigParser.ConfigParser()
+
+
+#logging.basicConfig(filename="logfile.txt")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# create a file handler
+handler = logging.FileHandler("logfile.txt")
+handler.setLevel(logging.INFO)
+
+# create a logging format
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+# add the handlers to the logger
+logger.addHandler(handler)
 
 
 arcpy.env.overwriteOutput = True
@@ -1039,7 +1056,7 @@ class CreateNewProject(object):
                if pg:
                    saveToPg(lyr,pg)
                    if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
-                      saveToPg(inFeaturesGDB+"/"+featureName+"__ATTACH",pg)
+                      saveAttachTableToPg(inFeaturesGDB,featureName,"__ATTACH",pg)
 
                fSet = arcpy.FeatureSet()
                fSet.load(desc.dataElement.catalogPath)
@@ -1166,7 +1183,7 @@ class CreateNewProject(object):
                if pg:
                    saveToPg(tbl,pg)
                    if arcpy.Exists(inFeaturesGDB+"/"+featureName+"__ATTACH"):
-                      saveToPg(inFeaturesGDB+"/"+featureName+"__ATTACH",pg)
+                      saveAttachTableToPg(inFeaturesGDB,featureName,"__ATTACH",pg)
 
                feature_json=openJSON(templatePath + "/name.RecordSet.id.json")
                #feature_json['description'] = tbl.description
@@ -1307,6 +1324,7 @@ class CreateNewProject(object):
         LoadCatalog(sqliteDb,"config", "",file)
         if pg:
              saveSqliteToPG(["catalog","services"],sqliteDb,pg)
+             saveSqliteServiceTablesToPG(replicaDestinationPath+"/"+serviceName+".geodatabase",pg)
  
         #conn.close()
         printMessage("Finished")
@@ -3123,19 +3141,61 @@ def saveSqliteToPG(tables,sqliteDb,pg):
     except:
            printMessage("Unable to run sql commands: " + cmd)
 
-    
+def saveSqliteServiceTablesToPG(serviceDb,pg):
+    #SET PGCLIENTENCODING=LATIN1
+    #-lco SCHEMA postgres
+    tables=["GDB_ColumnRegistry","GDB_ItemRelationshipTypes","GDB_ItemRelationships","GDB_ItemTypes","GDB_Items","GDB_Layers","GDB_Locators","GDB_Metadata","GDB_ReplicaLog","GDB_RowidGenerators","GDB_ServiceItems","GDB_TableRegistry","GDB_TablesModified","GDB_Tables_Last_Modified","GDB_Version"]
+    os.putenv("PGCLIENTENCODING","LATIN1")
+    for table in tables:
+        #-lco FID=OBJECTID -preserve_fid  
+        cmd = toolkitPath+"/gdal/ogr2ogr.exe  -lco LAUNDER=NO -lco GEOMETRY_NAME=the_geom --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + serviceDb + "\" \""+table+"\" -overwrite"
+        printMessage("Running " + cmd)
+        try:
+              os.system(cmd)
+        except:
+              printMessage("Unable to run sql commands: " + cmd)
+    os.unsetenv("PGCLIENTENCODING")
 
 def saveToPg(lyr,pg):
    desc = arcpy.Describe(lyr)
+   #-lco FID=OBJECTID -preserve_fid 
    if hasattr(desc,"shapeType"):
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -overwrite"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -overwrite"
    else:
-       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco FID=OBJECTID -preserve_fid -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -overwrite"
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -overwrite"
    printMessage("Running " + cmd)
    try:
         os.system(cmd)
    except:
         printMessage("Unable to run sql commands")
+
+def saveAttachTableToPg(fgdb,lyr,suffix,pg):
+   desc = arcpy.Describe(fgdb+"/"+lyr+suffix)
+   #-lco FID=OBJECTID -preserve_fid 
+   if hasattr(desc,"shapeType"):
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -overwrite"
+   else:
+       cmd = toolkitPath+"/gdal/ogr2ogr.exe -lco LAUNDER=NO -forceNullable --config OGR_SQLITE_SYNCHRONOUS OFF -gt 65536 --config GDAL_DATA \""+toolkitPath + "/gdal/gdal-data\" -f \"Postgresql\" PG:\"" + pg + "\"  \"" + desc.path + "\" " + desc.name.replace(".shp","") + " -nlt None -overwrite"
+   printMessage("Running " + cmd)
+   try:
+        os.system(cmd)
+   except:
+        printMessage("Unable to run sql commands")
+   #find the globalid
+   cmd = toolkitPath+"/gdal/ogrinfo.exe  PG:\"" + pg + "\"  -sql \"alter table \\\""+lyr+suffix+"\\\" rename \\\"GlobalID\\\" to \\\"GLOBALID\\\""
+   printMessage("Running " + cmd)
+   try:
+        os.system(cmd)
+   except:
+        printMessage("Unable to run sql commands: " + cmd)
+
+   #need to rename grazing_inspections_GlobalID fields to REL_GLOBALID
+   cmd = toolkitPath+"/gdal/ogrinfo.exe  PG:\"" + pg + "\"  -sql \"alter table \\\""+lyr+suffix+"\\\" rename \\\""+lyr + "_GlobalID\\\" to \\\"REL_GLOBALID\\\""
+   printMessage("Running " + cmd)
+   try:
+        os.system(cmd)
+   except:
+        printMessage("Unable to run sql commands: " + cmd)
 
 def saveToSqlite(lyr,sqliteDb):
    desc = arcpy.Describe(lyr)
@@ -3157,17 +3217,17 @@ def saveToSqliteUsingArcpy(lyr,sqliteDb):
         try:
             arcpy.CreateFeatureclass_management(sqliteDb,inFeaturesSqlName, desc.shapeType.upper())
         except Exception as e:
-            arcpy.AddMessage("Table already exists")
+            printMessage("Table already exists")
             printMessage(e)
         try:
             arcpy.CopyFeatures_management(desc.catalogPath, sqliteDb+"/"+inFeaturesSqlName)
         except Exception as e:
-            arcpy.AddMessage("Unable to copy features")
+            printMessage("Unable to copy features")
             printMessage(e)
 
    else:
         arcpy.CopyRows_management(desc.catalogPath, sqliteDb+"/"+inFeaturesSqlName)
-        arcpy.AddMessage("")
+        printMessage("")
 
    arcpy.ClearWorkspaceCache_management(sqliteDb)
    desc = arcpy.Describe(sqliteDb)
@@ -3177,7 +3237,7 @@ def initializeSqlite(sqliteDb):
         #conn = sqlite3.connect("c:/massappraisal/colville/"+inFeaturesName+".sqlite")
         c = conn.cursor()
 
-        c.execute("PRAGMA journal_mode=WAL")
+        #c.execute("PRAGMA journal_mode=WAL")
         c.execute("DROP TABLE IF EXISTS catalog")
         c.execute("DROP TABLE IF EXISTS services")
         c.execute("CREATE TABLE IF NOT EXISTS catalog (id INTEGER PRIMARY KEY AUTOINCREMENT, name text, type text, json text)")
@@ -3223,6 +3283,7 @@ def LoadService(sqliteDb,service,name,  layerid,dtype,file):
     conn.close()
 
 def printMessage(str):
+  logger.info(str)
   if sys.executable.find("python.exe") != -1:
      print(str)
   else:
@@ -3253,7 +3314,7 @@ def main():
        #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016grazing.mxd"
        #mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016homesites.mxd"
        mxd=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\mxd\leasecompliance2016.mxd"
-       pg=None
+       #pg=None
        
        
     elif socket.gethostname()=='steve-laptop':

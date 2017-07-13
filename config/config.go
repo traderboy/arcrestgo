@@ -36,6 +36,8 @@ var Catalogs map[string]structs.Catalog
 var DbSource = SQLITE3
 
 var Schema = "postgres."
+var TableSuffix = ""
+var DbTimeStamp = ""
 
 var Project structs.JSONConfig
 var RootPath = "catalogs"
@@ -48,7 +50,7 @@ var HTTPPort = ":80"
 var HTTPSPort = ":443"
 var Pem = "ssl/reais.x10host.com.key.pem"
 var Cert = "ssl/2_reais.x10host.com.crt"
-var UUID = "(select '{'||upper(substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12))||'}' from ( select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v))"
+var UUID = ""
 
 //"github.com/gin-gonic/gin"
 //Db is the SQLITE databa se object
@@ -99,6 +101,10 @@ func Initialize() {
 					DbName = pwd + string(os.PathSeparator) + "arcrest.sqlite"
 				}
 				Schema = ""
+				TableSuffix = "_evw"
+				UUID = "(select '{'||upper(substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12))||'}' from ( select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v) as foo)"
+				DbTimeStamp = "(julianday('now') - 2440587.5)*86400.0*1000"
+
 			} else if os.Args[i] == "-pgsql" {
 				DbSource = PGSQL
 				if len(os.Args) > i+1 && os.Args[i+1][0] != 45 { // && len(os.Args[i+1]) > 0 && os.Args[i+1][0] != 45
@@ -107,6 +113,10 @@ func Initialize() {
 					DbName = "user=postgres dbname=gis host=192.168.99.100"
 				}
 				Schema = "postgres."
+				UUID = "('{'||md5(random()::text || clock_timestamp()::text)::uuid||'}')"
+				//DbTimeStamp = "(CAST (to_char(now(), 'J') AS INT) - 2440587.5)*86400.0*1000"
+				DbTimeStamp = "(now())"
+
 			} else if os.Args[i] == "-root" {
 				if len(os.Args) > i+1 && os.Args[i+1][0] != 45 {
 					RootPath, _ = filepath.Abs(os.Args[i+1])
@@ -666,8 +676,8 @@ func GetArcQuery(catalog string, service string, layerid int, dtype string, obje
 		}
 		return jsonstr
 	} else if DbSource == PGSQL {
-		sql := "select json from services where service=$1 and name=$2 and layerid=$3 and type=$4"
-		log.Printf("select json from services where service='%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
+		sql := "select json from " + Schema + "services where service=$1 and name=$2 and layerid=$3 and type=$4"
+		log.Printf("select json from "+Schema+"services where service='%v' and name='%v' and layerid=%v and type='%v'", catalog, service, layerid, dtype)
 		stmt, err := Db.Prepare(sql)
 		if err != nil {
 			log.Println(err.Error())
@@ -681,6 +691,7 @@ func GetArcQuery(catalog string, service string, layerid int, dtype string, obje
 			return []byte("")
 		}
 		var featureObj structs.FeatureTable
+		//var fieldsArr []structs.Field
 		err = json.Unmarshal(fields, &featureObj)
 		if err != nil {
 			log.Println("Error unmarshalling fields into features object: " + string(fields))
@@ -798,6 +809,9 @@ func in_array(v interface{}, in interface{}) (ok bool, i int) {
 		}
 	}
 	return
+}
+func DblQuote(s string) string {
+	return "\"" + s + "\""
 }
 func testQuery() {
 

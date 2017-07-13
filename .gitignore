@@ -52,3 +52,5 @@ go-sqlite3/*
 catalogs.old/*
 *.ini
 delta*.geodatabase
+settings.ini
+logfile.txt
