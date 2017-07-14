@@ -3308,6 +3308,7 @@ def main():
     if socket.gethostname()=='steve-desktop':
        #host="gis.biz.tm"
        host="reais.x10host.com"
+       host="arcrest.ddns.net"
        root=r"D:\workspace\go\src\github.com\traderboy\arcrestgo"
        db=r"D:\workspace\go\src\github.com\traderboy\arcrestgo\arcrest.sqlite"
        #mxd=r"C:\Users\steve\Documents\ArcGIS\Packages\leasecompliance2016_B4A776C0-3F50-4B7C-ABEE-76C757E356C7\v103\leasecompliance2016.mxd"

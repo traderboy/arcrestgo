@@ -1,8 +1,22 @@
+# CGO_ENABLED=1 GOOS=linux go build --ldflags '-extldflags "-static"' -installsuffix cgo -o server.bin server.go
+# docker cp arcrestgo:/usr/local/go/src/github.com/traderboy/arcrestgo/server.bin docker
+
+# docker build –t traderboy/arcrestserver -f docker/Dockerfile_scratch .
+# docker run -d -p 80:80 -p 443:443 -e HTTPS_PORT=443 -e HTTP_PORT=80 --name arcrestserver traderboy/arcrestserver
 FROM scratch
 
-COPY /server /server/
+#RUN mkdir /app
 
-CMD ["/server"]
+ADD catalogs /catalogs
+ADD dist /dist
+ADD ssl /ssl
+ADD arcrest.sqlite /
+ADD docker/server.bin /
+ADD index.html /
+
+WORKDIR /
+
+CMD ["./server.bin","-root catalogs","-file"]
 
 
 #FROM postgres:9.5
@@ -33,4 +47,4 @@ CMD ["/server"]
 #ADD myapp /app/
 #ENTRYPOINT ["./server"]
 
-EXPOSE 8080
+#EXPOSE 8080

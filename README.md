@@ -15,10 +15,8 @@ ogr2ogr -append -lco GEOMETRY_NAME=the_geom -lco SCHEMA=public -f "PostgreSQL" P
 
 ogr2ogr -f "PostgreSQL" PG:"dbname=gis user=postgres" "source_data.json" 
 
-
 docker run  -v /d/data:/data  -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" /data/accommodationagreementrentals.geodatabase -skipfailures
 docker run  -v /d/data:/data  -v /d/git:/git geodata/gdal:local ogr2ogr -f "PostgreSQL" PG:"host=192.168.99.100 dbname=gis user=postgres" /data/content.items.data.json -skipfailures
-
 
 SELECT load_extension( 'd:/bin/mod_spatialite.dll', 'sqlite3_modspatialite_init')
 SELECT load_extension( 'd:/bin/stgeometry_sqlite.dll', 'SDE_SQL_funcs_init');

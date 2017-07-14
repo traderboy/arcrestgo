@@ -142,6 +142,7 @@ func main() {
 	//http.ListenAndServe(":8080", http.HandlerFunc(redirectToHttps))
 
 }
+
 func TestDb() {
 	Db, err := sql.Open("sqlite3", "file:"+"D:/workspace/go/src/github.com/traderboy/arcrestgo/arcrest.sqlite"+"?PRAGMA journal_mode=WAL")
 	if err != nil {

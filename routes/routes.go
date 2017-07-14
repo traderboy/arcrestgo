@@ -1500,58 +1500,59 @@ func StartGorillaMux() *mux.Router {
 		}).Methods("POST", "PUT")
 	*/
 
-	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryLocal", func(w http.ResponseWriter, r *http.Request) {
-		//if(req.query.outFields=='OBJECTID'){
-		vars := mux.Vars(r)
-		name := vars["name"]
-		id := vars["id"]
-		idInt, _ := strconv.Atoi(id)
-		log.Println(r.FormValue("returnGeometry"))
-		log.Println(r.FormValue("outFields"))
+	/*
+		r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryLocal", func(w http.ResponseWriter, r *http.Request) {
+			//if(req.query.outFields=='OBJECTID'){
+			vars := mux.Vars(r)
+			name := vars["name"]
+			id := vars["id"]
+			idInt, _ := strconv.Atoi(id)
+			log.Println(r.FormValue("returnGeometry"))
+			log.Println(r.FormValue("outFields"))
 
-		if len(r.FormValue("where")) > 0 {
-			w.Header().Set("Content-Type", "application/json")
-			var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
-			w.Write(response)
-
-		} else if len(r.FormValue("objectIds")) > 0 {
-			response := config.GetArcService(name, "FeatureServer", idInt, "query", "")
-			if len(response) > 0 {
+			if len(r.FormValue("where")) > 0 {
 				w.Header().Set("Content-Type", "application/json")
+				var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
 				w.Write(response)
+
+			} else if len(r.FormValue("objectIds")) > 0 {
+				response := config.GetArcService(name, "FeatureServer", idInt, "query", "")
+				if len(response) > 0 {
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(response)
+				} else {
+					log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
+					http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+
+				}
+			} else if r.FormValue("returnGeometry") == "false" && strings.Index(r.FormValue("outFields"), "OBJECTID") > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
+				log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/objectid")
+
+				response := config.GetArcService(name, "FeatureServer", idInt, "objectid", "")
+				if len(response) > 0 {
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(response)
+				} else {
+					log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".objectid.json")
+					http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".objectid.json")
+				}
 			} else {
-				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
-				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+				log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query")
 
+				response := config.GetArcService(name, "FeatureServer", idInt, "query", "")
+				if len(response) > 0 {
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(response)
+				} else {
+					log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
+					http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+
+				}
 			}
-		} else if r.FormValue("returnGeometry") == "false" && strings.Index(r.FormValue("outFields"), "OBJECTID") > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
-			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/objectid")
+			//http.ServeFile(w, r, config.DataPath + "/" + id  + "query.json")
 
-			response := config.GetArcService(name, "FeatureServer", idInt, "objectid", "")
-			if len(response) > 0 {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(response)
-			} else {
-				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".objectid.json")
-				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".objectid.json")
-			}
-		} else {
-			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query")
-
-			response := config.GetArcService(name, "FeatureServer", idInt, "query", "")
-			if len(response) > 0 {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(response)
-			} else {
-				log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
-				http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
-
-			}
-		}
-		//http.ServeFile(w, r, config.DataPath + "/" + id  + "query.json")
-
-	}).Methods("GET", "POST")
-
+		}).Methods("GET", "POST")
+	*/
 	/*
 		r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/query", func(w http.ResponseWriter, r *http.Request) {
 			vars := mux.Vars(r)
@@ -2104,7 +2105,7 @@ func StartGorillaMux() *mux.Router {
 		}
 		//} else {
 		if config.DbSource != config.FILE {
-			var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var parentTableName = config.Project.Services[name]["layers"][id]["data"].(string)
 			var tableName = parentTableName + "__ATTACH" + config.TableSuffix
 
 			cols := []string{"CONTENT_TYPE", "ATT_NAME", "DATA_SIZE", "DATA"}
@@ -2125,17 +2126,19 @@ func StartGorillaMux() *mux.Router {
 
 			vals = append(vals, buf)
 
-			sql := "update " + tableName + " set " + p + " where ATTACHMENTID=" + config.GetParam(1)
-			log.Printf("update %v(%v) values('%v','%v',%v)", tableName, cols, vals[0], vals[1], vals[2])
+			sql := "update " + config.Schema + config.DblQuote(tableName) + " set " + p + " where " + config.DblQuote("ATTACHMENTID") + "=" + config.GetParam(1)
+			log.Printf("update %v%v(%v) values('%v','%v',%v)", config.Schema, config.DblQuote(tableName), cols, vals[0], vals[1], vals[2])
 			res, err := config.DbQuery.Exec(sql, vals...)
 			if err != nil {
 				log.Println(err.Error())
 			} else {
-				objectid, err := res.LastInsertId()
-				if err != nil {
-					println("Error:", err.Error())
-				} else {
-					println("LastInsertId:", objectid)
+				if config.DbSource == config.SQLITE3 {
+					objectid, err := res.LastInsertId()
+					if err != nil {
+						println("Error:", err.Error())
+					} else {
+						println("LastInsertId:", objectid)
+					}
 				}
 			}
 		}
@@ -2188,13 +2191,13 @@ func StartGorillaMux() *mux.Router {
 			}
 		}
 		if config.DbSource != config.FILE {
-			var parentTableName = config.Schema + config.Project.Services[name]["layers"][id]["data"].(string)
+			var parentTableName = config.Project.Services[name]["layers"][id]["data"].(string)
 			var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
 			var tableName = parentTableName + "__ATTACH" + config.TableSuffix
 			var vals []interface{}
 			vals = append(vals, row)
 
-			sql := "delete from " + tableName + " where ATTACHMENTID=" + config.GetParam(1)
+			sql := "delete from " + config.Schema + config.DblQuote(tableName) + " where " + config.DblQuote("ATTACHMENTID") + "=" + config.GetParam(1)
 			log.Printf("delele from %v where "+config.DblQuote(parentObjectID)+"=%v", tableName, row)
 
 			_, err := config.DbQuery.Exec(sql, vals...)
@@ -2335,6 +2338,7 @@ func StartGorillaMux() *mux.Router {
 		//db.Close()
 
 	}).Methods("GET", "POST", "PUT")
+
 	//http://reais.x10host.com/arcgis/rest/services/leasecompliance2016/FeatureServer/xml/31?f=json&db=C:\Users\steve\AppData\Local\Packages\Esri.CollectorforArcGIS_eytg3kh68c6a8\LocalState\hpluser5_qd3vos1n.1xf\df5aa0e91991468eb0efadf475bea54e\n2tel3ls.beb.geodatabase
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/xml/{id}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -2348,14 +2352,16 @@ func StartGorillaMux() *mux.Router {
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/xml/" + id)
 		var dbName = config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase"
 		if len(dbPath) > 0 {
-			if config.DbSqliteDbName != dbPath {
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
+			if config.DbSource != config.PGSQL {
+				if config.DbSqliteDbName != dbPath {
+					if config.DbSqliteQuery != nil {
+						config.DbSqliteQuery.Close()
+					}
+					config.DbSqliteQuery = nil
 				}
-				config.DbSqliteQuery = nil
+				config.DbSqliteDbName = dbPath
+				dbName = "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
 			}
-			config.DbSqliteDbName = dbPath
-			dbName = "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
 		} else {
 			if config.DbSqliteDbName != dbName {
 				if config.DbSqliteQuery != nil {
@@ -2368,11 +2374,15 @@ func StartGorillaMux() *mux.Router {
 
 		var err error
 		//if err != nil {
-		if config.DbSqliteQuery == nil {
-			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
-			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
-			if err != nil {
-				log.Fatal(err)
+		if config.DbSource == config.PGSQL {
+			config.DbSqliteQuery = config.DbQuery
+		} else {
+			if config.DbSqliteQuery == nil {
+				//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
+				config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 		if r.Method == "PUT" {
@@ -2385,7 +2395,7 @@ func StartGorillaMux() *mux.Router {
 				return
 			}
 			//ret := config.SetArcService(body, name, "FeatureServer", idInt, "")
-			sql := "update " + config.Schema + "\"GDB_Items\" set \"Definition\"=? where PhysicalName=?" //OBJECTID=?"
+			sql := "update " + config.Schema + config.DblQuote("GDB_Items") + " set " + config.DblQuote("Definition") + "=? where " + config.DblQuote("PhysicalName") + "=?" //OBJECTID=?"
 			stmt, err := config.DbSqliteQuery.Prepare(sql)
 			if err != nil {
 				log.Println(err.Error())
@@ -2413,7 +2423,7 @@ func StartGorillaMux() *mux.Router {
 		//Db.Exec(initializeStr)
 		log.Print("Sqlite database: " + dbName)
 		//sql := "SELECT \"DatasetName\",\"ItemId\",\"ItemInfo\",\"AdvancedDrawingInfo\" FROM \"GDB_ServiceItems\""
-		sql := "SELECT \"Definition\" FROM " + config.Schema + "\"GDB_Items\" where PhysicalName=?" //OBJECTID=?"
+		sql := "SELECT " + config.DblQuote("Definition") + " FROM " + config.Schema + config.DblQuote("GDB_Items") + " where " + config.DblQuote("PhysicalName") + "=?" //OBJECTID=?"
 		log.Printf("Query: "+sql+"%v", tableName)
 
 		stmt, err := config.DbSqliteQuery.Prepare(sql)
@@ -2422,7 +2432,6 @@ func StartGorillaMux() *mux.Router {
 			w.Header().Set("Content-Type", "application/json")
 			response, _ := json.Marshal(map[string]interface{}{"response": err.Error()})
 			w.Write(response)
-
 		}
 		//rows := stmt.QueryRow(id)
 		var itemInfo []byte
@@ -2457,14 +2466,16 @@ func StartGorillaMux() *mux.Router {
 		log.Println("/arcgis/rest/services/" + name + "/FeatureServer/table/" + id)
 		var dbName = "file:" + config.ReplicaPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "replicas" + string(os.PathSeparator) + name + ".geodatabase" + "?PRAGMA journal_mode=WAL"
 		if len(dbPath) > 0 {
-			if config.DbSqliteDbName != dbPath {
-				if config.DbSqliteQuery != nil {
-					config.DbSqliteQuery.Close()
+			if config.DbSource != config.PGSQL {
+				if config.DbSqliteDbName != dbPath {
+					if config.DbSqliteQuery != nil {
+						config.DbSqliteQuery.Close()
+					}
+					config.DbSqliteQuery = nil
 				}
-				config.DbSqliteQuery = nil
+				config.DbSqliteDbName = dbPath
+				dbName = "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
 			}
-			config.DbSqliteDbName = dbPath
-			dbName = "file:" + dbPath + config.SqlWalFlags //+ "?PRAGMA journal_mode=WAL"
 			/*
 				if config.DbSqliteQuery != nil {
 					config.DbSqliteQuery.Close()
@@ -2488,11 +2499,15 @@ func StartGorillaMux() *mux.Router {
 		//if err != nil {
 		if config.DbSqliteQuery == nil {
 			//config.DbSqliteQuery, err = sql.Open("sqlite3", "file:"+dbName+"?PRAGMA journal_mode=WAL")
-			config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
-			if err != nil {
-				log.Fatal(err)
-				w.Write([]byte("Error: " + err.Error()))
-				return
+			if config.DbSource == config.PGSQL {
+				config.DbSqliteQuery = config.DbQuery
+			} else {
+				config.DbSqliteQuery, err = sql.Open("sqlite3", dbName)
+				if err != nil {
+					log.Fatal(err)
+					w.Write([]byte("Error: " + err.Error()))
+					return
+				}
 			}
 		}
 
@@ -2650,7 +2665,90 @@ func StartGorillaMux() *mux.Router {
 		//http.ServeFile(w, r, config.DataPath + "/" + id  + "query.json")
 
 	}).Methods("GET", "POST")
+	/*
+		r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/_query", func(w http.ResponseWriter, r *http.Request) {
+			//if(req.query.outFields=='OBJECTID'){
+			vars := mux.Vars(r)
+			name := vars["name"]
+			id := vars["id"]
+			idInt, _ := strconv.Atoi(id)
+			dbPath := r.URL.Query().Get("db")
+			where := r.FormValue("where")
+			outFields := r.FormValue("outFields")
+			returnIdsOnly := r.FormValue("returnIdsOnly")
+			var parentObjectID = config.Project.Services[name]["layers"][id]["oidname"].(string)
+			//returnGeometry := r.FormValue("returnGeometry")
+			objectIds := r.FormValue("objectIds")
+			log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query")
+			//returnIdsOnly = true
 
+			//log.Println(r.FormValue("returnGeometry"))
+			//log.Println(r.FormValue("outFields"))
+			//sql := "select "+outFields + " from " +
+
+			if len(where) > 0 {
+				log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/where=" + where)
+				//response := config.GetArcQuery(name, "FeatureServer", idInt, "query",objectIds,where)
+				w.Header().Set("Content-Type", "application/json")
+				//var response = []byte("{\"objectIdFieldName\":\"OBJECTID\",\"globalIdFieldName\":\"GlobalID\",\"geometryProperties\":{\"shapeAreaFieldName\":\"Shape__Area\",\"shapeLengthFieldName\":\"Shape__Length\",\"units\":\"esriMeters\"},\"features\":[]}")
+				var response = []byte(`{"objectIdFieldName":"OBJECTID","globalIdFieldName":"GlobalID","geometryProperties":{"shapeLengthFieldName":"","units":"esriMeters"},"features":[]}`)
+				w.Write(response)
+
+			} else if returnIdsOnly == "true" {
+				log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/objectids")
+
+				response := config.GetArcService(name, "FeatureServer", idInt, "objectids", dbPath)
+				if len(response) > 0 {
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(response)
+				} else {
+					log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".objectids.json")
+					http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".objectids.json")
+				}
+			} else if len(objectIds) > 0 {
+				log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/objectIds=" + objectIds)
+
+				//only get the select objectIds
+				//response := config.GetArcService(name, "FeatureServer", idInt, "query")
+				response := config.GetArcQuery(name, "FeatureServer", idInt, "query", objectIds, dbPath)
+
+				if len(response) > 0 {
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(response)
+				} else {
+					log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
+					http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+
+				}
+				//if returnGeometry == "false" &&
+			} else if strings.Index(outFields, parentObjectID) > -1 { //r.FormValue("returnGeometry") == "false" && r.FormValue("outFields") == "OBJECTID" {
+				log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/outfields=" + outFields)
+
+				response := config.GetArcService(name, "FeatureServer", idInt, "outfields", dbPath)
+				if len(response) > 0 {
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(response)
+				} else {
+					log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".outfields.json")
+					http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".outfields.json")
+				}
+			} else {
+				log.Println("/arcgis/rest/services/" + name + "/FeatureServer/" + id + "/query/else")
+
+				response := config.GetArcService(name, "FeatureServer", idInt, "query", dbPath)
+				if len(response) > 0 {
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(response)
+				} else {
+					log.Println("Sending: " + config.DataPath + string(os.PathSeparator) + name + string(os.PathSeparator) + "services" + string(os.PathSeparator) + "FeatureServer." + id + ".query.json")
+					http.ServeFile(w, r, config.DataPath+string(os.PathSeparator)+name+string(os.PathSeparator)+"services"+string(os.PathSeparator)+"FeatureServer."+id+".query.json")
+				}
+			}
+
+			//http.ServeFile(w, r, config.DataPath + "/" + id  + "query.json")
+
+		}).Methods("GET", "POST")
+	*/
 	//http://192.168.2.59:8080/arcgis/rest/services/accommodationagreementrentals/FeatureServer/1/queryRelatedRecords?objectIds=12&outFields=*&relationshipId=2&returnGeometry=true&f=json
 	r.HandleFunc("/arcgis/rest/services/{name}/FeatureServer/{id}/queryRelatedRecords", func(w http.ResponseWriter, r *http.Request) {
 		/*

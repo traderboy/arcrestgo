@@ -9,13 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
-
 	"strconv"
+	"strings"
 
 	_ "github.com/lib/pq"
 	sqlite3 "github.com/mattn/go-sqlite3"
-
 	structs "github.com/traderboy/arcrestgo/structs"
 )
 
@@ -33,9 +31,9 @@ const (
 var Catalogs map[string]structs.Catalog
 
 //map[string]Service
-var DbSource = SQLITE3
+var DbSource = 0 // SQLITE3
 
-var Schema = "postgres."
+var Schema = "" //= "postgres."
 var TableSuffix = ""
 var DbTimeStamp = ""
 
@@ -46,8 +44,8 @@ var SqlWalFlags = "?PRAGMA journal_mode=WAL"
 
 //leasecompliance2016
 var RootName string
-var HTTPPort = ":80"
-var HTTPSPort = ":443"
+var HTTPPort string  // = ":80"
+var HTTPSPort string //= ":443"
 var Pem = "ssl/reais.x10host.com.key.pem"
 var Cert = "ssl/2_reais.x10host.com.crt"
 var UUID = ""
@@ -63,7 +61,7 @@ var DbQuery *sql.DB
 var DbSqliteQuery *sql.DB
 var DbSqliteDbName string
 
-var port = ":8080"
+//var port = ":8080"
 
 var DataPath = RootPath        //+ string(os.PathSeparator)        //+ string(os.PathSeparator) //+ "services"
 var ReplicaPath = RootPath     //+ string(os.PathSeparator)     //+ "replicas"
@@ -100,22 +98,15 @@ func Initialize() {
 				} else {
 					DbName = pwd + string(os.PathSeparator) + "arcrest.sqlite"
 				}
-				Schema = ""
-				TableSuffix = "_evw"
-				UUID = "(select '{'||upper(substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12))||'}' from ( select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v) as foo)"
-				DbTimeStamp = "(julianday('now') - 2440587.5)*86400.0*1000"
 
 			} else if os.Args[i] == "-pgsql" {
 				DbSource = PGSQL
 				if len(os.Args) > i+1 && os.Args[i+1][0] != 45 { // && len(os.Args[i+1]) > 0 && os.Args[i+1][0] != 45
 					DbName = os.Args[i+1]
 				} else {
+
 					DbName = "user=postgres dbname=gis host=192.168.99.100"
 				}
-				Schema = "postgres."
-				UUID = "('{'||md5(random()::text || clock_timestamp()::text)::uuid||'}')"
-				//DbTimeStamp = "(CAST (to_char(now(), 'J') AS INT) - 2440587.5)*86400.0*1000"
-				DbTimeStamp = "(now())"
 
 			} else if os.Args[i] == "-root" {
 				if len(os.Args) > i+1 && os.Args[i+1][0] != 45 {
@@ -142,7 +133,27 @@ func Initialize() {
 				os.Exit(0)
 			}
 		}
+	} else if len(os.Getenv("DB_SOURCE")) > 0 {
+		//read in from environment variables
+		RootPath, _ = filepath.Abs(os.Getenv("ROOT_PATH"))
+
+		tmpSrc := os.Getenv("DB_SOURCE")
+		if len(tmpSrc) > 0 {
+			if tmpSrc == "PG" {
+				DbSource = PGSQL
+				DbName = os.Getenv("DB_NAME")
+			} else if tmpSrc == "SQLITE" {
+				DbSource = SQLITE3
+				DbName = os.Getenv("DB_NAME")
+			} else {
+				DbSource = FILE
+			}
+		} else {
+			DbSource = FILE
+		}
+
 	} else {
+
 		//read all folder in catalogs
 		/*
 			files, _ := ioutil.ReadDir(RootPath)
@@ -159,11 +170,38 @@ func Initialize() {
 		if Project.DataSource == "pg" {
 			DbSource = PGSQL
 			DbName = Project.PG
-			Schema = "postgres."
+			//Schema = "postgres."
 		} else if Project.DataSource == "sqlite" {
 			DbSource = SQLITE3
 			DbName = Project.SqliteDb
 		} else if Project.DataSource == "file" {
+			DbSource = FILE
+		}
+	}
+	//for docker, environment variables override command line parameters?
+	if len(HTTPPort) == 0 {
+		HTTPPort = ":" + os.Getenv("HTTP_PORT") //80
+		if len(HTTPPort) == 1 {
+			HTTPPort = ":80"
+		}
+	}
+	if len(HTTPSPort) == 0 {
+		HTTPSPort = ":" + os.Getenv("HTTPS_PORT") //443
+		if len(HTTPSPort) == 1 {
+			HTTPSPort = ":443"
+		}
+	}
+	if DbSource == 0 {
+		tmpSrc := os.Getenv("DB_SOURCE")
+		if len(tmpSrc) > 0 {
+			if tmpSrc == "PG" {
+				DbSource = PGSQL
+			} else if tmpSrc == "SQLITE" {
+				DbSource = SQLITE3
+			} else {
+				DbSource = FILE
+			}
+		} else {
 			DbSource = FILE
 		}
 	}
@@ -174,11 +212,21 @@ func Initialize() {
 			log.Fatal(err)
 		}
 		DbQuery = Db
+		Schema = "postgres."
+		UUID = "('{'||md5(random()::text || clock_timestamp()::text)::uuid||'}')"
+		//DbTimeStamp = "(CAST (to_char(now(), 'J') AS INT) - 2440587.5)*86400.0*1000"
+		DbTimeStamp = "(now())"
+
 		log.Print("Postgresql database: " + DbName)
 		log.Print("Pinging Postgresql: ")
 		log.Println(Db.Ping)
 		LoadConfiguration()
 	} else if DbSource == SQLITE3 {
+		Schema = ""
+		TableSuffix = "_evw"
+		UUID = "(select '{'||upper(substr(u,1,8)||'-'||substr(u,9,4)||'-4'||substr(u,13,3)||'-'||v||substr(u,17,3)||'-'||substr(u,21,12))||'}' from ( select lower(hex(randomblob(16))) as u, substr('89ab',abs(random()) % 4 + 1, 1) as v) as foo)"
+		DbTimeStamp = "(julianday('now') - 2440587.5)*86400.0*1000"
+
 		//use 2 different sqlite files:
 		//1st: contains configuration information and JSON data
 		//2nd: contains actual data
@@ -375,6 +423,23 @@ func Initialize() {
 	log.Println("Data path: " + DataPath)
 	log.Println("Replica path: " + ReplicaPath)
 	log.Println("Attachments path: " + AttachmentsPath)
+	var DbSourceName string
+	switch DbSource {
+	case FILE:
+		DbSourceName = "Filesystem"
+		break
+	case PGSQL:
+		DbSourceName = "Postgresql"
+		break
+	case SQLITE3:
+		DbSourceName = "Sqlite"
+		break
+	default:
+		DbSourceName = "Unknown"
+	}
+	log.Println("Data source: " + DbSourceName)
+	log.Printf("HTTP Port: %v\n", HTTPPort)
+	log.Printf("HTTPS Port: %v\n", HTTPSPort)
 
 }
 
@@ -781,6 +846,7 @@ func GetArcQuery(catalog string, service string, layerid int, dtype string, obje
 		return true
 	*/
 }
+
 func in_string_array(val string, array []string) (ok bool, i int) {
 	for i = range array {
 		if ok = array[i] == val; ok {
@@ -789,6 +855,7 @@ func in_string_array(val string, array []string) (ok bool, i int) {
 	}
 	return
 }
+
 func in_float_array(val float64, array []float64) bool {
 	for i := range array {
 		if array[i] == val {
@@ -810,9 +877,11 @@ func in_array(v interface{}, in interface{}) (ok bool, i int) {
 	}
 	return
 }
+
 func DblQuote(s string) string {
 	return "\"" + s + "\""
 }
+
 func testQuery() {
 
 	sql := "insert into grazing_inspections(yearling_heifers,studs,lambs,wethers,kids,reviewer_name,reviewer_date,reviewer_title,cows,steer_calves,mares,fillies,nannies,Comments,OBJECTID,colts,ewes,rams,billies,yearling_steers,bulls,geldings,GlobalGUID,GlobalID) values( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"

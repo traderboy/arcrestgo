@@ -1,18 +1,18 @@
 store:
     # data-only container
-    image: postgres:latest # reuse postgres container
+    image: kartoza/postgis:9.5-2.2 # reuse postgres container
     volumes:
         - /var/lib/postgresql/data
     command: "true"
 
 postgres:
-    image: postgres:latest
+    image: kartoza/postgis:9.5-2.2
     ports:
         - "5432" # random available host port will be chosen, same as -P
     volumes_from:
         - store # connect postgres and the data-only container
     environment:
-        - POSTGRES_PASSWORD=mypass
+        - POSTGRES_PASSWORD=postgres
         # you can also set the postgres username and database name
 
 go:
@@ -22,6 +22,9 @@ go:
         # this will create environment variables in the go container
         # with ip and port info for the postgres container
         # also creates entries in /etc/hosts with ip info
+    environment:
+        - DB_SOURCE=PG
+
     ports:
         - "8080" # this is port i'm exposing in the container
 

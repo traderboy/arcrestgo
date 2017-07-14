@@ -54,3 +54,4 @@ catalogs.old/*
 delta*.geodatabase
 settings.ini
 logfile.txt
+*.bin
