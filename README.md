@@ -22,3 +22,10 @@ docker run  -v /d/data:/data  -v /d/git:/git geodata/gdal:local ogr2ogr -f "Post
 
 SELECT load_extension( 'd:/bin/mod_spatialite.dll', 'sqlite3_modspatialite_init')
 SELECT load_extension( 'd:/bin/stgeometry_sqlite.dll', 'SDE_SQL_funcs_init');
+
+Docker
+git clone git@github.com:traderboy/arcrestgo.git
+cd arcrestgo
+cd docker
+docker-compose build
+docker-compose up -d

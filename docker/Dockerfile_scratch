@@ -1,0 +1,36 @@
+FROM scratch
+
+COPY /server /server/
+
+CMD ["/server"]
+
+
+#FROM postgres:9.5
+#FROM golang:onbuild
+#$ docker build –t yourname/hello-go .
+#$ docker run –p 8000:8000 –d yourname/hello-go
+
+#FROM golang:1.7
+#RUN mkdir /app
+#ADD docker/server.go /app 
+#ADD structs /app/
+#ADD routes /app
+#ADD config /app
+#ADD docker/config.go /app/config
+#ADD catalogs /app
+#ADD dist /app
+#ADD sha256 /app
+
+
+#WORKDIR /app
+# Build the outyet command inside the container.
+# (You may fetch or manage dependencies here,
+# either manually or with a tool like "godep".)
+#RUN go install github.com/traderboy/arcrestgo
+#RUN go build ./server.go
+
+#CMD ["./server"]
+#ADD myapp /app/
+#ENTRYPOINT ["./server"]
+
+EXPOSE 8080
