@@ -1,7 +1,9 @@
 #FROM postgres:9.5
 #FROM golang:onbuild
 #$ docker build –t traderboy/arcrestgo -f docker/Dockerfile .
-#$ docker run –p 8000:8000 –d yourname/hello-go
+#$  docker run -d -p 8000:8000  --name arcrestgo traderboy/arcrestgo
+#   docker logs arcrestgo
+#   docker rm arcrestgo
 
 FROM golang:1.7
 #RUN mkdir /app
